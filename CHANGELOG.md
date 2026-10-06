@@ -165,6 +165,32 @@
   a check that `capabilities.json` matches `npm run manifest`, and a web UI
   typecheck + build. No API key in CI; `VENICE_VIDEO_CONFIG_DIR` points at
   an empty dir so no test can reach a paid endpoint.
+- **The `/video/queue` request body is built in core.** New
+  `packages/core/src/venice/request-builder.ts` (on the barrel and at
+  `venice-video-harness/core/venice/request-builder.js`):
+  `buildVideoQueueRequest(input, { logger? })` builds the render path's body
+  from inputs that are already URL / `data:` URI strings — pure reference
+  mode, the resolution pins (`minimax-h3-max` 768P matched before
+  `minimax-h3` 2K, Seedance 720p, …), `aspect_ratio` for R2V and every
+  text-to-video model, `audio` omitted for non-configurable models
+  (HappyHorse, MiniMax), reference/scene budgets, voice-donor and lip-sync
+  reference audio, camera trajectory, `consents`. `planVideoQueueRequest`
+  tells a host which media the body will use, so it only reads or uploads
+  those. `buildRegistryVideoQueueRequest` + `snapVideoRequest` are
+  `queueVideo`'s registry-flag variant (the two paths still differ; both are
+  kept as they were). Helpers: `planLipSyncReferenceAudio`,
+  `voiceReferenceClipIssue`, `VOICE_REF_MIN_SEC` / `VOICE_REF_MAX_SEC`,
+  `withSeedanceFaceConsent`, `isNeedsConsentError`. The faces-off decision
+  (`decideFacesOff`, `FacesOffModelError`, `characterKindsFor`), refusal
+  classification (`src/venice/refusal.ts`), `classifyVideoRetrieveStatus`
+  and `assertShotDurationsValid` also move to core. The wire types gain
+  `VideoQueueRequest.consents` and per-element `audio_url`. src keeps the
+  file reads, ffprobe/ffmpeg padding, sidecar reads and the transport, and
+  re-exports every moved name, so its export lists are unchanged. Request
+  bodies are byte-identical (18,231-case dump); in 31 cases a media
+  preparation log line now prints before a body-decision line, and on the
+  over-15s lip-sync error the two info lines before the throw are gone.
+  Test: `tests/core-request-builder.test.mjs`.
 - **The prompt builders and the @ImageN slot planner move into core
   (phase 3).** `src/mini-drama/prompt-builder.ts` moves verbatim to
   `packages/core/src/mini-drama/prompt-builder.ts`,

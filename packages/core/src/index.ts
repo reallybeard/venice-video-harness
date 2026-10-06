@@ -45,8 +45,17 @@ export type {
   GenerateWithReferencesOptions,
   GenerateWithReferencesResult,
   VeniceApiError,
+  SeedanceFaceConsent,
+  VideoQueueConsents,
   VideoElement as VideoElementRequest,
 } from './venice/types.js';
+
+// /video/queue: request-body builders (every input already a URL / data: URI),
+// the faces-off decision, refusal classification and retrieve-status verdicts.
+export * from './venice/request-builder.js';
+export * from './venice/faces-off.js';
+export * from './venice/refusal.js';
+export * from './venice/retrieve-status.js';
 
 // Text / intelligence model catalogue.
 export * from './venice/text-models.js';
@@ -79,6 +88,7 @@ export * from './mini-drama/stream-choices.js';
 // Generation planning: units, multi-shot grouping, montage scenes and beats.
 export * from './mini-drama/generation-planner.js';
 export * from './mini-drama/montage.js';
+export * from './mini-drama/duration-preflight.js';
 export * from './mini-drama/shot-paths.js';
 // Music-cue placement and volume-automation expressions (rendering stays in the CLI).
 export * from './mini-drama/music-cues.js';
