@@ -126,3 +126,6 @@ export * from './venice/render-job.js';
 export * from './session/gates.js';
 // The QA loops (qa-storyboard, qa-videos) over the ports: vision judge, image probe, clock.
 export * from './mini-drama/qa-loops.js';
+// One video render over the ports (references, video backend, clock, logger)
+// plus injected media callbacks: faces-off, request plan, media, body, job, recipe.
+export * from './mini-drama/render-video.js';
