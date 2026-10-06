@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 
 import type { MusicCueSpec, ShotScript } from '../series/types.js';
+import type { PlacementMap } from './shot-paths.js';
 
 export const DEFAULT_GAIN_DB = -22;
 export const DEFAULT_FADE_IN = 1.0;
@@ -24,10 +25,10 @@ export interface ResolvedMusicCue {
   endSec: number;
 }
 
-export interface PlacementMap {
-  /** Shot id (string, zero-padded for numeric shots like "003" / "003b"). */
-  [shotId: string]: { startSec: number; endSec: number };
-}
+// One definition, shared with the shot-path helpers (keys are `shotKey` ids
+// like "003" / "003b"); re-exported here so music-cue callers keep importing it
+// from this module.
+export type { PlacementMap };
 
 /** Normalize a shot id (number or string) to a string key. */
 export function shotIdKey(id: number | string): string {
