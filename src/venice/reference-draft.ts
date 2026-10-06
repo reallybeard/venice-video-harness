@@ -28,6 +28,7 @@ import { writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import type { VeniceClient } from './client.js';
 import type { MultiEditModel } from 'venice-video-harness/core/venice/types.js';
+import { buildReferenceDraftPrompt, referenceDraftLayers } from 'venice-video-harness/core/mini-drama/storyboard-panels.js';
 import { multiEditImage, loadImageAsDataUri } from './multi-edit.js';
 import { ensureRealPng, restoreAspectRatio, aspectRatioToDimensions } from './edit-post.js';
 import { appendRecipePass } from './recipe.js';
@@ -80,48 +81,7 @@ export interface DraftPanelResult {
   textOnlyCharacters: string[];
 }
 
-/**
- * Build the composition prompt. Image numbering follows the multi-edit
- * array order: image 1 = base, images 2..N = character layers.
- */
-export function buildReferenceDraftPrompt(options: DraftPanelOptions): string {
-  const { baseKind, characters, sceneDescription, blocking, aesthetic } = options;
-  const parts: string[] = [];
-
-  if (baseKind === 'location') {
-    parts.push(
-      'Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it.',
-    );
-  } else {
-    parts.push(
-      'Image 1 is the scene draft — keep its composition, framing, and environment.',
-    );
-  }
-
-  characters.forEach((char, i) => {
-    const imgNum = i + 2;
-    if (baseKind === 'location') {
-      parts.push(
-        `Place the person from image ${imgNum} (${char.name}: ${char.identityLine}) into the scene — reproduce their exact face, hair, and body from image ${imgNum}, not from this text.`,
-      );
-    } else {
-      parts.push(
-        `Make the character ${char.name} in the scene match the person in image ${imgNum} exactly — face, hair, and body from image ${imgNum}, not from text. (${char.identityLine}.)`,
-      );
-    }
-  });
-
-  parts.push(sceneDescription);
-  if (blocking) parts.push(`BLOCKING: ${blocking}`);
-
-  parts.push(
-    'Render as a single continuous cinematic frame. Do NOT copy the reference images\u2019 poses, backgrounds, or layout — only the identities. ' +
-    'No text, no labels, no inset panels, no multi-view composition, no speech bubbles.',
-  );
-  if (aesthetic) parts.push(`STYLE: ${aesthetic}.`);
-
-  return parts.join(' ');
-}
+export { buildReferenceDraftPrompt };
 
 /**
  * Draft a panel (or blocking plate) with REAL reference bytes via multi-edit.
@@ -142,11 +102,10 @@ export async function draftPanelWithReferences(
   for (const missing of missingChars) {
     console.warn(`  Reference draft: no reference image for ${missing.name} (${missing.refPath}) — identity will be text-only for this character.`);
   }
-  if (usable.length > 2) {
-    console.warn(`  Reference draft: multi-edit takes at most 2 reference layers — dropping ${usable.slice(2).map(c => c.name).join(', ')}.`);
+  const { layers: layerChars, dropped: droppedChars } = referenceDraftLayers(usable);
+  if (droppedChars.length > 0) {
+    console.warn(`  Reference draft: multi-edit takes at most 2 reference layers — dropping ${droppedChars.map(c => c.name).join(', ')}.`);
   }
-  const layerChars = usable.slice(0, 2);
-  const droppedChars = usable.slice(2);
   const textOnlyCharacters = [...missingChars, ...droppedChars].map(c => c.name);
 
   const prompt = buildReferenceDraftPrompt({ ...options, characters: layerChars });
