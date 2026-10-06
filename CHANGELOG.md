@@ -265,6 +265,29 @@
   as one cue; the inline-TTS lip-sync MP3 carries the first on-camera
   speaker's line(s); `loadEpisodeScript` drops malformed entries from a list
   the same way it nulls a malformed object. Test: `tests/dialogue-line.test.mjs`.
+- **`ShotTake` and `ApprovalBinding` in core (`plan-schema-additions.md`
+  §1–§2).** A take is one render of one shot: what was sent, what came back,
+  what QA said, whether a human accepted it. The CLI had the inputs
+  (`*.recipe.json` sidecars, `failed-requests.log`, the `qa-report`) but no
+  per-take record, and retry policy, cost history and "which take is in the
+  cut" all need one. New in `series/types.ts`: `ShotTake` (id, ISO
+  `createdAt`, `recipe`, `model`, `seed`, `outputPath`, `queueId`, `costUsd`,
+  `status: queued | rendered | failed | rejected`, classified `failure`, `qa`,
+  `review`), `TakeRecipe` (the `/video/queue` body with asset refs in place
+  of bytes, reference lists in push order so `@ImageN` / `@AudioN` can be
+  rebuilt), `TakeQA`, `TakeReview` (`status: 'approved'`, `at`, `note`,
+  `settingsDigest`), `ApprovalBinding` (`{ panelSha256, settingsDigest }`,
+  lifted from `panel-approval.ts`) and `PanelReview` (binding + verdict +
+  reviewer + optional human sign-off). `ShotScript` gains optional `takes`,
+  `currentTakeId` and `panelReview`. `ShotApproval` in
+  `src/mini-drama/panel-approval.ts` is now a type alias of
+  `ApprovalBinding` — same two fields, same name exported, so `qa-approve` /
+  `generate-videos` and `qa-approved.json` readers are untouched. Type-only:
+  nothing in the CLI writes `takes[]` yet. Test:
+  `tests/takes-approval.test.mjs` (the shapes compile as specified with
+  `ShotApproval ≡ ApprovalBinding`; a script with and without `takes`
+  round-trips through `saveEpisodeScript` / `loadEpisodeScript` and
+  `saveSeries` / `loadSeries` with no key invented).
 
 ## 2.26.0 — 2026-10-05
 

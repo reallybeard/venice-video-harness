@@ -967,6 +967,177 @@ export interface ShotScript {
    * the order of the original shotNumbers is preserved.
    */
   shotIdSuffix?: string;
+  /**
+   * Every render of this shot, oldest first (see `ShotTake`). Optional and
+   * additive: the CLI keeps its `*.recipe.json` sidecars, `failed-requests.log`
+   * and `qa-report` as today; a host that wants retry policy, cost history or
+   * "which take is in the cut" reads this list instead of reconstructing it.
+   */
+  takes?: ShotTake[];
+  /** `ShotTake.id` of the take in the cut. Absent until a take is chosen. */
+  currentTakeId?: string;
+  /**
+   * The storyboard panel's review, bound to the panel bytes and the settings
+   * the panel depends on (see `PanelReview`, `ApprovalBinding`). The CLI
+   * records the same binding in `qa-approved.json`; `verifyApproval` reads
+   * either.
+   */
+  panelReview?: PanelReview;
+}
+
+// ---------------------------------------------------------------------------
+// Takes and approval
+//
+// A take is one render of one shot: what was sent, what came back, what QA
+// said, whether a human accepted it. The CLI already holds the inputs
+// (`*.recipe.json` sidecars, `failed-requests.log`, the `qa-report`) but had
+// no per-take record; retry policy, cost history and "which take is in the
+// cut" all need one. `ApprovalBinding` is the one shape that ties a human
+// review to what the human looked at; the panel review and the take review
+// both use it (lifted from `src/mini-drama/panel-approval.ts`, whose
+// `ShotApproval` is now an alias of it).
+// ---------------------------------------------------------------------------
+
+/**
+ * One render of one shot. Appended to `ShotScript.takes`; the take in the cut
+ * is named by `ShotScript.currentTakeId`.
+ */
+export interface ShotTake {
+  /** Stable id, unique within the shot. */
+  id: string;
+  /** ISO 8601 timestamp of when the take was queued. Core timestamps are ISO strings, never reference seconds. */
+  createdAt: string;
+  /** The exact `/video/queue` body minus the base64 payloads (asset refs instead). */
+  recipe?: TakeRecipe;
+  /** Venice video model id the take was queued on. */
+  model: string;
+  /** Seed sent with the request, when one was. */
+  seed?: number;
+  /** Project-relative path of the rendered clip; absent while queued or after a failure. */
+  outputPath?: string;
+  /** Venice queue id, for re-attach and for the audit trail. */
+  queueId?: string;
+  /** USD, from `/video/quote` or the retrieve body; absent when unknown. */
+  costUsd?: number;
+  /**
+   * Where the take is on its ladder: `queued` (submitted, not back yet),
+   * `rendered` (clip on disk), `failed` (Venice refused or the job failed),
+   * `rejected` (rendered, but QA or a human turned it down).
+   */
+  status: 'queued' | 'rendered' | 'failed' | 'rejected';
+  /** Venice's refusal / failure, classified (`classifyVideoQueueRefusal`, `VideoGenerationFailedError`). */
+  failure?: { kind: string; status?: string; detail?: string; refunded?: boolean };
+  /** What the vision QA pass said about the rendered clip. */
+  qa?: TakeQA;
+  /** A human accepted this take for the shot as the shot was configured then — see `TakeReview` for the binding. */
+  review?: TakeReview;
+}
+
+/**
+ * The `/video/queue` body a take was made from, with every binary payload
+ * replaced by an asset ref (a project-relative path on the CLI, an asset id
+ * in a browser). Enough to reconstruct `@ImageN` / `@AudioN` bindings and to
+ * re-queue the same request; never carries bytes.
+ */
+export interface TakeRecipe {
+  /** Final prompt as sent, including the identity / role clauses. */
+  prompt: string;
+  negativePrompt?: string;
+  /** Requested duration string, e.g. `"5s"`. */
+  duration: string;
+  resolution?: string;
+  aspectRatio?: string;
+  /** Whether native model audio was requested. */
+  audio?: boolean;
+  /** In push order, so `@ImageN` can be reconstructed. Asset refs, not bytes. */
+  referenceImages?: string[];
+  /** Start-frame asset ref (`image_url`), for i2v lanes. */
+  startFrame?: string;
+  /** End-frame asset ref, for models that accept one. */
+  endFrame?: string;
+  /** Exact-audio input (`audio_url`), for lip-sync lanes. */
+  audioUrl?: string;
+  /** Voice-donor clips (`reference_audio_urls`), in push order so `@AudioN` can be reconstructed. */
+  referenceAudio?: string[];
+  /** Kling-style `elements`: one frontal ref plus angle refs per character. Asset refs. */
+  elements?: Array<{ frontal: string; angles: string[] }>;
+  /** Environment plates (`scene_image_urls`). Asset refs. */
+  sceneImages?: string[];
+}
+
+/** The vision QA verdict on one rendered take. */
+export interface TakeQA {
+  /** Model-reported quality score, when the judge gives one. */
+  score?: number;
+  /** Whether the take cleared the QA gate. */
+  passed: boolean;
+  /** Specific problems found, one per entry; empty when `passed`. */
+  issues: string[];
+  /** One-paragraph summary of what the judge saw. */
+  summary: string;
+  /** The vision model that judged it. */
+  model?: string;
+}
+
+/**
+ * What a human looked at: the panel's bytes and the settings it depends on.
+ * From `panel-approval.ts`. `panelSha256` is the sha256 of the panel file's
+ * bytes; `settingsDigest` is the sha256 of the canonical JSON of the
+ * `PanelSettings` the panel is a function of (prompt, references, image
+ * models). Regenerate the panel or change its inputs and the binding no
+ * longer matches, so a stale approval cannot unblock a billed render of
+ * something nobody reviewed.
+ */
+export interface ApprovalBinding {
+  /** sha256 of the panel file's bytes at approval time. */
+  panelSha256: string;
+  /** sha256 of the canonical JSON of `PanelSettings` at approval time. */
+  settingsDigest: string;
+}
+
+/**
+ * The storyboard panel's review for one shot, bound to what was reviewed.
+ * `verdict` is the reviewer's call; `approvedBy` / `approvalReason` /
+ * `approvedAt` record a human sign-off layered on top of it (a human may
+ * approve a `failed` panel with a reason, or leave a `passed` one unapproved).
+ */
+export interface PanelReview {
+  /** The panel bytes and settings this review is about. */
+  binding: ApprovalBinding;
+  /**
+   * `passed` / `failed` are the reviewer's verdict; `unchecked` means no
+   * review ran; `error` means the review itself failed (model error, missing
+   * panel) and says nothing about the panel.
+   */
+  verdict: 'passed' | 'failed' | 'unchecked' | 'error';
+  /** Who or what reviewed: a model id, or a person. */
+  reviewer: string;
+  /** One-paragraph summary of the review. */
+  summary: string;
+  /** Person who signed off, when a human did. */
+  approvedBy?: string;
+  /** Why the human approved, especially over a `failed` verdict. */
+  approvalReason?: string;
+  /** ISO 8601 timestamp of the human sign-off. */
+  approvedAt?: string;
+  /** ISO 8601 timestamp of the review itself. */
+  reviewedAt: string;
+}
+
+/**
+ * A human's acceptance of one take for its shot. Only approvals are recorded;
+ * a take nobody accepted simply has no `review`, and a rejected one is
+ * `status: 'rejected'` on the take itself.
+ */
+export interface TakeReview {
+  /** Only the accepted state is recorded. */
+  status: 'approved';
+  /** ISO 8601 timestamp of the approval. */
+  at: string;
+  /** Free-text note from the approver. */
+  note?: string;
+  /** `settingsDigest` of the shot's video settings when approved; an edit after that makes the take stale. */
+  settingsDigest: string;
 }
 
 // ---------------------------------------------------------------------------
