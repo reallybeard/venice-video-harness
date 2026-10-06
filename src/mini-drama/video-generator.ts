@@ -53,8 +53,9 @@ import {
 import { characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { VideoGenerationFailedError } from '../venice/video.js';
-import { abortableSleep, currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
+import { currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
 import { renderVideo } from 'venice-video-harness/core/mini-drama/render-video.js';
+import { runGenerationUnits, type GenerationUnitRenderer } from 'venice-video-harness/core/mini-drama/generation-loop.js';
 import { createCliClock } from '../ports/clock.js';
 import { createCliLogger } from '../ports/logger.js';
 import { createCliReferenceStore } from '../ports/reference-store.js';
@@ -71,7 +72,6 @@ export type {
 } from 'venice-video-harness/core/venice/queue-handshake.js';
 
 const VIDEO_QUEUE_PATH = '/api/v1/video/queue';
-const MULTISHOT_RETRY_DELAY_MS = 15_000;
 
 function runCommand(command: string, args: string[]): string {
   const result = spawnSync(command, args, {
@@ -1499,59 +1499,6 @@ async function renderMontageUnit(
   return shotPaths;
 }
 
-async function renderMultiShotUnitUntilSuccess(
-  client: VeniceClient,
-  series: SeriesState,
-  shots: ShotScript[],
-  unit: GenerationUnit,
-  sceneDir: string,
-  previousRenderedShotPath: string | undefined,
-  nextShotNumber: number | undefined,
-): Promise<string[]> {
-  let attempt = 1;
-
-  while (true) {
-    try {
-      if (attempt > 1) {
-        console.log(`  ${unit.unitId}: retrying multi-shot render (attempt ${attempt})`);
-      }
-
-      return await renderMultiShotUnit(
-        client,
-        series,
-        shots,
-        unit,
-        sceneDir,
-        previousRenderedShotPath,
-        nextShotNumber,
-      );
-    } catch (err) {
-      // A cancelled operation is not a failed attempt: retrying it fails the
-      // same way every 15s, forever.
-      if (isAbortError(err)) throw err;
-      // A classified refusal is final: a face-screening refusal fails on the
-      // same images every time, and a provider refusal has already had its one
-      // refunded retry inside submitVideoQueue. Looping here would only bill
-      // (or spam the queue endpoint, anti-pattern 27b).
-      if (err instanceof VideoRefusalError) throw err;
-      // A FAILED render is final too: its pending-job record is already
-      // cleared, so a retry re-queues and re-bills the same body. A faces-off
-      // refusal is thrown before the queue call on the same images every time.
-      if (err instanceof VideoGenerationFailedError) throw err;
-      if (err instanceof FacesOffModelError) throw err;
-      if (err instanceof VeniceRequestError) {
-        console.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed (HTTP ${err.status}): ${err.message}`);
-        console.warn(`  Error body: ${JSON.stringify(err.body, null, 2)}`);
-      } else {
-        console.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed - ${err}`);
-      }
-      console.warn(`  ${unit.unitId}: keeping multi-shot strategy, retrying in ${(MULTISHOT_RETRY_DELAY_MS / 1000).toFixed(0)}s`);
-      attempt += 1;
-      await abortableSleep(MULTISHOT_RETRY_DELAY_MS);
-    }
-  }
-}
-
 export interface GenerateEpisodeVideosResult {
   videoPaths: string[];
   plan: GenerationPlan;
@@ -1567,88 +1514,47 @@ export async function generateEpisodeVideos(
   plan: GenerationPlan,
   episodeAudioMix?: import('venice-video-harness/core/series/types.js').AudioMixDefaults,
 ): Promise<GenerateEpisodeVideosResult> {
-  // Fail fast on duration / model mismatches before any Venice queue call.
-  assertShotDurationsValid(shots, plan);
-
-  const videoPaths: string[] = [];
-  // Suffixed inserts ("13b") share their base shotNumber, so a Map keyed by
-  // shotNumber collapses "13" and "13b" onto one entry and the base shot is
-  // silently skipped as "video exists" (the insert's video). The plan is
-  // built from `shots` in order with each shot in exactly one unit, so we
-  // resolve unit shots with a sequential cursor instead; the Map remains
-  // only as a fallback for hand-edited plans.
-  const shotsByNumber = new Map(shots.map(shot => [shot.shotNumber, shot]));
-  let shotCursor = 0;
-  let previousRenderedShotPath: string | undefined;
-  let previousShot: ShotScript | undefined;
-
-  for (let unitIndex = 0; unitIndex < plan.units.length; unitIndex++) {
-    const unit = plan.units[unitIndex];
-    const unitShots = unit.shotNumbers
-      .map(shotNumber => {
-        const candidate = shots[shotCursor];
-        if (candidate && candidate.shotNumber === shotNumber) {
-          shotCursor += 1;
-          return candidate;
-        }
-        return shotsByNumber.get(shotNumber);
-      })
-      .filter((shot): shot is ShotScript => Boolean(shot));
-    const nextUnit = plan.units[unitIndex + 1];
-    const nextShotNumber = nextUnit?.shotNumbers[0];
-
-    if (unitShots.length === 0) continue;
-
-    // Feeds the shell's `/jobs` view, so a backgrounded episode render reports
-    // "unit 3/12 shot 5" instead of only whatever the current poll is doing.
-    reportProgress({
-      phase: 'render',
-      current: unitIndex + 1,
-      total: plan.units.length,
-      detail: `unit ${unitIndex + 1}/${plan.units.length} · shot ${unitShots[0].shotNumber}`,
-    });
-
-    try {
-      const savedPaths = unit.unitType === 'single'
-        ? await renderSingleShotUnit(
-          client,
-          series,
-          unitShots[0],
-          unit,
-          sceneDir,
-          previousRenderedShotPath,
-          nextShotNumber,
-          previousShot,
-          episodeAudioMix,
-        )
-        : unit.unitType === 'montage'
-          ? await renderMontageUnit(
-            client,
-            series,
-            unitShots,
-            unit,
-            sceneDir,
-          )
-          : await renderMultiShotUnitUntilSuccess(
-            client,
-            series,
-            unitShots,
-            unit,
-            sceneDir,
-            previousRenderedShotPath,
-            nextShotNumber,
-          );
-
-      if (savedPaths.length > 0) {
-        videoPaths.push(...savedPaths);
-        previousRenderedShotPath = savedPaths[savedPaths.length - 1];
-      }
-      previousShot = unitShots[unitShots.length - 1];
-      console.log('');
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  return { videoPaths, plan };
+  const renderer: GenerationUnitRenderer = {
+    single: (shot, unit, context) => renderSingleShotUnit(
+      client,
+      series,
+      shot,
+      unit,
+      sceneDir,
+      context.previousRenderedShot,
+      context.nextShotNumber,
+      context.previousShot,
+      episodeAudioMix,
+    ),
+    montage: (unitShots, unit) => renderMontageUnit(client, series, unitShots, unit, sceneDir),
+    multishot: (unitShots, unit, context) => renderMultiShotUnit(
+      client,
+      series,
+      unitShots,
+      unit,
+      sceneDir,
+      context.previousRenderedShot,
+      context.nextShotNumber,
+    ),
+    // A classified refusal is final: a face-screening refusal fails on the
+    // same images every time, and a provider refusal has already had its one
+    // refunded retry inside submitVideoQueue (anti-pattern 27b). A FAILED
+    // render is final too: its pending-job record is already cleared, so a
+    // retry re-queues and re-bills the same body. A faces-off refusal is
+    // thrown before the queue call on the same images every time.
+    isFinalError: err => isAbortError(err)
+      || err instanceof VideoRefusalError
+      || err instanceof VideoGenerationFailedError
+      || err instanceof FacesOffModelError,
+    describeHttpError: err => (err instanceof VeniceRequestError
+      ? { status: err.status, message: err.message, body: err.body }
+      : undefined),
+  };
+  return runGenerationUnits(
+    { logger: createCliLogger(), clock: createCliClock() },
+    renderer,
+    shots,
+    plan,
+    { signal: currentSignal() },
+  );
 }
