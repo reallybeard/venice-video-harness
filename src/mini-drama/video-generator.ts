@@ -63,6 +63,11 @@ import { assertFacesOffCompatible, characterKindsFor, FacesOffModelError } from 
 import { appendRecipePass } from '../venice/recipe.js';
 import { classifyVideoRetrieveStatus, VideoGenerationFailedError } from '../venice/video.js';
 import {
+  RENDER_FILE_VIDEO_JOB_POLICY,
+  VideoJobPollError,
+  VideoJobTimeoutError,
+} from 'venice-video-harness/core/venice/render-job.js';
+import {
   clearPendingJob,
   findPendingJob,
   recordPendingJob,
@@ -1024,17 +1029,25 @@ async function pollRenderedVideo(
   const jobKey = resolvePath(outputPath);
 
   let elapsed = 0;
+  let polls = 0;
   let consecutiveErrors = 0;
-  while (true) {
+  let videoBuffer: Buffer | undefined;
+  while (!videoBuffer) {
     throwIfAborted();
     if (elapsed >= MAX_POLL_MS) {
-      throw new Error(
-        `Timed out after ${Math.round(MAX_POLL_MS / 60_000)} min waiting for ${model} (${queue_id}). `
-        + `The job is still recorded — re-run to re-attach, or drop it with \`venice-video queue clear\`.`,
-      );
+      throw new VideoJobTimeoutError({
+        model,
+        queueId: queue_id,
+        reason: 'max-wait',
+        polls,
+        waitedMs: elapsed,
+        maxWaitMs: MAX_POLL_MS,
+        hint: RENDER_FILE_VIDEO_JOB_POLICY.timeoutHint,
+      });
     }
     await abortableSleep(POLL_INTERVAL_MS);
     elapsed += POLL_INTERVAL_MS;
+    polls += 1;
 
     try {
       const result = await client.postBinaryOrJson<{ status: string; execution_duration?: number }>(
@@ -1044,61 +1057,8 @@ async function pollRenderedVideo(
       consecutiveErrors = 0;
 
       if (Buffer.isBuffer(result.value)) {
-        const videoBuffer = result.value;
-
-        archiveExisting(outputPath);
-
-        await writeFile(outputPath, videoBuffer);
-        await clearPendingJob(jobKey);
-        console.log(`  Video saved: ${outputPath} (${(videoBuffer.length / 1024 / 1024).toFixed(1)} MB, ${(elapsed / 1000).toFixed(0)}s)`);
-
-        try {
-          await client.post(VIDEO_COMPLETE_PATH, { model, queue_id });
-        } catch { /* cleanup is optional */ }
-
-        // Recipe sidecar: log the resolved video call with stable on-disk
-        // paths (never data: URIs) so a finishing agent can replay or
-        // continue this shot. `elements` mapping goes in `extra` since it
-        // carries per-character frontal/reference structure.
-        const isPath = (p?: string): p is string => !!p && !p.startsWith('data:');
-        await appendRecipePass(outputPath, {
-          kind: 'video-generate',
-          role: (prompt.characterElements && prompt.characterElements.length > 0)
-            || (referenceImagePaths && referenceImagePaths.length > 0)
-            || (elements && elements.length > 0)
-            ? 'identity' : 'content',
-          model: effectiveModel,
-          label: effectiveModel !== prompt.model
-            ? `video render (fallback from ${prompt.model})`
-            : 'video render',
-          prompt: prompt.prompt,
-          negativePrompt,
-          duration: prompt.duration,
-          aspectRatio: (body.aspect_ratio as string | undefined) ?? options.aspectRatio,
-          resolution: body.resolution as string | undefined,
-          anchorImagePath: isPath(anchorImagePath) ? anchorImagePath : undefined,
-          endImagePath: isPath(endFrameImagePath) ? endFrameImagePath : undefined,
-          audioPath: isPath(audioPath) ? audioPath : undefined,
-          referenceImagePaths: referenceImagePaths?.filter(isPath),
-          extra: {
-            audio: prompt.audio,
-            ...(body.bitrate_mode ? { bitrateMode: body.bitrate_mode } : {}),
-            ...(voiceReferencePaths && voiceReferencePaths.length > 0
-              ? { voiceReferencePaths: voiceReferencePaths.filter(isPath) } : {}),
-            ...(sceneImagePaths && sceneImagePaths.length > 0
-              ? { sceneImagePaths: sceneImagePaths.filter(isPath) } : {}),
-            ...(elements && elements.length > 0
-              ? {
-                elements: elements.map(el => ({
-                  frontalImageUrl: isPath(el.frontalImageUrl) ? el.frontalImageUrl : undefined,
-                  referenceImageUrls: el.referenceImageUrls?.filter(isPath),
-                  audioPath: isPath(el.audioPath) ? el.audioPath : undefined,
-                })),
-              } : {}),
-          },
-        });
-
-        return outputPath;
+        videoBuffer = result.value;
+        continue;
       }
 
       const status = result.value as { status: string; execution_duration?: number };
@@ -1132,14 +1092,68 @@ async function pollRenderedVideo(
 
       consecutiveErrors++;
       if (consecutiveErrors >= MAX_CONSECUTIVE_POLL_ERRORS) {
-        throw new Error(
-          `Polling ${model} (${queue_id}) failed ${consecutiveErrors} times in a row; giving up. `
-          + `Last error: ${(err as Error).message ?? err}`,
-        );
+        throw new VideoJobPollError(model, queue_id, consecutiveErrors, err);
       }
       console.warn(`  Poll error ${consecutiveErrors}/${MAX_CONSECUTIVE_POLL_ERRORS} (will retry): ${err}`);
     }
   }
+
+  // Storing the media is outside the poll's error budget: a failed write is
+  // not a transient retrieve error, and retrying it re-downloads the whole
+  // clip every 10s until the deadline. It propagates with the record kept, so
+  // the next run re-attaches and fetches the media again.
+  archiveExisting(outputPath);
+  await writeFile(outputPath, videoBuffer);
+  await clearPendingJob(jobKey);
+
+  try {
+    await client.post(VIDEO_COMPLETE_PATH, { model, queue_id });
+  } catch { /* cleanup is optional */ }
+  console.log(`  Video saved: ${outputPath} (${(videoBuffer.length / 1024 / 1024).toFixed(1)} MB, ${(elapsed / 1000).toFixed(0)}s)`);
+
+  // Recipe sidecar: log the resolved video call with stable on-disk
+  // paths (never data: URIs) so a finishing agent can replay or
+  // continue this shot. `elements` mapping goes in `extra` since it
+  // carries per-character frontal/reference structure.
+  const isPath = (p?: string): p is string => !!p && !p.startsWith('data:');
+  await appendRecipePass(outputPath, {
+    kind: 'video-generate',
+    role: (prompt.characterElements && prompt.characterElements.length > 0)
+      || (referenceImagePaths && referenceImagePaths.length > 0)
+      || (elements && elements.length > 0)
+      ? 'identity' : 'content',
+    model: effectiveModel,
+    label: effectiveModel !== prompt.model
+      ? `video render (fallback from ${prompt.model})`
+      : 'video render',
+    prompt: prompt.prompt,
+    negativePrompt,
+    duration: prompt.duration,
+    aspectRatio: (body.aspect_ratio as string | undefined) ?? options.aspectRatio,
+    resolution: body.resolution as string | undefined,
+    anchorImagePath: isPath(anchorImagePath) ? anchorImagePath : undefined,
+    endImagePath: isPath(endFrameImagePath) ? endFrameImagePath : undefined,
+    audioPath: isPath(audioPath) ? audioPath : undefined,
+    referenceImagePaths: referenceImagePaths?.filter(isPath),
+    extra: {
+      audio: prompt.audio,
+      ...(body.bitrate_mode ? { bitrateMode: body.bitrate_mode } : {}),
+      ...(voiceReferencePaths && voiceReferencePaths.length > 0
+        ? { voiceReferencePaths: voiceReferencePaths.filter(isPath) } : {}),
+      ...(sceneImagePaths && sceneImagePaths.length > 0
+        ? { sceneImagePaths: sceneImagePaths.filter(isPath) } : {}),
+      ...(elements && elements.length > 0
+        ? {
+          elements: elements.map(el => ({
+            frontalImageUrl: isPath(el.frontalImageUrl) ? el.frontalImageUrl : undefined,
+            referenceImageUrls: el.referenceImageUrls?.filter(isPath),
+            audioPath: isPath(el.audioPath) ? el.audioPath : undefined,
+          })),
+        } : {}),
+    },
+  });
+
+  return outputPath;
 }
 
 function resolveCharacterElements(
