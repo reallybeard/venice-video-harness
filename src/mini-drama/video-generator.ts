@@ -1,6 +1,6 @@
 import { writeFile, mkdir, appendFile } from 'node:fs/promises';
-import { join, dirname, basename, resolve as resolvePath } from 'node:path';
-import { existsSync, readFileSync, renameSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { existsSync, renameSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { measureLipSyncFidelity, type LipSyncFidelity } from './lip-sync-fidelity.js';
 import type { VeniceClient } from '../venice/client.js';
@@ -25,7 +25,6 @@ import {
   DEFAULT_CHARACTER_CONSISTENCY_MODEL,
   getMaxReferenceImages,
 } from 'venice-video-harness/core/series/types.js';
-import { padAudioForModel, probeAudioDurationSec } from '../venice/audio-preflight.js';
 import { generateSpeech } from '../venice/audio.js';
 import { getCharacterDir, getLocationDir, getLocation } from '../series/manager.js';
 import {
@@ -45,40 +44,22 @@ import { mustRenderAsExactLipSync, parseShotDuration } from './generation-planne
 import { dialogueFileForShot, shotKey } from './shot-paths.js';
 import { dialogueLines, isVoiceOverLine, onCameraDialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import type { BitrateMode } from 'venice-video-harness/core/venice/models.js';
-import type { CameraKeyframe, VideoElement as WireVideoElement } from 'venice-video-harness/core/venice/types.js';
-import {
-  MAX_VOICE_REFERENCE_CLIPS,
-  buildVideoQueueRequest,
-  planLipSyncReferenceAudio,
-  planVideoQueueRequest,
-  videoQueueReferenceImages,
-  voiceReferenceClipIssue,
-} from 'venice-video-harness/core/venice/request-builder.js';
+import type { CameraKeyframe } from 'venice-video-harness/core/venice/types.js';
 import {
   nextVideoQueueAttempt,
   startVideoQueueAttempts,
   type VideoQueueLogLine,
 } from 'venice-video-harness/core/venice/queue-handshake.js';
-import { assertFacesOffCompatible, characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
+import { characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
-import { classifyVideoRetrieveStatus, VideoGenerationFailedError } from '../venice/video.js';
-import {
-  RENDER_FILE_VIDEO_JOB_POLICY,
-  VideoJobPollError,
-  VideoJobTimeoutError,
-} from 'venice-video-harness/core/venice/render-job.js';
-import {
-  clearPendingJob,
-  findPendingJob,
-  recordPendingJob,
-  touchPendingJob,
-} from '../venice/job-store.js';
-import {
-  abortableSleep,
-  isAbortError,
-  reportProgress,
-  throwIfAborted,
-} from '../venice/operation-context.js';
+import { VideoGenerationFailedError } from '../venice/video.js';
+import { currentSignal, reportProgress } from '../venice/operation-context.js';
+import { renderVideo } from 'venice-video-harness/core/mini-drama/render-video.js';
+import { createCliClock } from '../ports/clock.js';
+import { createCliLogger } from '../ports/logger.js';
+import { createCliReferenceStore } from '../ports/reference-store.js';
+import { createCliRenderMedia } from '../ports/render-media.js';
+import { createCliVideoBackend } from '../ports/video-backend.js';
 import type { VideoRefusal } from '../venice/refusal.js';
 
 export { nextVideoQueueAttempt, startVideoQueueAttempts } from 'venice-video-harness/core/venice/queue-handshake.js';
@@ -90,27 +71,7 @@ export type {
 } from 'venice-video-harness/core/venice/queue-handshake.js';
 
 const VIDEO_QUEUE_PATH = '/api/v1/video/queue';
-const VIDEO_RETRIEVE_PATH = '/api/v1/video/retrieve';
-const VIDEO_COMPLETE_PATH = '/api/v1/video/complete';
-const POLL_INTERVAL_MS = 10_000;
 const MULTISHOT_RETRY_DELAY_MS = 15_000;
-/**
- * Ceiling on a single shot's poll loop. Generous relative to real render times
- * (~30 min worst case) but finite: the loop used to be `while (true)`, so a job
- * that never resolved hung the process forever.
- */
-const MAX_POLL_MS = 60 * 60 * 1000;
-/** Consecutive /retrieve failures tolerated before abandoning a shot. */
-const MAX_CONSECUTIVE_POLL_ERRORS = 6;
-
-/**
- * True when Venice no longer recognises a queue id -- the job was reaped or
- * never existed. Only meaningful for a resumed id; a fresh one just failed.
- */
-function isQueueGoneError(error: unknown): boolean {
-  return error instanceof VeniceRequestError
-    && (error.status === 400 || error.status === 404 || error.status === 410);
-}
 
 function runCommand(command: string, args: string[]): string {
   const result = spawnSync(command, args, {
@@ -381,11 +342,6 @@ function collectReferenceImagePathsForShot(
     .slice(0, budget);
 }
 
-function imageToDataUri(imagePath: string, mimeType = 'image/png'): string {
-  const buffer = readFileSync(imagePath);
-  return `data:${mimeType};base64,${buffer.toString('base64')}`;
-}
-
 /**
  * Resolve the best location reference image for a shot. Closer shot types
  * (close-up / reaction / insert) prefer the medium ref; everything else
@@ -653,12 +609,6 @@ export interface RenderVideoOptions {
   cameraTrajectory?: CameraKeyframe[];
 }
 
-function fileToDataUri(filePath: string, mimeType = 'image/png'): string | undefined {
-  if (!filePath || !existsSync(filePath)) return undefined;
-  const buffer = readFileSync(filePath);
-  return `data:${mimeType};base64,${buffer.toString('base64')}`;
-}
-
 /**
  * Thrown when `/video/queue` refused the request and no retry is warranted.
  * `refusal.kind` tells a face-screening refusal (an image problem: nothing
@@ -728,432 +678,67 @@ export async function submitVideoQueue(
   }
 }
 
+/**
+ * Render one clip to `outputPath`: core's `renderVideo` over the CLI ports
+ * (fs references, the pending-job registry, Venice) and the CLI render media
+ * (ffmpeg, provenance and recipe sidecars). Re-attaches to a recorded job for
+ * the same output instead of paying for it again (rule 43).
+ */
 export async function renderVideoFile(
   client: VeniceClient,
   options: RenderVideoOptions,
 ): Promise<string> {
-  const { prompt, anchorImagePath, outputPath, endFrameImagePath,
-    elements, referenceImagePaths, sceneImagePaths,
-    negativePrompt, audioUrl, audioPath, videoUrl, voiceReferencePaths } = options;
-  await mkdir(dirname(outputPath), { recursive: true });
+  await mkdir(dirname(options.outputPath), { recursive: true });
 
-  // NOTE: the former Seedance seedream-provenance pre-flight gate was removed
-  // (2026-07). Venice dropped the restriction that Seedance 2.0 only accepts
-  // face-bearing input images produced by seedream-v5-lite / -edit — it now
-  // accepts face-bearing images from any image family — so there is nothing to
-  // check, reroute, or launder before building the body. The Seedance face
-  // *consent* attestation (409 needs_consent) is a separate mechanism and is
-  // still handled at queue time below.
-  const effectiveModel = prompt.model;
-
-  // Faces-off preflight: a `-basic` Seedance id refuses any input image that
-  // shows a person, so a shot with characters (or a face-bearing reference)
-  // must not be submitted to one. Throws before the paid call, naming the
-  // face-capable twin. Reads the `hasFace` provenance sidecars.
-  await assertFacesOffCompatible({
-    model: effectiveModel,
-    characters: options.characters,
-    characterKinds: options.characterKinds,
-    imagePaths: [
-      anchorImagePath,
-      endFrameImagePath,
-      ...(referenceImagePaths ?? []),
-      ...(sceneImagePaths ?? []),
-      ...(elements ?? []).flatMap(el => [el.frontalImageUrl, ...(el.referenceImageUrls ?? [])]),
-    ].filter((p): p is string => Boolean(p)),
-  });
-
-  // Core decides what goes in the body (`buildVideoQueueRequest`); this
-  // function prepares only the media the plan says will be sent — reads files
-  // into data: URIs, pads and probes audio — and hands it over as strings.
-  // The plan also validates a camera trajectory, so a malformed orbit fails
-  // before any media is prepared rather than as a paid queue round-trip.
-  //
-  // Pure reference mode (2026-07-30): on @Image-tag R2V models with a full
-  // slot plan the references carry ALL consistency and no start image is sent
-  // (see `VideoQueuePlan.referencesOnly`). Shots with no references at all
-  // (rare: no characters, no location, no storyboard) still anchor on the panel.
-  const plan = planVideoQueueRequest({
-    model: effectiveModel,
-    referenceSlotCount: prompt.referenceSlots?.length,
-    hasReferenceImages: Boolean(referenceImagePaths && referenceImagePaths.length > 0),
-    hasDialogueAudio: Boolean(audioPath),
-    cameraTrajectory: options.cameraTrajectory,
-  });
-
-  const startImageUrl = !plan.referencesOnly && anchorImagePath && existsSync(anchorImagePath)
-    ? imageToDataUri(anchorImagePath)
-    : undefined;
-  const endImageUrl = endFrameImagePath && existsSync(endFrameImagePath) && plan.acceptsEndImage
-    ? imageToDataUri(endFrameImagePath)
-    : undefined;
-
-  // audio_url attach with Wan 2.7 minimum-duration pre-flight.
-  // - `audioPath` (preferred for new callers) runs ffprobe + ffmpeg apad to
-  //   pad short dialogue to the model's minAudioInputSec before encoding.
-  // - `audioUrl` (legacy) is taken at face value; the silent-reject guard
-  //   on the rendered video will surface a downstream failure if the audio
-  //   was too short. Migrate callers to `audioPath` when possible.
-  // - `wan-2-7-reference-to-video` uses per_reference_audio inside elements
-  //   instead of a global audio_url — see element loop below.
-  let requestAudioUrl = audioUrl;
-  if (plan.acceptsAudioUrl && audioPath) {
-    try {
-      const result = await padAudioForModel({ model: effectiveModel, audioPath });
-      if (result.padded) {
-        console.log(`  Padded ${audioPath} -> ${result.outputPath} (${result.durationSec.toFixed(2)}s) for ${effectiveModel}.`);
-      }
-      requestAudioUrl = fileToDataUri(result.outputPath, 'audio/mpeg') ?? audioUrl;
-    } catch (err) {
-      console.warn(`  Wan audio pre-flight failed (${(err as Error).message}). Falling back to raw audioUrl.`);
-    }
-  }
-
-  let wireElements: WireVideoElement[] | undefined;
-  if (elements && elements.length > 0 && plan.acceptsElements) {
-    wireElements = await Promise.all(elements.map(async el => {
-      const out: WireVideoElement = {};
-      if (el.frontalImageUrl) {
-        out.frontal_image_url = el.frontalImageUrl.startsWith('data:')
-          ? el.frontalImageUrl
-          : fileToDataUri(el.frontalImageUrl) ?? el.frontalImageUrl;
-      }
-      if (el.referenceImageUrls && el.referenceImageUrls.length > 0) {
-        out.reference_image_urls = el.referenceImageUrls.map(url =>
-          url.startsWith('data:') ? url : (fileToDataUri(url) ?? url),
-        );
-      }
-      if (el.videoUrl) out.video_url = el.videoUrl;
-      // per-reference audio for Wan 2.7 R2V — each element drives
-      // a different character's lip-sync. Run the same pad pre-flight here.
-      if (plan.acceptsPerElementAudio) {
-        if (el.audioPath) {
-          try {
-            const result = await padAudioForModel({ model: effectiveModel, audioPath: el.audioPath });
-            if (result.padded) {
-              console.log(`  [per-ref] Padded ${el.audioPath} -> ${result.outputPath} for ${effectiveModel}.`);
-            }
-            const uri = fileToDataUri(result.outputPath, 'audio/mpeg');
-            if (uri) out.audio_url = uri;
-            else if (el.audioUrl) out.audio_url = el.audioUrl;
-          } catch (err) {
-            console.warn(`  [per-ref] audio pre-flight failed (${(err as Error).message}); using raw audioUrl.`);
-            if (el.audioUrl) out.audio_url = el.audioUrl;
-          }
-        } else if (el.audioUrl) {
-          out.audio_url = el.audioUrl;
-        }
-      }
-      return out;
-    }));
-  }
-
-  // Past the model's budget the builder drops references (and says so), so
-  // only the ones it keeps are read.
-  const referenceImageUrls = (referenceImagePaths ?? []).map((p, i) =>
-    i < plan.referenceImageBudget && !p.startsWith('data:') ? (fileToDataUri(p) ?? p) : p,
-  );
-
-  const sceneImageUrls = plan.acceptsSceneImages && sceneImagePaths
-    ? sceneImagePaths
-      .slice(0, plan.sceneImageBudget)
-      .map(p => p.startsWith('data:') ? p : (fileToDataUri(p) ?? p))
-    : undefined;
-
-  let lipSyncReferenceAudioUrl: string | undefined;
-  if (plan.lipSyncViaReferenceAudio && audioPath) {
-    if (!existsSync(audioPath)) {
-      console.warn(`  ⚠ Lip-sync audio missing on disk, rendering without it: ${audioPath}`);
-    } else {
-      const audioSec = await probeAudioDurationSec(audioPath);
-      const { targetSec, warnings } = planLipSyncReferenceAudio({
-        model: effectiveModel,
-        audioSec,
-        duration: prompt.duration,
-        label: audioPath,
-      });
-      for (const warning of warnings) console.warn(warning);
-      const sendPath = join(dirname(audioPath), 'padded', basename(audioPath).replace(/\.[^.]+$/, '') + '.wav');
-      await mkdir(dirname(sendPath), { recursive: true });
-      const ff = spawnSync('ffmpeg', [
-        '-y', '-v', 'error', '-i', audioPath,
-        '-af', `apad=whole_dur=${targetSec.toFixed(3)}`, '-t', targetSec.toFixed(3),
-        '-ac', '1', '-ar', '44100', '-c:a', 'pcm_s16le', sendPath,
-      ]);
-      if (ff.status !== 0) {
-        throw new Error(`ffmpeg could not prepare lip-sync audio ${audioPath}: ${ff.stderr?.toString().trim()}`);
-      }
-      lipSyncReferenceAudioUrl = fileToDataUri(sendPath, 'audio/wav');
-      if (lipSyncReferenceAudioUrl) {
-        console.log(`  Lip-sync audio (reference_audio_urls): ${audioSec.toFixed(2)}s, sent as ${targetSec.toFixed(2)}s WAV`);
-      }
-    }
-  }
-
-  // Voice-donor reference audio (@Audio1, @Audio2, …). Prepared only when the
-  // body will carry a reference image (Venice rejects audio-only). Each clip
-  // must be 2-15s with an aggregate ≤15s across ≤3 clips; out-of-budget clips
-  // are dropped with a warning so the render still proceeds.
-  const voiceReferenceUrls: string[] = [];
-  const bodyHasReferenceImage = (videoQueueReferenceImages(effectiveModel, referenceImageUrls)?.length ?? 0) > 0;
-  if (voiceReferencePaths && voiceReferencePaths.length > 0
-    && plan.acceptsReferenceAudio && bodyHasReferenceImage) {
-    let aggregateSec = 0;
-    for (const p of voiceReferencePaths) {
-      if (voiceReferenceUrls.length >= MAX_VOICE_REFERENCE_CLIPS) {
-        console.warn(`  ⚠ Voice reference budget: >3 clips, dropping extras.`);
-        break;
-      }
-      if (p.startsWith('data:')) { voiceReferenceUrls.push(p); continue; }
-      if (!existsSync(p)) { console.warn(`  ⚠ Voice reference missing on disk, skipping: ${p}`); continue; }
-      let durSec: number;
-      try {
-        durSec = await probeAudioDurationSec(p);
-      } catch (err) {
-        console.warn(`  ⚠ Could not probe voice reference (${(err as Error).message}); skipping ${p}`);
-        continue;
-      }
-      const issue = voiceReferenceClipIssue(p, durSec, aggregateSec);
-      if (issue) {
-        console.warn(issue);
-        continue;
-      }
-      const mime = p.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg';
-      const uri = fileToDataUri(p, mime);
-      if (uri) { voiceReferenceUrls.push(uri); aggregateSec += durSec; }
-    }
-    if (voiceReferenceUrls.length > 0) {
-      console.log(`  Reference audio (@Audio1..@Audio${voiceReferenceUrls.length}): ${voiceReferenceUrls.length} voice clip(s), ${aggregateSec.toFixed(2)}s total`);
-    }
-  }
-
-  const body = buildVideoQueueRequest({
-    model: effectiveModel,
-    prompt: prompt.prompt,
-    duration: prompt.duration,
-    audio: prompt.audio,
-    negativePrompt,
-    aspectRatio: options.aspectRatio,
-    resolution: options.resolution,
-    bitrateMode: options.bitrateMode,
-    referenceSlotCount: prompt.referenceSlots?.length,
-    hasCharacterElements: Boolean(prompt.characterElements && prompt.characterElements.length > 0),
-    startImageUrl,
-    startImageLabel: anchorImagePath,
-    endImageUrl,
-    referenceImageUrls,
-    sceneImageUrls,
-    elements: wireElements,
-    audioUrl: requestAudioUrl,
-    hasDialogueAudio: Boolean(audioPath),
-    lipSyncReferenceAudioUrl,
-    referenceAudioUrls: voiceReferenceUrls,
-    voiceReferenceCount: voiceReferencePaths?.length,
-    videoUrl,
-    cameraTrajectory: options.cameraTrajectory,
-  }) as unknown as Record<string, unknown>;
-
-  console.log(`  Queueing video: model=${effectiveModel}, duration=${prompt.duration}, aspect=${body.aspect_ratio ?? 'default'}, prompt=${(prompt.prompt).length} chars`);
-
-  // Re-attach to an in-flight generation for this exact output rather than
-  // paying for it again. Populated by a previous run that was interrupted
-  // mid-poll (Ctrl-C, crash, closed terminal). See venice/job-store.ts.
-  const jobKey = resolvePath(outputPath);
-  const recordedJob = options.forceRequeue ? undefined : await findPendingJob(jobKey);
-  if (recordedJob && recordedJob.kind === 'video') {
-    console.log(`  Re-attaching to in-flight job ${recordedJob.queueId} (${recordedJob.model}) — not re-queueing.`);
-    return pollRenderedVideo(client, {
-      ...options,
-      queueId: recordedJob.queueId,
-      model: recordedJob.model,
-      effectiveModel,
-      body,
-      resumed: true,
-    });
-  }
-
-  const queueResponse = await submitVideoQueue(client, effectiveModel, body, outputPath);
-
-  const { queue_id, model } = queueResponse;
-  console.log(`  Queue ID: ${queue_id}`);
-  await recordPendingJob({
-    kind: 'video',
-    model,
-    queueId: queue_id,
-    outputPath: jobKey,
-    project: options.project,
-    episode: options.episode,
-    prompt: prompt.prompt,
-  });
-
-  return pollRenderedVideo(client, {
-    ...options,
-    queueId: queue_id,
-    model,
-    effectiveModel,
-    body,
-    resumed: false,
-  });
-}
-
-interface PollRenderedVideoOptions extends RenderVideoOptions {
-  queueId: string;
-  /** Model as Venice echoed it back from /queue -- /retrieve keys on this. */
-  model: string;
-  /** Model actually used for the render, for recipe/provenance output. */
-  effectiveModel: string;
-  /** The queue request body, kept for failure diagnostics. */
-  body: Record<string, unknown>;
-  /** True when the queue id came from the pending-job registry, not a fresh queue. */
-  resumed: boolean;
-}
-
-/**
- * Poll a queued video to completion, save it, and write its recipe sidecar.
- *
- * Split out of renderVideoFile so a resumed queue id can enter the same path
- * without re-queueing. Cancellation propagates (the shell's Ctrl-C leaves the
- * pending-job record in place so the next run re-attaches), while a resumed id
- * Venice has already reaped falls back to a fresh generation.
- */
-async function pollRenderedVideo(
-  client: VeniceClient,
-  options: PollRenderedVideoOptions,
-): Promise<string> {
-  const {
-    prompt, anchorImagePath, outputPath, endFrameImagePath,
-    elements, referenceImagePaths, sceneImagePaths,
-    negativePrompt, audioPath, voiceReferencePaths,
-    queueId: queue_id, model, effectiveModel, body, resumed,
-  } = options;
-  const jobKey = resolvePath(outputPath);
-
-  let elapsed = 0;
-  let polls = 0;
-  let consecutiveErrors = 0;
-  let videoBuffer: Buffer | undefined;
-  while (!videoBuffer) {
-    throwIfAborted();
-    if (elapsed >= MAX_POLL_MS) {
-      throw new VideoJobTimeoutError({
-        model,
-        queueId: queue_id,
-        reason: 'max-wait',
-        polls,
-        waitedMs: elapsed,
-        maxWaitMs: MAX_POLL_MS,
-        hint: RENDER_FILE_VIDEO_JOB_POLICY.timeoutHint,
-      });
-    }
-    await abortableSleep(POLL_INTERVAL_MS);
-    elapsed += POLL_INTERVAL_MS;
-    polls += 1;
-
-    try {
-      const result = await client.postBinaryOrJson<{ status: string; execution_duration?: number }>(
-        VIDEO_RETRIEVE_PATH,
-        { model, queue_id },
-      );
-      consecutiveErrors = 0;
-
-      if (Buffer.isBuffer(result.value)) {
-        videoBuffer = result.value;
-        continue;
-      }
-
-      const status = result.value as { status: string; execution_duration?: number };
-      const verdict = classifyVideoRetrieveStatus(status);
-      if (verdict.kind === 'failed') {
-        // Terminal server-side failure: surface it now instead of polling to
-        // the 30-minute deadline. The job is dead, so drop the pending record
-        // rather than inviting the next run to re-attach to it.
-        process.stdout.write('\n');
-        await clearPendingJob(jobKey);
-        throw new VideoGenerationFailedError(model, queue_id, verdict.status, status, verdict.detail);
-      }
-      const pct = status.execution_duration
-        ? `${(status.execution_duration / 1000).toFixed(0)}s elapsed`
-        : '';
-      await touchPendingJob(jobKey);
-      reportProgress({ phase: 'poll', detail: `${status.status} ${pct}`.trim() });
-      process.stdout.write(`\r  Polling... ${status.status} ${pct}   `);
-    } catch (err) {
-      if (isAbortError(err)) throw err;
-      // Terminal verdicts are not transient poll errors; never count or retry them.
-      if (err instanceof VideoGenerationFailedError) throw err;
-
-      // A resumed queue id Venice has already reaped can never complete —
-      // without this the loop below would retry it forever.
-      if (resumed && isQueueGoneError(err)) {
-        console.warn(`\n  ⚠ Recorded job ${queue_id} is gone on Venice's side; queueing a fresh generation.`);
-        await clearPendingJob(jobKey);
-        return renderVideoFile(client, { ...options, forceRequeue: true });
-      }
-
-      consecutiveErrors++;
-      if (consecutiveErrors >= MAX_CONSECUTIVE_POLL_ERRORS) {
-        throw new VideoJobPollError(model, queue_id, consecutiveErrors, err);
-      }
-      console.warn(`  Poll error ${consecutiveErrors}/${MAX_CONSECUTIVE_POLL_ERRORS} (will retry): ${err}`);
-    }
-  }
-
-  // Storing the media is outside the poll's error budget: a failed write is
-  // not a transient retrieve error, and retrying it re-downloads the whole
-  // clip every 10s until the deadline. It propagates with the record kept, so
-  // the next run re-attaches and fetches the media again.
-  archiveExisting(outputPath);
-  await writeFile(outputPath, videoBuffer);
-  await clearPendingJob(jobKey);
+  // Core's own poll progress is replaced by the CLI's `Polling...` line
+  // (onProgress), which reports Venice's execution time rather than ours.
+  const { progress: _progress, ...logger } = createCliLogger();
+  const ports = {
+    references: createCliReferenceStore(),
+    video: createCliVideoBackend(() => client, logger, { validateRequests: false }),
+    clock: createCliClock(),
+    logger,
+  };
 
   try {
-    await client.post(VIDEO_COMPLETE_PATH, { model, queue_id });
-  } catch { /* cleanup is optional */ }
-  console.log(`  Video saved: ${outputPath} (${(videoBuffer.length / 1024 / 1024).toFixed(1)} MB, ${(elapsed / 1000).toFixed(0)}s)`);
-
-  // Recipe sidecar: log the resolved video call with stable on-disk
-  // paths (never data: URIs) so a finishing agent can replay or
-  // continue this shot. `elements` mapping goes in `extra` since it
-  // carries per-character frontal/reference structure.
-  const isPath = (p?: string): p is string => !!p && !p.startsWith('data:');
-  await appendRecipePass(outputPath, {
-    kind: 'video-generate',
-    role: (prompt.characterElements && prompt.characterElements.length > 0)
-      || (referenceImagePaths && referenceImagePaths.length > 0)
-      || (elements && elements.length > 0)
-      ? 'identity' : 'content',
-    model: effectiveModel,
-    label: effectiveModel !== prompt.model
-      ? `video render (fallback from ${prompt.model})`
-      : 'video render',
-    prompt: prompt.prompt,
-    negativePrompt,
-    duration: prompt.duration,
-    aspectRatio: (body.aspect_ratio as string | undefined) ?? options.aspectRatio,
-    resolution: body.resolution as string | undefined,
-    anchorImagePath: isPath(anchorImagePath) ? anchorImagePath : undefined,
-    endImagePath: isPath(endFrameImagePath) ? endFrameImagePath : undefined,
-    audioPath: isPath(audioPath) ? audioPath : undefined,
-    referenceImagePaths: referenceImagePaths?.filter(isPath),
-    extra: {
-      audio: prompt.audio,
-      ...(body.bitrate_mode ? { bitrateMode: body.bitrate_mode } : {}),
-      ...(voiceReferencePaths && voiceReferencePaths.length > 0
-        ? { voiceReferencePaths: voiceReferencePaths.filter(isPath) } : {}),
-      ...(sceneImagePaths && sceneImagePaths.length > 0
-        ? { sceneImagePaths: sceneImagePaths.filter(isPath) } : {}),
-      ...(elements && elements.length > 0
-        ? {
-          elements: elements.map(el => ({
-            frontalImageUrl: isPath(el.frontalImageUrl) ? el.frontalImageUrl : undefined,
-            referenceImageUrls: el.referenceImageUrls?.filter(isPath),
-            audioPath: isPath(el.audioPath) ? el.audioPath : undefined,
-          })),
-        } : {}),
-    },
-  });
-
-  return outputPath;
+    await renderVideo(ports, createCliRenderMedia(), {
+      prompt: options.prompt,
+      outputKey: options.outputPath,
+      anchorImage: options.anchorImagePath,
+      endFrameImage: options.endFrameImagePath,
+      elements: options.elements,
+      referenceImages: options.referenceImagePaths,
+      sceneImages: options.sceneImagePaths,
+      negativePrompt: options.negativePrompt,
+      audioUrl: options.audioUrl,
+      dialogueAudio: options.audioPath,
+      videoUrl: options.videoUrl,
+      aspectRatio: options.aspectRatio,
+      bitrateMode: options.bitrateMode,
+      characters: options.characters,
+      characterKinds: options.characterKinds,
+      voiceReferences: options.voiceReferencePaths,
+      project: options.project,
+      episode: options.episode,
+      resolution: options.resolution,
+      cameraTrajectory: options.cameraTrajectory,
+    }, {
+      signal: currentSignal(),
+      forceRequeue: options.forceRequeue,
+      onProgress: status => {
+        const pct = status.execution_duration
+          ? `${(status.execution_duration / 1000).toFixed(0)}s elapsed`
+          : '';
+        reportProgress({ phase: 'poll', detail: `${status.status} ${pct}`.trim() });
+        process.stdout.write(`\r  Polling... ${status.status} ${pct}   `);
+      },
+    });
+  } catch (err) {
+    // End the `\r  Polling...` line before the failure is reported.
+    if (err instanceof VideoGenerationFailedError) process.stdout.write('\n');
+    throw err;
+  }
+  return options.outputPath;
 }
 
 function resolveCharacterElements(
