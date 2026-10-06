@@ -111,3 +111,5 @@ export * from './session/status.js';
 // re-attach or queue once, poll by policy, store, complete (rule 43).
 export * from './venice/video-errors.js';
 export * from './venice/render-job.js';
+// Pipeline gates: whether a stage may run and what clears it (the commands and status share them).
+export * from './session/gates.js';

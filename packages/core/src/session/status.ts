@@ -15,6 +15,9 @@
 // ---------------------------------------------------------------------------
 
 import { PIPELINE_BRANCHES, PIPELINE_STAGES } from '../agent/pipeline.js';
+import { scriptApproved } from './gates.js';
+
+export { scriptApproved };
 
 /**
  * What the classifier reads about one episode. Exactly the markers the CLI
@@ -129,16 +132,6 @@ function stageGate(stageId: ProjectStageId | EpisodeStageId): string | undefined
 function shellForm(command: string, episode?: number): string {
   const withoutProject = command.split(' -p <project>').join('');
   return episode === undefined ? withoutProject : withoutProject.split('-e <n>').join(`-e ${episode}`);
-}
-
-/**
- * The script-approval gate. `storyboard-episode` accepts either marker:
- * `approve-script` writes the artifact, `workshop --approve` only sets the
- * script's status (rule 45 — checking only the file told every
- * workshop-driven project to re-approve a script it had already shot).
- */
-export function scriptApproved(facts: Pick<EpisodeFacts, 'scriptApprovalArtifact' | 'scriptStatusApproved'>): boolean {
-  return facts.scriptApprovalArtifact || facts.scriptStatusApproved;
 }
 
 /**
