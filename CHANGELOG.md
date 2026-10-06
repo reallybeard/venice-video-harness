@@ -562,6 +562,26 @@
   output and request bodies are unchanged (the chatJson and queue
   refactors were checked against the previous implementations).
   Tests: `tests/core-port-helpers.test.mjs`, `tests/core-render-job.test.mjs`.
+- **The QA loops run in core over the ports.** `qa-storyboard` and `qa-videos`
+  are now thin callers of `runStoryboardQa` / `runVideoQa`
+  (`packages/core/src/mini-drama/qa-loops.ts`, on the barrel). Storyboard QA
+  attaches the panel, up to two front sheets and the nearest earlier panel
+  from the same location, then walks the model chain: the chosen reader,
+  then the project's paired vision companion, then UNCHECKED and counted in
+  `summary.errored` (rule 55). Video QA runs the head-glitch luma scan and
+  the boundary luma jumps over `ImageProbe`, then mid-beat frame sampling,
+  per-unit identity and the single cross-unit identity call over
+  `VisionJudge` (rule 52). The pieces are exported too (`probeHeadGlitch`,
+  `probeBoundary`, `probeUnitFrames`, `judgeUnitIdentity`,
+  `judgeCrossUnitIdentity`). Core takes the ports plus plain inputs: the
+  host finds the panels, sheets and unit masters, says where sampled frames
+  go, renders the typed progress events and writes the report. Console
+  output, both reports and every vision request are byte-identical, pinned
+  by `tests/qa-loops-golden.test.mjs` (the real CLI against a stubbed
+  `VeniceClient`). One adapter change: the CLI `ImageProbe` answers a
+  one-frame `frameLumas` window with a single seek at any start, so the
+  boundary check runs the ffmpeg command it always did. Test:
+  `tests/core-qa-loops.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

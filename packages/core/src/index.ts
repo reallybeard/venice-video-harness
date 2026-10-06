@@ -124,3 +124,5 @@ export * from './venice/video-errors.js';
 export * from './venice/render-job.js';
 // Pipeline gates: whether a stage may run and what clears it (the commands and status share them).
 export * from './session/gates.js';
+// The QA loops (qa-storyboard, qa-videos) over the ports: vision judge, image probe, clock.
+export * from './mini-drama/qa-loops.js';
