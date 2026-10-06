@@ -187,6 +187,22 @@
   `kind: 'object'`. `gender` / `age` / `voiceDescription` / `wardrobe` stay
   on the type and are ignored for objects. Test:
   `tests/character-kind.test.mjs`.
+- **`referenceCheck` on `Character` and `Location`
+  (plan-schema-additions §6).** New core type
+  `ReferenceCheck { ref, pass, issues[], summary }`: the verdict of a vision
+  check of a locked reference image against its own description, run once
+  at lock time. Panels and every shot copy the reference, so a wrong one is
+  cheapest to catch there. `ref` is the checked image (relative to the
+  series dir) and the check counts only while `ref` is still the locked
+  reference. Optional on both entities; existing `series.json` files parse
+  and re-save unchanged. CLI: `lock-character --check-reference`
+  (`--check-model` overrides `intelligence.visionModel`) runs the check on
+  `anchor.png` / `front.png` / `three-quarter.png` via the same `chatJson`
+  vision path as panel QA (`src/mini-drama/reference-check.ts`), prints the
+  verdict and stores it on the character. It is informational, never a gate:
+  no sheet on disk skips with a note, a failed call warns and leaves the
+  field untouched, and the lock goes through either way. Test:
+  `tests/reference-check.test.mjs`.
 - **`packages/core` — the pure half of the harness, exported as
   `venice-video-harness/core` (phase 2 of the core split).** An npm
   workspace holding the modules that were already pure, moved with

@@ -105,6 +105,7 @@ import {
 import { shotKey } from './shot-paths.js';
 import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
+import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
 import { generateLocationReferences } from './location-generator.js';
 import {
   ensureEpisodeStoryboardReferences,
@@ -1368,10 +1369,13 @@ program
   .option('-e, --episode <number>', 'Episode the --voice-from-shot shot belongs to', '1')
   .option('--from-start <sec>', 'With --voice-from-shot: harvest audio starting at this offset (seconds)', parseFloat)
   .option('--from-end <sec>', 'With --voice-from-shot: harvest audio up to this offset (seconds)', parseFloat)
+  .option('--check-reference', 'Vision-check the locked reference sheet against the character description with the series intelligence vision model and store the verdict as `referenceCheck` (informational; never blocks the lock)', false)
+  .option('--check-model <model>', 'Vision model for --check-reference (default: series intelligence.visionModel)')
   .action(async (opts: {
     project: string; character: string; voiceId: string; voiceName?: string;
     voiceReference?: string; voiceFromShot?: string; episode: string;
     fromStart?: number; fromEnd?: number;
+    checkReference: boolean; checkModel?: string;
   }) => {
     const series = await loadSeries(resolve(opts.project));
     if (!series) { console.error('Series not found.'); process.exit(1); }
@@ -1382,6 +1386,28 @@ program
     char.voiceId = opts.voiceId;
     char.voiceName = opts.voiceName || opts.voiceId;
     char.locked = true;
+
+    if (opts.checkReference) {
+      // Informational only: a mismatch prints and is stored; the lock still
+      // goes through. A failed call warns and leaves `referenceCheck` as it
+      // was rather than recording a verdict the model never gave.
+      if (!resolveReferenceCheckTarget(series, char)) {
+        console.warn(`  Reference check skipped: no reference sheet on disk for ${char.name} (run generate-character-references first).`);
+      } else {
+        const model = opts.checkModel ?? intelligenceFor(series).visionModel;
+        try {
+          const apiKey = await getVeniceApiKey();
+          const client = new VeniceClient(apiKey);
+          const check = await checkCharacterReference(client, model, series, char);
+          if (check) {
+            char.referenceCheck = check;
+            console.log(formatReferenceCheck(check));
+          }
+        } catch (err) {
+          console.warn(`  Reference check failed (${err instanceof Error ? err.message : String(err)}); lock continues.`);
+        }
+      }
+    }
 
     if (opts.voiceReference && opts.voiceFromShot) {
       console.error('Pass either --voice-reference or --voice-from-shot, not both.');
