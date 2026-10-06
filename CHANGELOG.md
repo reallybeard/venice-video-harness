@@ -191,6 +191,28 @@
   preparation log line now prints before a body-decision line, and on the
   over-15s lip-sync error the two info lines before the throw are gone.
   Test: `tests/core-request-builder.test.mjs`.
+- **Pipeline status classification moves into core as data
+  (`venice-video-harness/core/session/status.js`, also on the core barrel).**
+  `classifyEpisode(facts)` and `classifyProject(facts)` take plain
+  `EpisodeFacts` / `ProjectFacts` records (which markers exist: script,
+  `script-approved.json` and `script.status` separately, panel / clip counts,
+  QA report and approval, video QA report, music, dialogue, final cut) and
+  return the stage, the advancing `PIPELINE_STAGES` id, its gate text and the
+  shell-form command. Stage commands and the loop suggestion are derived from
+  the pipeline table (`stageCommand`), so `status` and `pipeline` cannot drift
+  (rules 45/48); the aesthetic suggestion is the one documented exception.
+  Also in core: `projectStatusFromFacts` / `episodeStatusFromFacts` (the
+  `status` report), `scriptApproved` (the either-marker rule),
+  `qualifyCommand`, `formatProjectStatus`, and the `EpisodeStatus` /
+  `ProjectStatus` shapes. `src/session/status.ts` keeps
+  `collectProjectStatus(projectDir)` with the same signature and output and
+  adds `collectProjectFacts(projectDir)` (the disk reader); it re-exports the
+  core half. `status` / `pipeline` text and `--json` output are byte-identical.
+  Tests: `tests/core-stages.test.mjs` (classification from facts; every stage
+  the classifier can return is a pipeline stage and every pipeline stage is
+  reachable), `tests/status-golden.test.mjs` (30 synthetic projects through
+  the collector, the formatter and the CLI, compared byte for byte against a
+  capture taken before the move).
 - **The prompt builders and the @ImageN slot planner move into core
   (phase 3).** `src/mini-drama/prompt-builder.ts` moves verbatim to
   `packages/core/src/mini-drama/prompt-builder.ts`,

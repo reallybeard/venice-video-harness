@@ -6,17 +6,42 @@
 // episode-NNN-final.mp4. Nothing surfaced that, so knowing where an episode
 // stood meant listing directories by hand and remembering the gate order.
 //
-// This reads those markers and reports the stage plus the exact next command.
+// This reads those markers into plain facts; the classification (stage, gate,
+// next command) is pure and lives in core (`venice-video-harness/core/session/
+// status.js`), so a browser host classifies its own store the same way.
 // ---------------------------------------------------------------------------
 
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { getEpisodeDir, loadEpisodeScript, loadSeries } from '../series/manager.js';
 import type { EpisodeScript, SeriesState } from 'venice-video-harness/core/series/types.js';
-import type { EpisodeStatus, ProjectStatus } from 'venice-video-harness/core/session/status.js';
+import {
+  projectStatusFromFacts,
+  type EpisodeFacts,
+  type ProjectFacts,
+  type ProjectStatus,
+} from 'venice-video-harness/core/session/status.js';
 
-export type { EpisodeStatus, ProjectStatus } from 'venice-video-harness/core/session/status.js';
-export { formatProjectStatus, qualifyCommand } from 'venice-video-harness/core/session/status.js';
+export type {
+  EpisodeClassification,
+  EpisodeFacts,
+  EpisodeStageId,
+  EpisodeStatus,
+  ProjectClassification,
+  ProjectFacts,
+  ProjectStageId,
+  ProjectStatus,
+} from 'venice-video-harness/core/session/status.js';
+export {
+  classifyEpisode,
+  classifyProject,
+  episodeStatusFromFacts,
+  formatProjectStatus,
+  projectStatusFromFacts,
+  qualifyCommand,
+  scriptApproved,
+  stageCommand,
+} from 'venice-video-harness/core/session/status.js';
 
 function countMatching(dir: string, pattern: RegExp): number {
   if (!existsSync(dir)) return 0;
@@ -27,32 +52,24 @@ function countMatching(dir: string, pattern: RegExp): number {
   }
 }
 
-/**
- * Determine an episode's stage and the command that advances it.
- * Mirrors the real gate order: script → approve → storyboard → QA → qa-approve
- * → videos → music → assemble.
- */
-function classifyEpisode(
+/** The markers the classifier reads for one episode, from disk. */
+function collectEpisodeFacts(
   series: SeriesState,
   episode: number,
   script: EpisodeScript | null,
   episodeDir: string,
-): EpisodeStatus {
+): EpisodeFacts {
   const sceneDir = join(episodeDir, 'scene-001');
   const audioDir = join(episodeDir, 'audio');
   const padded = String(episode).padStart(3, '0');
 
-  const status: EpisodeStatus = {
+  return {
     episode,
     title: series.episodes.find(e => e.number === episode)?.title,
     hasScript: Boolean(script),
     shotCount: script?.shots?.length ?? 0,
-    // Mirror the gate in `storyboard-episode`, which accepts either marker.
-    // `approve-script` writes the artifact; `workshop --approve` instead sets
-    // the script's own status, and checking only the file told every
-    // workshop-driven project to re-approve a script it had already shot.
-    scriptApproved: existsSync(join(episodeDir, 'script-approved.json'))
-      || script?.status === 'approved',
+    scriptApprovalArtifact: existsSync(join(episodeDir, 'script-approved.json')),
+    scriptStatusApproved: script?.status === 'approved',
     qaReported: existsSync(join(episodeDir, 'qa-report.json')),
     qaApproved: existsSync(join(episodeDir, 'qa-approved.json')),
     videoQaReported: existsSync(join(episodeDir, 'video-qa-report.json')),
@@ -61,60 +78,23 @@ function classifyEpisode(
     hasMusic: existsSync(join(audioDir, 'music.mp3')),
     dialogueCount: countMatching(audioDir, /^dialogue-shot-\d+\.mp3$/),
     hasFinalCut: existsSync(join(episodeDir, `episode-${padded}-final.mp4`)),
-    stage: 'not started',
-    // A shot script is loop mode's only precondition (gates are skipped).
-    loopAvailable: (script?.shots?.length ?? 0) > 0,
   };
-
-  const ref = `-e ${episode}`;
-  if (!status.hasScript) {
-    status.stage = 'no script';
-    status.nextCommand = `workshop-episode ${ref} --concept "<what happens>"`;
-  } else if (!status.scriptApproved) {
-    status.stage = 'script drafted';
-    status.nextCommand = `approve-script ${ref}`;
-  } else if (status.panelCount < status.shotCount) {
-    status.stage = status.panelCount === 0
-      ? 'ready to storyboard'
-      : `storyboarding (${status.panelCount}/${status.shotCount} panels)`;
-    status.nextCommand = `storyboard-episode ${ref}`;
-  } else if (!status.qaReported) {
-    status.stage = 'panels complete';
-    status.nextCommand = `qa-storyboard ${ref}`;
-  } else if (!status.qaApproved) {
-    status.stage = 'at QA gate';
-    status.nextCommand = `qa-approve ${ref}`;
-  } else if (status.videoCount < status.shotCount) {
-    status.stage = status.videoCount === 0
-      ? 'ready to render'
-      : `rendering (${status.videoCount}/${status.shotCount} clips)`;
-    status.nextCommand = `generate-videos ${ref}`;
-  } else if (!status.videoQaReported && !status.hasFinalCut) {
-    status.stage = 'clips complete, unverified';
-    status.nextCommand = `qa-videos ${ref}`;
-  } else if (!status.hasFinalCut) {
-    status.stage = 'clips verified';
-    status.nextCommand = `assemble-episode ${ref}`;
-  } else {
-    status.stage = 'complete';
-  }
-
-  return status;
 }
 
-export async function collectProjectStatus(projectDir: string): Promise<ProjectStatus | null> {
+/** Everything `projectStatusFromFacts` needs, read from a project directory. */
+export async function collectProjectFacts(projectDir: string): Promise<ProjectFacts | null> {
   const series = await loadSeries(projectDir);
   if (!series) return null;
 
-  const episodes: EpisodeStatus[] = [];
+  const episodes: EpisodeFacts[] = [];
   for (const meta of series.episodes) {
     const episodeDir = getEpisodeDir(series, meta.number);
     const script = await loadEpisodeScript(series, meta.number);
-    episodes.push(classifyEpisode(series, meta.number, script, episodeDir));
+    episodes.push(collectEpisodeFacts(series, meta.number, script, episodeDir));
   }
 
   const characters = series.characters ?? [];
-  const status: ProjectStatus = {
+  return {
     projectDir,
     name: series.name,
     slug: series.slug,
@@ -124,26 +104,9 @@ export async function collectProjectStatus(projectDir: string): Promise<ProjectS
     locationCount: (series.locations ?? []).length,
     episodes,
   };
+}
 
-  // Project-level prerequisites gate everything downstream, so they take
-  // precedence over any individual episode's next step.
-  if (!status.aestheticSet) {
-    status.nextCommand = 'explore-aesthetic   # then: set-aesthetic';
-  } else if (status.characterCount === 0) {
-    status.nextCommand = 'add-character --name "<NAME>" --gender <f|m>';
-  } else if (episodes.length === 0) {
-    status.nextCommand = 'new-episode -t "<title>"';
-  } else {
-    const unfinished = episodes.find(e => e.nextCommand);
-    status.nextCommand = unfinished?.nextCommand;
-  }
-
-  // Surface loop mode (the gate-skipping alternate path) whenever a shot script
-  // exists, pointed at the first episode that has one.
-  const loopable = episodes.find(e => e.loopAvailable);
-  if (loopable) {
-    status.loopCommand = `loop -e ${loopable.episode} --mode <looping|production>`;
-  }
-
-  return status;
+export async function collectProjectStatus(projectDir: string): Promise<ProjectStatus | null> {
+  const facts = await collectProjectFacts(projectDir);
+  return facts ? projectStatusFromFacts(facts) : null;
 }

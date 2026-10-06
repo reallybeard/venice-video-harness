@@ -11,9 +11,12 @@
 // that advances it. `venice-video pipeline [--json]` prints it, so the order
 // travels inside the binary and cannot be left out of a published tarball.
 //
-// It mirrors the on-disk state machine in `src/session/status.ts`
-// (`classifyEpisode` + the project-level prerequisites). When you change a
-// gate there, change the matching stage here — a stale map is worse than none.
+// `classifyEpisode` / `classifyProject` (`session/status.ts`) walk this table:
+// their stage ids are ids here and their commands are these commands in shell
+// form, so renaming or reordering a stage changes `status` too, and
+// `tests/core-stages.test.mjs` fails if the two stop covering each other.
+// When a gate condition changes in `cli.ts`, change the classifier and the
+// stage here in the same commit — a stale map is worse than none.
 // ---------------------------------------------------------------------------
 
 export interface PipelineStage {
