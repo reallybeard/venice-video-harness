@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import type { ShotScript } from 'venice-video-harness/core/series/types.js';
+import { dialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 
 export interface SubtitleEntry {
   index: number;
@@ -70,8 +71,12 @@ export function generateSubtitles(shots: ShotScript[], sceneDir?: string): Subti
   for (const shot of shots) {
     const shotDuration = getActualShotDuration(sceneDir, shot.shotNumber, shot.duration);
 
-    if (shot.dialogue) {
-      const words = shot.dialogue.line.split(/\s+/);
+    // Subtitles carry every line on the shot as one cue (two lines on a shot
+    // read as one exchange); a single-object dialogue is unchanged.
+    const lines = dialogueLines(shot);
+    if (lines.length > 0) {
+      const text = lines.map(line => line.line).join(' ');
+      const words = text.split(/\s+/);
       const wordsPerSecond = 2.5;
       const speakDuration = Math.min(words.length / wordsPerSecond + 0.5, shotDuration - 0.3);
 
@@ -86,7 +91,7 @@ export function generateSubtitles(shots: ShotScript[], sceneDir?: string): Subti
           index: index++,
           startTime: formatSrtTime(start),
           endTime: formatSrtTime(end),
-          text: shot.dialogue.line,
+          text,
         });
       } else {
         const mid = Math.ceil(words.length / 2);

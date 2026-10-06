@@ -7,6 +7,7 @@ import type { ShotArtifacts, TreatmentProgress } from './treatment.js';
 import type { VeniceClient } from '../venice/client.js';
 import type { AestheticProfile } from '../storyboard/prompt-builder.js';
 import type { Character, EpisodeScript, Location, SeriesState } from 'venice-video-harness/core/series/types.js';
+import { dialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import { addEpisode, getCharacterDir, getLocationDir, saveEpisodeScript, saveSeries } from '../series/manager.js';
 import { getProjectLanguage } from 'venice-video-harness/core/series/project-language.js';
 import { DEFAULT_INTELLIGENCE_MODEL, describeIntelligence } from 'venice-video-harness/core/venice/text-models.js';
@@ -436,6 +437,14 @@ export function renderWorkshopMarkdown(draft: WorkshopDraft, progress?: Treatmen
 }
 
 
+function renderDialogueCell(shot: { dialogue?: EpisodeScript['shots'][number]['dialogue'] }): string {
+  const lines = dialogueLines(shot).filter(line => line.line?.trim());
+  if (lines.length === 0) return '<span class="muted">—</span>';
+  return lines
+    .map(line => `<strong>${escapeHtml(line.character)}</strong><br>“${escapeHtml(line.line)}”`)
+    .join('<br>');
+}
+
 function escapeHtml(value: unknown): string {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -604,7 +613,7 @@ export function renderWorkshopHtml(
       ${progress ? renderShotProgressCell(progress.shots.get(key)) : ''}
       <td><span class="pill">${escapeHtml(shot.type)}</span><br><span class="muted">${escapeHtml(shot.duration)} · ${escapeHtml(shot.location ?? 'No location')}</span></td>
       <td>${escapeHtml(shot.description)}</td>
-      <td>${shot.dialogue?.line?.trim() ? `<strong>${escapeHtml(shot.dialogue.character)}</strong><br>“${escapeHtml(shot.dialogue.line)}”` : '<span class="muted">—</span>'}</td>
+      <td>${renderDialogueCell(shot)}</td>
     </tr>`;
   }).join('');
   const references = renderReferences(draft.inputs.referenceSources ?? [], thumbnails);

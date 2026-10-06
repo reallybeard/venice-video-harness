@@ -27,7 +27,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, appendFile, rename } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import type { VeniceClient } from '../venice/client.js';
-import type { SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
+import type { DialogueLine, SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
+import { dialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import { closestValidDuration } from 'venice-video-harness/core/venice/models.js';
 import { buildVideoPrompt, type MiniDramaVideoPrompt } from './prompt-builder.js';
 import { renderVideoFile, extractLastFrame, resolveShotReferenceInputs, type RenderVideoOptions } from './video-generator.js';
@@ -101,7 +102,7 @@ export interface AuthoredBeat {
   description: string;
   /** Who is on screen. Names must match series.characters. */
   characters: string[];
-  dialogue: { character: string; line: string; delivery?: string } | null;
+  dialogue: DialogueLine | null;
   /** Diegetic sound for this beat. */
   sfx: string | null;
   cameraMovement: string;
@@ -1170,7 +1171,7 @@ export class StreamEngine {
     } catch {
       const style = this.series.aesthetic?.style ? `${this.series.aesthetic.style}. ` : '';
       const camera = shot.cameraMovement ? `${shot.cameraMovement}. ` : '';
-      const line = shot.dialogue ? ` ${shot.dialogue.character} says, in character: "${shot.dialogue.line}".` : '';
+      const line = dialogueLines(shot).map(d => ` ${d.character} says, in character: "${d.line}".`).join('');
       const sfx = shot.sfx ? ` Sound of ${shot.sfx}.` : '';
       return { prompt: `${style}${camera}${shot.description}${line}${sfx}`.slice(0, 1500), model, duration: this.duration, audio: true };
     }

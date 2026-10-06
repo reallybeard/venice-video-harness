@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import type {
   SeriesState,
   MiniDramaCharacter,
+  DialogueLine,
   EpisodeMeta,
   EpisodeScript,
   Location,
@@ -352,10 +353,24 @@ export async function loadEpisodeScript(
   // 2026-08-12: "Cannot read properties of undefined (reading 'toUpperCase')"
   // after the first unit rendered). A dialogue without a speaker and a line
   // is not dialogue — normalize it to null at the single load point.
+  // A list is checked line by line: malformed entries are dropped, and a list
+  // left empty becomes null like a malformed single object.
+  const wellFormed = (d: unknown): d is DialogueLine => {
+    const line = d as { character?: unknown; line?: unknown } | null | undefined;
+    return Boolean(line && typeof line === 'object'
+      && typeof line.character === 'string' && line.character.trim() !== ''
+      && typeof line.line === 'string' && line.line.trim() !== '');
+  };
   for (const shot of script.shots ?? []) {
-    const d = shot.dialogue as { character?: unknown; line?: unknown } | null | undefined;
-    if (d && (typeof d.character !== 'string' || d.character.trim() === ''
-      || typeof d.line !== 'string' || d.line.trim() === '')) {
+    const d = shot.dialogue as unknown;
+    if (!d) continue;
+    if (Array.isArray(d)) {
+      const kept = d.filter(wellFormed);
+      if (kept.length !== d.length) {
+        console.warn(`  ⚠ Shot ${shot.shotNumber}: ${d.length - kept.length} malformed dialogue line(s) (missing character/line) dropped.`);
+      }
+      shot.dialogue = kept.length > 0 ? kept : null;
+    } else if (!wellFormed(d)) {
       console.warn(`  ⚠ Shot ${shot.shotNumber}: malformed dialogue (missing character/line) — treating as no dialogue.`);
       shot.dialogue = null;
     }

@@ -774,6 +774,29 @@ export const INTERIOR_ENVIRONMENTS = new Set<ShotEnvironment>(['DAY_INTERIOR', '
 // Shot Script
 // ---------------------------------------------------------------------------
 
+/**
+ * One spoken line on a shot.
+ *
+ * `voiceOver` makes the NARRATOR-by-name convention explicit without removing
+ * it: when unset, a line is voice-over iff its speaker is `NARRATOR`, `V.O.`
+ * or `VO` (see `isVoiceOverLine`). A voice-over line never reaches the video
+ * prompt — there is no mouth on camera — and the TTS pass owns that lane.
+ */
+export interface DialogueLine {
+  /** Stable across edits; what a beat map or a lip-sync cue points at. */
+  id?: string;
+  character: string;
+  line: string;
+  delivery?: string;
+  /**
+   * Narration / V.O.: no on-camera speaker, `audio: false` on the model when
+   * the mix suppresses narration, TTS owns the lane. Today inferred from the
+   * character name (`NARRATOR`, `V.O.`, `VO`); set explicitly to override
+   * either way.
+   */
+  voiceOver?: boolean;
+}
+
 export interface ShotScript {
   shotNumber: number;
   type: 'establishing' | 'dialogue' | 'action' | 'reaction' | 'insert' | 'close-up';
@@ -822,7 +845,14 @@ export interface ShotScript {
    * line (rule 49).
    */
   blocking?: string;
-  dialogue: { character: string; line: string; delivery?: string } | null;
+  /**
+   * The shot's spoken line(s). A single object is the shape every existing
+   * `script.json` carries and still parses unchanged; a list is for shots
+   * that carry two lines (an exchange inside one beat). Consumers go through
+   * `dialogueLines(shot)` (series/dialogue.ts) rather than reading this
+   * field directly, so both shapes look the same downstream.
+   */
+  dialogue: DialogueLine | DialogueLine[] | null;
   sfx: string | null;
   cameraMovement: string;
   transition: string;
