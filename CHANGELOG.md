@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **A `kind: 'object'` prop gets a product reference sheet, not a portrait.**
+  `buildCharacterReferencePromptParts` chose the product-plate angles and the
+  person-suppressing negatives only when `baseTraits` began "inanimate
+  object". A prop marked only `kind: 'object'` got "front portrait, looking
+  at camera" plus the default male traits ("handsome, strong features"). Both
+  now count, and a prop with no `baseTraits` gets no default traits. The
+  `objectCast` path sets both fields, so its sheets are unchanged. Test: the
+  `kind: object` case in `tests/character-references-golden.test.mjs`.
 - **Location plates keep `kind: 'object'` props out of the room.** The plate
   prompts left a recurring prop out of the plate (a clean-plate clause and a
   negative) only when its `baseTraits` began "inanimate object", the
@@ -180,6 +188,19 @@
   the sidecars, and re-exports the old names. Output is unchanged:
   `tests/location-plates-golden.test.mjs` pins every request body and
   `.prompt.json` sidecar across 14 cases, captured before the move.
+
+- **Character reference requests are in core.** The four angles, the
+  name-derived seed, the negatives, the cfg / steps / aspect / resolution
+  defaults and the `/image/generate` body for one angle moved to
+  `venice-video-harness/core/mini-drama/character-references.js`
+  (`buildCharacterReferenceRequest`, `CHARACTER_ANGLES`,
+  `CHARACTER_REFERENCE_DEFAULTS`, `characterSeedFromName`,
+  `parseCharacterAngles`). `add-character` and
+  `generateCharacterReferences` each built the body themselves; both now call
+  core and keep the Venice call, the files and the sidecars. Output is
+  unchanged: `tests/character-references-golden.test.mjs` pins every request
+  body, sidecar and saved character across 12 generator cases and 10
+  `add-character` runs, captured before the move.
 
 - **Duration and resolution are validated before the paid call instead of
   silently corrected.** `queueVideo` used to snap an unsupported duration to

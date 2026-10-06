@@ -1,0 +1,3041 @@
+{
+  "module": {
+    "all four angles, female default traits": {
+      "result": {
+        "generated": [
+          "front.png",
+          "three-quarter.png",
+          "profile.png",
+          "full-body.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "front.prompt.json": {
+              "character": "MARA",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "MARA",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, full-body)",
+                  "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "MARA",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "MARA",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png"
+      ]
+    },
+    "custom base traits, placeholder wardrobe dropped": {
+      "result": {
+        "generated": [
+          "front.png",
+          "three-quarter.png",
+          "profile.png",
+          "full-body.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "tomas": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "TOMAS",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "a nervous radio operator",
+              "fullDescription": "Tomas, mid 20s, a nervous radio operator",
+              "wardrobe": "n/a",
+              "voiceDescription": "quick",
+              "baseTraits": "lanky young man, freckles, wire glasses",
+              "locked": false,
+              "seed": 17
+            },
+            "front.prompt.json": {
+              "character": "TOMAS",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (TOMAS, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "TOMAS",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (TOMAS, full-body)",
+                  "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "TOMAS",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (TOMAS, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "TOMAS",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (TOMAS, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Tomas, mid 20s, a nervous radio operator. lanky young man, freckles, wire glasses. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png"
+      ]
+    },
+    "object cast by baseTraits gets product-plate angles": {
+      "result": {
+        "generated": [
+          "front.png",
+          "three-quarter.png",
+          "profile.png",
+          "full-body.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 3,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 3,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 3,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 3,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "the-ledger": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "THE LEDGER",
+              "gender": "other",
+              "age": "n/a",
+              "description": "a ledger",
+              "fullDescription": "a leather-bound ledger with brass corners",
+              "wardrobe": "none",
+              "voiceDescription": "",
+              "baseTraits": "inanimate object, a leather-bound ledger",
+              "locked": false,
+              "seed": 3
+            },
+            "front.prompt.json": {
+              "character": "THE LEDGER",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 3,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE LEDGER, front)",
+                  "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 3,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "THE LEDGER",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 3,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE LEDGER, full-body)",
+                  "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 3,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "THE LEDGER",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 3,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE LEDGER, profile)",
+                  "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 3,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "THE LEDGER",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 3,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE LEDGER, three-quarter)",
+                  "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. a leather-bound ledger with brass corners. inanimate object, a leather-bound ledger. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 3,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png"
+      ]
+    },
+    "a kind: object prop without baseTraits": {
+      "result": {
+        "generated": [
+          "front.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a dented brass storm lantern. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 5,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "the-lantern": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "THE LANTERN",
+              "kind": "object",
+              "gender": "other",
+              "age": "n/a",
+              "description": "a brass lantern",
+              "fullDescription": "a dented brass storm lantern",
+              "wardrobe": "n/a",
+              "voiceDescription": "",
+              "locked": false,
+              "seed": 5
+            },
+            "front.prompt.json": {
+              "character": "THE LANTERN",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a dented brass storm lantern. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 5,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": false
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE LANTERN, front)",
+                  "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. a dented brass storm lantern. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 5,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png"
+      ]
+    },
+    "angle subset keeps the requested order": {
+      "result": {
+        "generated": [
+          "profile.png",
+          "front.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "front.prompt.json": {
+              "character": "MARA",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "MARA",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  profile: saved -> profile.png",
+        "  front: saved -> front.png"
+      ]
+    },
+    "skipExisting leaves an existing angle alone": {
+      "result": {
+        "generated": [
+          "three-quarter.png"
+        ],
+        "skipped": [
+          "front.png"
+        ]
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "front.png",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "three-quarter.prompt.json": {
+              "character": "MARA",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  three-quarter: saved -> three-quarter.png"
+      ]
+    },
+    "an existing angle is archived, not overwritten": {
+      "result": {
+        "generated": [
+          "profile.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "profile-force-archive-<ts>.png",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "profile.prompt.json": {
+              "character": "MARA",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  profile: saved -> profile.png"
+      ]
+    },
+    "prompt, model, cfg, aspect and resolution overrides": {
+      "result": {
+        "generated": [
+          "front.png",
+          "full-body.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "gpt-image-2",
+            "resolution": "2K",
+            "aspect_ratio": "2:3",
+            "prompt": "An exact hand-written prompt.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 7,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "gpt-image-2",
+            "resolution": "2K",
+            "aspect_ratio": "2:3",
+            "prompt": "An exact hand-written prompt.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 7,
+            "seed": 17,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "tomas": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "TOMAS",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "a nervous radio operator",
+              "fullDescription": "Tomas, mid 20s, a nervous radio operator",
+              "wardrobe": "n/a",
+              "voiceDescription": "quick",
+              "baseTraits": "lanky young man, freckles, wire glasses",
+              "locked": false,
+              "seed": 17
+            },
+            "front.prompt.json": {
+              "character": "TOMAS",
+              "angle": "front",
+              "model": "gpt-image-2",
+              "prompt": "An exact hand-written prompt.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 7,
+              "aspect_ratio": "2:3",
+              "resolution": "2K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "gpt-image-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "gpt-image-2",
+                  "label": "character reference (TOMAS, front)",
+                  "prompt": "An exact hand-written prompt.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 7,
+                  "aspectRatio": "2:3",
+                  "resolution": "2K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "TOMAS",
+              "angle": "full-body",
+              "model": "gpt-image-2",
+              "prompt": "An exact hand-written prompt.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 7,
+              "aspect_ratio": "2:3",
+              "resolution": "2K",
+              "seed": 17,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "gpt-image-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "gpt-image-2",
+                  "label": "character reference (TOMAS, full-body)",
+                  "prompt": "An exact hand-written prompt.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 17,
+                  "cfgScale": 7,
+                  "aspectRatio": "2:3",
+                  "resolution": "2K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png",
+        "  full-body: saved -> full-body.png"
+      ]
+    },
+    "long aesthetic on a short-cap model keeps the subject": {
+      "result": {
+        "generated": [
+          "front.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "seedream-v5-lite",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, photorealistic, photograph, photo, 3D render, Pixar, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "front.prompt.json": {
+              "character": "MARA",
+              "angle": "front",
+              "model": "seedream-v5-lite",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, photorealistic, photograph, photo, 3D render, Pixar, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "seedream-v5-lite",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "seedream-v5-lite",
+                  "label": "character reference (MARA, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, photorealistic, photograph, photo, 3D render, Pixar, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png"
+      ]
+    },
+    "negative prompt strategy none": {
+      "result": {
+        "generated": [
+          "front.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "front.prompt.json": {
+              "character": "MARA",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  front: saved -> front.png"
+      ]
+    },
+    "photoreal negative prompt strategy": {
+      "result": {
+        "generated": [
+          "three-quarter.png"
+        ],
+        "skipped": []
+      },
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 4242,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "characters": {
+        "mara": {
+          "files": [
+            "character.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "MARA",
+              "gender": "female",
+              "age": "40s",
+              "description": "a weathered bush pilot",
+              "fullDescription": "Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair",
+              "wardrobe": "oil-stained leather flight jacket",
+              "voiceDescription": "dry, low",
+              "locked": false,
+              "seed": 4242
+            },
+            "three-quarter.prompt.json": {
+              "character": "MARA",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 4242,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (MARA, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Mara, 40s, a weathered bush pilot with a sun-creased face and cropped grey hair. beautiful, elegant, detailed features. oil-stained leather flight jacket. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 4242,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "log": [
+        "  three-quarter: saved -> three-quarter.png"
+      ]
+    },
+    "no aesthetic throws": {
+      "result": {
+        "error": "Series aesthetic must be set before generating character references."
+      },
+      "calls": [],
+      "characters": {
+        "mara": {
+          "files": [],
+          "json": {}
+        }
+      },
+      "log": []
+    }
+  },
+  "cli": {
+    "male defaults": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "ROOK",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, full-body)",
+                  "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "ROOK",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "ROOK",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    },
+    "female with description, wardrobe and voice": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 891426096,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 891426096,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 891426096,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 891426096,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "INES VALE",
+          "gender": "female",
+          "age": "late 30s",
+          "description": "tall, sharp cheekbones, shaved head",
+          "fullDescription": "Ines Vale, late 30s, tall, sharp cheekbones, shaved head",
+          "wardrobe": "grey wool coat",
+          "voiceDescription": "husky alto",
+          "locked": true,
+          "seed": 891426096
+        }
+      ],
+      "characters": {
+        "ines-vale": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "INES VALE",
+              "gender": "female",
+              "age": "late 30s",
+              "description": "tall, sharp cheekbones, shaved head",
+              "fullDescription": "Ines Vale, late 30s, tall, sharp cheekbones, shaved head",
+              "wardrobe": "grey wool coat",
+              "voiceDescription": "husky alto",
+              "locked": true,
+              "seed": 891426096
+            },
+            "front.prompt.json": {
+              "character": "INES VALE",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 891426096,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (INES VALE, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 891426096,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "INES VALE",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 891426096,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (INES VALE, full-body)",
+                  "prompt": "full body, head to toe, standing pose, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 891426096,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "INES VALE",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 891426096,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (INES VALE, profile)",
+                  "prompt": "side profile, 90 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 891426096,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "INES VALE",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 891426096,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (INES VALE, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Ines Vale, late 30s, tall, sharp cheekbones, shaved head. beautiful, elegant, detailed features. grey wool coat. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 891426096,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for INES VALE...",
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png",
+        "Character added: INES VALE",
+        "Next: audition-voices -p <dir>/project --character \"INES VALE\""
+      ],
+      "stderr": []
+    },
+    "object via base traits": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 312633840,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 312633840,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 312633840,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 312633840,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "THE KEY",
+          "gender": "other",
+          "age": "mid 20s",
+          "description": "mid 20s, inanimate object, an iron skeleton key",
+          "fullDescription": "The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "baseTraits": "inanimate object, an iron skeleton key",
+          "locked": true,
+          "seed": 312633840
+        }
+      ],
+      "characters": {
+        "the-key": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "full-body.png",
+            "full-body.prompt.json",
+            "full-body.provenance.json",
+            "full-body.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "THE KEY",
+              "gender": "other",
+              "age": "mid 20s",
+              "description": "mid 20s, inanimate object, an iron skeleton key",
+              "fullDescription": "The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "baseTraits": "inanimate object, an iron skeleton key",
+              "locked": true,
+              "seed": 312633840
+            },
+            "front.prompt.json": {
+              "character": "THE KEY",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 312633840,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE KEY, front)",
+                  "prompt": "product photograph of a single object, straight-on front view, centered, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 312633840,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "full-body.prompt.json": {
+              "character": "THE KEY",
+              "angle": "full-body",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 312633840,
+              "overrideSource": null
+            },
+            "full-body.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "full-body.recipe.json": {
+              "asset": "full-body.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE KEY, full-body)",
+                  "prompt": "product photograph of a single object, full view showing the entire object, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 312633840,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "THE KEY",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 312633840,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE KEY, profile)",
+                  "prompt": "product photograph of a single object, side view at 90 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 312633840,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "THE KEY",
+              "angle": "three-quarter",
+              "model": "nano-banana-2",
+              "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 312633840,
+              "overrideSource": null
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (THE KEY, three-quarter)",
+                  "prompt": "product photograph of a single object, three-quarter view at 45 degrees, studio lighting, plain neutral background, nothing else in frame. The Key, mid 20s, mid 20s, inanimate object, an iron skeleton key. inanimate object, an iron skeleton key. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, person, people, human, man, woman, face, hands, portrait, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 312633840,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for THE KEY...",
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "  profile: saved -> profile.png",
+        "  full-body: saved -> full-body.png",
+        "Character added: THE KEY",
+        "Next: audition-voices -p <dir>/project --character \"THE KEY\""
+      ],
+      "stderr": []
+    },
+    "angle subset with an inline prompt": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "A hand-written prompt for every angle.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "A hand-written prompt for every angle.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "profile.png",
+            "profile.prompt.json",
+            "profile.provenance.json",
+            "profile.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "A hand-written prompt for every angle.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "A hand-written prompt for every angle.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            },
+            "profile.prompt.json": {
+              "character": "ROOK",
+              "angle": "profile",
+              "model": "nano-banana-2",
+              "prompt": "A hand-written prompt for every angle.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "profile.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "profile.recipe.json": {
+              "asset": "profile.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, profile)",
+                  "prompt": "A hand-written prompt for every angle.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "  profile: saved -> profile.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    },
+    "override file: per-angle prompts and shared settings": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "seedream-v5-lite",
+            "resolution": "2K",
+            "aspect_ratio": "3:4",
+            "prompt": "Override front.",
+            "negative_prompt": "override negative",
+            "steps": 30,
+            "cfg_scale": 9,
+            "seed": 42,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        },
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "seedream-v5-lite",
+            "resolution": "2K",
+            "aspect_ratio": "3:4",
+            "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "only the negative",
+            "steps": 30,
+            "cfg_scale": 9,
+            "seed": 42,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json",
+            "three-quarter.png",
+            "three-quarter.prompt.json",
+            "three-quarter.provenance.json",
+            "three-quarter.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "seedream-v5-lite",
+              "prompt": "Override front.",
+              "negative_prompt": "override negative",
+              "cfg_scale": 9,
+              "aspect_ratio": "3:4",
+              "resolution": "2K",
+              "seed": 42,
+              "overrideSource": "override.json"
+            },
+            "front.provenance.json": {
+              "generationModel": "seedream-v5-lite",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "seedream-v5-lite",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "Override front.",
+                  "negativePrompt": "override negative",
+                  "seed": 42,
+                  "cfgScale": 9,
+                  "aspectRatio": "3:4",
+                  "resolution": "2K",
+                  "pass": 1
+                }
+              ]
+            },
+            "three-quarter.prompt.json": {
+              "character": "ROOK",
+              "angle": "three-quarter",
+              "model": "seedream-v5-lite",
+              "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "only the negative",
+              "cfg_scale": 9,
+              "aspect_ratio": "3:4",
+              "resolution": "2K",
+              "seed": 42,
+              "overrideSource": "override.json"
+            },
+            "three-quarter.provenance.json": {
+              "generationModel": "seedream-v5-lite",
+              "editModels": [],
+              "hasFace": true
+            },
+            "three-quarter.recipe.json": {
+              "asset": "three-quarter.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "seedream-v5-lite",
+                  "label": "character reference (ROOK, three-quarter)",
+                  "prompt": "three-quarter view, 45 degree angle, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "only the negative",
+                  "seed": 42,
+                  "cfgScale": 9,
+                  "aspectRatio": "3:4",
+                  "resolution": "2K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "  Using prompt overrides from override.json",
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "  three-quarter: saved -> three-quarter.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    },
+    "unreadable override file falls back to defaults": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": "missing.json"
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": [
+        "  Failed to read --override-prompt missing.json: ENOENT: no such file or directory, open '/private<dir>/missing.json'"
+      ]
+    },
+    "invalid angle exits 2": {
+      "status": 2,
+      "calls": [],
+      "seriesCharacters": [],
+      "characters": {
+        "rook": {
+          "files": [],
+          "json": {}
+        }
+      },
+      "stdout": [],
+      "stderr": [
+        "--angles must be a subset of: front, three-quarter, profile, full-body (got: back)"
+      ]
+    },
+    "skip images makes no request": {
+      "status": 0,
+      "calls": [],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": false,
+          "seed": 2553081
+        }
+      ],
+      "characters": {},
+      "stdout": [
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    },
+    "existing angle is archived": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front-force-archive-<ts>.png",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Cinematic photography.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    },
+    "series negative strategy and long aesthetic": {
+      "status": 0,
+      "calls": [
+        {
+          "path": "/api/v1/image/generate",
+          "body": {
+            "model": "nano-banana-2",
+            "resolution": "1K",
+            "aspect_ratio": "1:1",
+            "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+            "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+            "steps": 30,
+            "cfg_scale": 10,
+            "seed": 2553081,
+            "safe_mode": false,
+            "hide_watermark": true
+          }
+        }
+      ],
+      "seriesCharacters": [
+        {
+          "name": "ROOK",
+          "gender": "male",
+          "age": "mid 20s",
+          "description": "mid 20s, handsome, strong features, detailed features",
+          "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+          "wardrobe": "stylish contextual attire",
+          "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+          "locked": true,
+          "seed": 2553081
+        }
+      ],
+      "characters": {
+        "rook": {
+          "files": [
+            "character.json",
+            "front.png",
+            "front.prompt.json",
+            "front.provenance.json",
+            "front.recipe.json"
+          ],
+          "json": {
+            "character.json": {
+              "name": "ROOK",
+              "gender": "male",
+              "age": "mid 20s",
+              "description": "mid 20s, handsome, strong features, detailed features",
+              "fullDescription": "Rook, mid 20s, mid 20s, handsome, strong features, detailed features",
+              "wardrobe": "stylish contextual attire",
+              "voiceDescription": "deep, resonant masculine voice, low pitch, authoritative tone, steady cadence",
+              "locked": true,
+              "seed": 2553081
+            },
+            "front.prompt.json": {
+              "character": "ROOK",
+              "angle": "front",
+              "model": "nano-banana-2",
+              "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+              "negative_prompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+              "cfg_scale": 10,
+              "aspect_ratio": "1:1",
+              "resolution": "1K",
+              "seed": 2553081,
+              "overrideSource": null
+            },
+            "front.provenance.json": {
+              "generationModel": "nano-banana-2",
+              "editModels": [],
+              "hasFace": true
+            },
+            "front.recipe.json": {
+              "asset": "front.png",
+              "passes": [
+                {
+                  "kind": "generate",
+                  "role": "identity",
+                  "model": "nano-banana-2",
+                  "label": "character reference (ROOK, front)",
+                  "prompt": "front portrait, looking at camera, centered, studio lighting, neutral background. Rook, mid 20s, mid 20s, handsome, strong features, detailed features. handsome, strong features, detailed features. stylish contextual attire. STYLE: Hand-painted gouache storybook illustration with thick visible brush strokes, chalky matte pigments, soft deckled paper texture, naive folk-art proportions, flattened perspective and decorative borders.",
+                  "negativePrompt": "deformed, blurry, bad anatomy, low quality, multiple people, watermark, character reference sheet, comic panels, panel borders, no text, no labels, no annotations, no inset panels, no detail callouts, no multi-view layout",
+                  "seed": 2553081,
+                  "cfgScale": 10,
+                  "aspectRatio": "1:1",
+                  "resolution": "1K",
+                  "pass": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "stdout": [
+        "Generating reference images for ROOK...",
+        "  front: saved -> front.png",
+        "Character added: ROOK",
+        "Next: audition-voices -p <dir>/project --character \"ROOK\""
+      ],
+      "stderr": []
+    }
+  }
+}
