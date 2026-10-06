@@ -120,6 +120,9 @@ export * from './mini-drama/location-plates.js';
 // Character reference sheets: the four angles, the seed, the negatives and the
 // /image/generate body for one angle.
 export * from './mini-drama/character-references.js';
+// Storyboard panels: the draft plan and requests, the identity-refine and
+// style-match prompts, the per-shot refine step, the scene-ref prompt.
+export * from './mini-drama/storyboard-panels.js';
 // Ports: the host interfaces core's loop runs over (CLI: src/ports/createCliPorts).
 export * from './ports.js';
 // Pipeline status: the report shapes, the pasteable-command helper, the text rendering.

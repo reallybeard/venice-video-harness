@@ -40,7 +40,6 @@ import {
   DEFAULT_ACTION_MODEL,
   DEFAULT_ATMOSPHERE_MODEL,
   DEFAULT_CHARACTER_CONSISTENCY_MODEL,
-  DEFAULT_IMAGE_GENERATION_MODEL,
   DEFAULT_IMAGE_EDIT_MODEL,
   DEFAULT_LIP_SYNC_MODEL,
   resolveAutoEdit,
@@ -51,7 +50,7 @@ import type { AestheticProfile } from '../storyboard/prompt-builder.js';
 import { VeniceClient } from '../venice/client.js';
 import { upscaleVideo, estimateUpscaleCostUsd } from '../venice/upscale.js';
 import { generateImage } from '../venice/generate.js';
-import { draftPanelWithReferences, type ReferenceDraftCharacter } from '../venice/reference-draft.js';
+import { draftPanelWithReferences } from '../venice/reference-draft.js';
 import { writeImageBytesSmart } from '../venice/image-bytes.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { getVeniceApiKey } from '../config.js';
@@ -102,7 +101,9 @@ import {
 import type { DialogueLine } from '../venice/audio.js';
 import { getMusicModel } from 'venice-video-harness/core/venice/models.js';
 
-import { buildImagePrompt } from './prompt-builder.js';
+import {
+  buildSceneRefPrompt, panelRefineOrder, panelRefineStep, planPanelDraft, SCENE_REF_MAX_IMAGES, styleAnchorShot, styleMatchAesthetic,
+} from 'venice-video-harness/core/mini-drama/storyboard-panels.js';
 import {
   buildCharacterReferenceRequest,
   CHARACTER_ANGLES,
@@ -2139,13 +2140,23 @@ program
         await renameFile(imgPath, archivePath);
       }
 
-      const imagePrompt = buildImagePrompt(shot, series);
-
-      // Fold in the shot's location: inject its locked description + lighting
-      // into the panel prompt (anti-pattern 7) and use its reference image as
-      // an environment anchor alongside character faces.
+      // Fold in the shot's location: its locked description + lighting go
+      // into the panel prompt (anti-pattern 7) and its plate is the base the
+      // characters are composed into. Identity references: anchor.png
+      // outranks front.png — same precedence as the video reference slots.
       const locInfo = resolveLocationRefForShot(series, shot);
-      const effectivePrompt = imagePrompt.prompt + locInfo.note;
+      const draftCharacters = shot.characters
+        .map(name => series.characters.find(c => c.name.toUpperCase() === name.toUpperCase()))
+        .filter((c): c is MiniDramaCharacter => c !== undefined)
+        .map(character => {
+          const charDir = getCharacterDir(series, character.name);
+          const primary = ['anchor.png', 'front.png', 'three-quarter.png']
+            .map(f => join(charDir, f))
+            .find(p => existsSync(p));
+          return { character, ...(primary ? { primary } : {}) };
+        });
+      const draft = planPanelDraft({ series, shot, characters: draftCharacters, locationPlate: locInfo.refPath, cfgScale });
+      const effectivePrompt = draft.prompt;
 
       if (opts.debug) {
         const debugPath = join(sceneDir, `shot-${shotNum}.prompt.json`);
@@ -2156,8 +2167,8 @@ program
           location: shot.location ?? null,
           locationRef: locInfo.refPath ?? null,
           prompt: effectivePrompt,
-          negativePrompt: imagePrompt.negativePrompt,
-          seed: imagePrompt.seed,
+          negativePrompt: draft.negativePrompt,
+          seed: draft.seed,
           cfgScale,
           generatedAt: new Date().toISOString(),
         }, null, 2), 'utf-8');
@@ -2166,167 +2177,62 @@ program
       const shotStart = Date.now();
 
       try {
-        const storyboardAR = series.storyboardAspectRatio ?? '16:9';
+        const storyboardAR = draft.aspectRatio;
         let imgBuffer: Buffer | undefined;
         // True when draftPanelWithReferences already wrote the panel (and its
         // recipe/provenance) to disk — the buffer write path below is skipped.
         let draftedViaEdit = false;
+        const hasChars = shot.characters.length > 0;
+        for (const name of draft.missingReferences) {
+          console.warn(`  ${progress} Shot ${shotNum}: no reference image for ${name} — identity will be text-only.`);
+        }
 
         // Character shots are drafted through /image/multi-edit with REAL
         // reference bytes (draftPanelWithReferences). The old path used
         // generateWithReferences, which silently dropped every reference
         // image — /image/generate has no reference input — so panels were
         // drafted from prompt text alone and drifted off-model (root cause
-        // of the storyboard QA burden; fixed 2026-08-11).
-        const hasChars = shot.characters && shot.characters.length > 0;
-        const panelModel = series.videoDefaults.imageDefaults?.generationModel
-          ?? DEFAULT_IMAGE_GENERATION_MODEL;
-        const panelEditModel = (series.videoDefaults.imageDefaults?.editModel
-          ?? DEFAULT_IMAGE_EDIT_MODEL) as MultiEditModel;
-
-        const charRefPaths: string[] = [];
-        if (hasChars) {
-          // Resolve identity references for the shot's characters (anchor.png
-          // outranks front.png — same precedence as the video reference slots).
-          const draftChars: ReferenceDraftCharacter[] = [];
-          for (const name of shot.characters) {
-            const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
-            if (!char) continue;
-            const charDir = getCharacterDir(series, char.name);
-            const refPath = ['anchor.png', 'front.png', 'three-quarter.png']
-              .map(f => join(charDir, f))
-              .find(p => existsSync(p));
-            if (!refPath) {
-              console.warn(`  ${progress} Shot ${shotNum}: no reference image for ${char.name} — identity will be text-only.`);
-              continue;
-            }
-            charRefPaths.push(refPath);
-            const wardrobe = shot.episodeWardrobe?.[char.name.toUpperCase()] ?? char.wardrobe;
-            draftChars.push({
-              name: char.name,
-              identityLine: `${char.description.slice(0, 120)}, wearing ${wardrobe}`,
-              refPath,
-            });
-          }
-
-          const aestheticStr = series.aesthetic
-            ? [series.aesthetic.style, series.aesthetic.palette, series.aesthetic.lighting].filter(Boolean).join(', ')
-            : undefined;
-
-          if (draftChars.length > 0 && locInfo.refPath) {
-            // Location plate exists: compose characters INTO the location via
-            // multi-edit. Geography is inherited from the plate pixels and
-            // identity from the character reference bytes — one call, both
-            // anchored. (Multi-edit budget: base + 2 layers.)
-            charRefPaths.unshift(locInfo.refPath);
-            await draftPanelWithReferences(client, {
-              model: panelEditModel,
-              basePath: locInfo.refPath,
-              baseKind: 'location',
-              characters: draftChars,
-              sceneDescription: effectivePrompt,
-              blocking: shot.blocking,
-              aesthetic: aestheticStr,
-              aspectRatio: storyboardAR,
-              outPath: imgPath,
-              recipeLabel: 'reference-drafted panel (location base)',
-            });
-            draftedViaEdit = true;
-          } else if (draftChars.length > 0) {
-            // No location plate: t2i-draft the scene composition first, then
-            // immediately composite real identity in via multi-edit — the
-            // character's actual face enters before the panel ever lands.
-            const response = await generateImage(client, {
-              model: panelModel,
-              prompt: effectivePrompt,
-              negative_prompt: imagePrompt.negativePrompt,
-              resolution: '1K',
-              aspect_ratio: storyboardAR,
-              steps: 30,
-              cfg_scale: cfgScale,
-              seed: imagePrompt.seed,
-              safe_mode: false,
-              hide_watermark: true,
-            });
+        // of the storyboard QA burden; fixed 2026-08-11). A location plate is
+        // the base when there is one (geography from the plate pixels,
+        // identity from the reference bytes, one call); otherwise the scene
+        // is t2i-drafted first and identity composited onto it. Faceless
+        // shots are an edit of the plate itself.
+        if (draft.generate) {
+          const response = await generateImage(client, draft.generate);
+          if (draft.compose) {
             const draftBuffer = Buffer.from(response.images[0].b64_json, 'base64');
             await writeFile(imgPath, draftBuffer);
             await appendRecipePass(imgPath, {
               kind: 'generate',
               role: 'content',
-              model: panelModel,
-              label: 'scene draft (pre-identity)',
+              model: draft.generate.model,
+              label: draft.generateLabel!,
               prompt: effectivePrompt,
-              negativePrompt: imagePrompt.negativePrompt,
-              seed: imagePrompt.seed,
+              negativePrompt: draft.negativePrompt,
+              seed: draft.seed,
               cfgScale,
               aspectRatio: storyboardAR,
-              resolution: '1K',
-            }, { provenance: 'generate', hasFace: true });
-            await draftPanelWithReferences(client, {
-              model: panelEditModel,
-              basePath: imgPath,
-              baseKind: 'scene-draft',
-              characters: draftChars,
-              sceneDescription: effectivePrompt,
-              blocking: shot.blocking,
-              aesthetic: aestheticStr,
-              aspectRatio: storyboardAR,
-              outPath: imgPath,
-              recipeLabel: 'reference-drafted panel (identity composite)',
-            });
-            draftedViaEdit = true;
+              resolution: draft.generate.resolution,
+            }, { provenance: 'generate', hasFace: draft.generateHasFace });
           } else {
-            // Characters named but no reference images on disk anywhere —
-            // legacy text-only draft (with a warning already emitted above).
-            const response = await generateImage(client, {
-              model: panelModel,
-              prompt: effectivePrompt,
-              negative_prompt: imagePrompt.negativePrompt,
-              resolution: '1K',
-              aspect_ratio: storyboardAR,
-              steps: 30,
-              cfg_scale: cfgScale,
-              seed: imagePrompt.seed,
-              safe_mode: false,
-              hide_watermark: true,
-            });
             imgBuffer = Buffer.from(response.images[0].b64_json, 'base64');
           }
-        } else if (locInfo.refPath) {
-          // No characters, but a location ref exists — draft the establishing
-          // panel as an EDIT of the location plate itself (the old path sent
-          // the plate to generateWithReferences, which dropped the bytes).
-          // Geography, architecture, and lighting are inherited pixel-for-pixel.
-          charRefPaths.push(locInfo.refPath);
+        }
+        if (draft.compose) {
+          const { compose } = draft;
           await draftPanelWithReferences(client, {
-            model: panelEditModel,
-            basePath: locInfo.refPath,
-            baseKind: 'location',
-            characters: [],
-            sceneDescription: effectivePrompt,
-            blocking: shot.blocking,
-            aesthetic: series.aesthetic
-              ? [series.aesthetic.style, series.aesthetic.palette, series.aesthetic.lighting].filter(Boolean).join(', ')
-              : undefined,
+            model: compose.model as MultiEditModel,
+            basePath: compose.base ?? imgPath,
+            baseKind: compose.baseKind,
+            characters: compose.characters.map(c => ({ name: c.name, identityLine: c.identityLine, refPath: c.ref })),
+            sceneDescription: compose.sceneDescription,
+            blocking: compose.blocking,
+            aesthetic: compose.aesthetic,
             aspectRatio: storyboardAR,
             outPath: imgPath,
-            recipeLabel: 'reference-drafted establishing panel (location base)',
+            recipeLabel: compose.recipeLabel,
           });
           draftedViaEdit = true;
-        } else {
-          const response = await generateImage(client, {
-            model: panelModel,
-            prompt: effectivePrompt,
-            negative_prompt: imagePrompt.negativePrompt,
-            resolution: '1K',
-            aspect_ratio: storyboardAR,
-            steps: 30,
-            cfg_scale: cfgScale,
-            seed: imagePrompt.seed,
-            safe_mode: false,
-            hide_watermark: true,
-          });
-          imgBuffer = Buffer.from(response.images[0].b64_json, 'base64');
         }
 
         if (draftedViaEdit) {
@@ -2358,29 +2264,27 @@ program
             }
           } catch { /* conversion is best-effort */ }
 
-          // Record provenance + recipe — `panelModel` was chosen above based
-          // on whether this shot has characters. `hasFace` is true when the
+          // Record provenance + recipe. `hasFace` is true when the
           // shot has named (non-silhouette) characters; Seedance only
           // gates face-bearing images. The recipe entry makes this pass
           // replayable by a finishing agent (model/prompt/seed/cfg/refs).
           await appendRecipePass(imgPath, {
             kind: 'generate',
             role: 'content',
-            model: panelModel,
-            label: 'base panel',
+            model: draft.generate!.model,
+            label: draft.generateLabel!,
             prompt: effectivePrompt,
-            negativePrompt: imagePrompt.negativePrompt,
-            seed: imagePrompt.seed,
+            negativePrompt: draft.negativePrompt,
+            seed: draft.seed,
             cfgScale,
             aspectRatio: storyboardAR,
-            resolution: '1K',
-            referenceImagePaths: charRefPaths.length > 0 ? charRefPaths : undefined,
+            resolution: draft.generate!.resolution,
             // This branch only runs when NO reference bytes reached the
             // model (text-only fallback) — record that so the UI can flag it.
             extra: hasChars
               ? { referenceUsage: { base: 'none', anchored: [], textOnly: shot.characters } }
               : undefined,
-          }, { provenance: 'generate', hasFace: hasChars });
+          }, { provenance: 'generate', hasFace: draft.generateHasFace });
 
           newlyGenerated.add(shot.shotNumber);
           generatedCount++;
@@ -2408,7 +2312,7 @@ program
       // Save a snapshot of the first character shot BEFORE refinement to use as style anchor.
       // Post-refinement panels can inherit layout artifacts from character reference sheets,
       // which would contaminate non-character shots during style-matching.
-      const firstCharShot = script.shots.find(s => s.characters.length > 0);
+      const firstCharShot = styleAnchorShot(script.shots);
       let styleAnchorPath: string | undefined;
       if (firstCharShot) {
         const firstCharShotPath = join(sceneDir, `shot-${String(firstCharShot.shotNumber).padStart(3, '0')}.png`);
@@ -2419,58 +2323,53 @@ program
       }
 
       const inFilter = (n: number) => !shotFilter || shotFilter.has(n);
-      const charShots = script.shots.filter(s => s.characters.length > 0 && inFilter(s.shotNumber));
-      const nonCharShots = script.shots.filter(s => s.characters.length === 0 && inFilter(s.shotNumber));
-      const refinableShots = [...charShots, ...nonCharShots];
+      const refinableShots = panelRefineOrder(script.shots.filter(s => inFilter(s.shotNumber)));
       const totalRefinable = refinableShots.length;
       let refineIdx = 0;
       const pass2Start = Date.now();
 
-      for (const shot of charShots) {
+      for (const shot of refinableShots) {
         refineIdx++;
         const shotNum = String(shot.shotNumber).padStart(3, '0');
         const imgPath = join(sceneDir, `shot-${shotNum}.png`);
         const progress = `[${refineIdx}/${totalRefinable}]`;
         if (!existsSync(imgPath)) continue;
 
-        if (shot.skipRefine) {
+        // Character shots get an identity refine unless drafting already
+        // composited real identity bytes (a second identity edit degrades more
+        // than it fixes). Faceless shots are style-matched against the
+        // shot's location plate (keeps every shot in a place looking like
+        // that place), else the episode's character-shot style anchor.
+        const locRef = resolveLocationRefForShot(series, shot).refPath;
+        const step = panelRefineStep(shot, {
+          referenceDrafted: referenceDrafted.has(shot.shotNumber),
+          locationPlate: locRef,
+          styleAnchor: styleAnchorPath && existsSync(styleAnchorPath) ? styleAnchorPath : undefined,
+        });
+
+        if (step.kind === 'skip' && step.reason === 'skip-refine') {
           console.log(`  ${progress} Shot ${shotNum}: refinement disabled (skipRefine), skipping`);
           continue;
         }
-
-        // Reference-drafted panels already carry real identity bytes from
-        // drafting — a second identity edit degrades more than it fixes.
-        if (referenceDrafted.has(shot.shotNumber)) {
+        if (step.kind === 'skip' && step.reason === 'reference-drafted') {
           console.log(`  ${progress} Shot ${shotNum}: reference-drafted, identity refinement not needed, skipping`);
           continue;
         }
 
-        const preFixPath = join(sceneDir, `shot-${shotNum}-pre-fix.png`);
-        if (existsSync(preFixPath) && !newlyGenerated.has(shot.shotNumber)) {
-          console.log(`  ${progress} Shot ${shotNum}: already refined, skipping`);
-          continue;
-        }
-
-        const refStart = Date.now();
-        try {
-          const locRef = resolveLocationRefForShot(series, shot).refPath;
-          await refineWithReferences(client, series, imgPath, shot, editModel, locRef);
-          const elapsed = ((Date.now() - refStart) / 1000).toFixed(1);
-          console.log(`  ${progress} Shot ${shotNum}: character-refined (${elapsed}s)`);
-        } catch (err) {
-          console.warn(`  ${progress} Shot ${shotNum}: refinement FAILED - ${err}`);
-        }
-      }
-
-      for (const shot of nonCharShots) {
-        refineIdx++;
-        const shotNum = String(shot.shotNumber).padStart(3, '0');
-        const imgPath = join(sceneDir, `shot-${shotNum}.png`);
-        const progress = `[${refineIdx}/${totalRefinable}]`;
-        if (!existsSync(imgPath)) continue;
-
-        if (shot.skipRefine) {
-          console.log(`  ${progress} Shot ${shotNum}: refinement disabled (skipRefine), skipping`);
+        if (step.kind === 'identity') {
+          const preFixPath = join(sceneDir, `shot-${shotNum}-pre-fix.png`);
+          if (existsSync(preFixPath) && !newlyGenerated.has(shot.shotNumber)) {
+            console.log(`  ${progress} Shot ${shotNum}: already refined, skipping`);
+            continue;
+          }
+          const refStart = Date.now();
+          try {
+            await refineWithReferences(client, series, imgPath, shot, editModel, locRef);
+            const elapsed = ((Date.now() - refStart) / 1000).toFixed(1);
+            console.log(`  ${progress} Shot ${shotNum}: character-refined (${elapsed}s)`);
+          } catch (err) {
+            console.warn(`  ${progress} Shot ${shotNum}: refinement FAILED - ${err}`);
+          }
           continue;
         }
 
@@ -2479,23 +2378,12 @@ program
           console.log(`  ${progress} Shot ${shotNum}: already style-matched, skipping`);
           continue;
         }
-
-        // Prefer the shot's location reference as the environment/style anchor
-        // (keeps every shot in a place looking like that place); fall back to
-        // the episode's character-shot style anchor when there's no location.
-        const locRef = resolveLocationRefForShot(series, shot).refPath;
-        const anchorForShot = locRef ?? styleAnchorPath;
-        if (anchorForShot && existsSync(anchorForShot)) {
+        if (step.kind === 'style') {
           const refStart = Date.now();
           try {
-            const aestheticStr = [
-              series.aesthetic!.style,
-              series.aesthetic!.palette,
-              series.aesthetic!.lighting,
-            ].join(', ');
-            await refineStyleConsistency(client, imgPath, anchorForShot, aestheticStr, editModel, shot.environment);
+            await refineStyleConsistency(client, imgPath, step.anchor, styleMatchAesthetic(series.aesthetic!), editModel, shot.environment);
             const elapsed = ((Date.now() - refStart) / 1000).toFixed(1);
-            console.log(`  ${progress} Shot ${shotNum}: style-refined (${elapsed}s${locRef ? ', location anchor' : ''})`);
+            console.log(`  ${progress} Shot ${shotNum}: style-refined (${elapsed}s${step.locationAnchor ? ', location anchor' : ''})`);
           } catch (err) {
             console.warn(`  ${progress} Shot ${shotNum}: refinement FAILED - ${err}`);
           }
@@ -2539,7 +2427,7 @@ program
         // Load all scene ref images that actually exist on disk
         const sceneRefUris: string[] = [];
         const sceneRefPaths: string[] = [];
-        for (const refPath of shot.sceneImagePaths!.slice(0, 2)) {
+        for (const refPath of shot.sceneImagePaths!.slice(0, SCENE_REF_MAX_IMAGES)) {
           if (existsSync(refPath)) {
             sceneRefUris.push(await loadImageAsDataUri(refPath));
             sceneRefPaths.push(refPath);
@@ -2553,13 +2441,7 @@ program
         }
 
         const panelDataUri = await loadImageAsDataUri(imgPath);
-        const defaultSceneRefPrompt =
-          `Integrate the visual elements from the reference image(s) into this scene. ` +
-          `Preserve the scene composition, characters, lighting, and cinematic framing exactly. ` +
-          `Do not change the overall image. Do not add text, speech bubbles, or panel borders.`;
-        const sceneRefPrompt = shot.sceneRefDescription
-          ? `${shot.sceneRefDescription} Preserve the scene composition, characters, lighting, and cinematic framing exactly. Do not add text, speech bubbles, or panel borders.`
-          : defaultSceneRefPrompt;
+        const sceneRefPrompt = buildSceneRefPrompt(shot.sceneRefDescription);
 
         const refStart = Date.now();
         try {

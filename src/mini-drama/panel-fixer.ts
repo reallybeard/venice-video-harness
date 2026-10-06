@@ -5,79 +5,14 @@ import type { VeniceClient } from '../venice/client.js';
 import type { MultiEditModel } from 'venice-video-harness/core/venice/types.js';
 import { multiEditImage, loadImageAsDataUri } from '../venice/multi-edit.js';
 import type { SeriesState, ShotScript, ShotEnvironment, MiniDramaCharacter } from 'venice-video-harness/core/series/types.js';
-import { FEMALE_BASE_TRAITS, MALE_BASE_TRAITS, DAYTIME_ENVIRONMENTS, DEFAULT_IMAGE_EDIT_MODEL } from 'venice-video-harness/core/series/types.js';
+import { DEFAULT_IMAGE_EDIT_MODEL } from 'venice-video-harness/core/series/types.js';
+import { buildStyleMatchPrompt, planCharacterFix, type CharacterFixReference } from 'venice-video-harness/core/mini-drama/storyboard-panels.js';
 import { getCharacterDir } from '../series/manager.js';
 import { appendRecipePass } from '../venice/recipe.js';
 // Multi-edit post-processing (WebP fix + 1:1→target aspect restore) is shared
 // with the reference-drafted panel path; see src/venice/edit-post.ts. The
 // 16:9 close-up crop warning documented there applies to every caller here.
 import { ensureRealPng, restoreAspectRatio, getImageDimensions } from '../venice/edit-post.js';
-
-function buildCharacterFixPrompt(
-  char: MiniDramaCharacter,
-  wardrobeOverride?: string,
-  environment?: ShotEnvironment,
-): string {
-  const traits = char.baseTraits ?? (char.gender === 'female' ? FEMALE_BASE_TRAITS : MALE_BASE_TRAITS);
-  const wardrobe = wardrobeOverride ?? char.wardrobe;
-  const isDaytime = environment && DAYTIME_ENVIRONMENTS.has(environment);
-
-  // Derive subject noun from description/age instead of just gender
-  const descLower = (char.description + ' ' + char.age).toLowerCase();
-  let subjectNoun: string;
-  if (/cat|tabby|feline|kitten/.test(descLower)) {
-    subjectNoun = 'cat';
-  } else if (/child|boy|girl|\d+\s*year\s*old/.test(descLower)) {
-    subjectNoun = char.gender === 'female' ? 'girl' : 'boy';
-  } else {
-    subjectNoun = char.gender === 'female' ? 'woman' : 'man';
-  }
-
-  return (
-    `Make the ${subjectNoun} in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. ` +
-    `Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. ` +
-    `Character: ${char.name}. ${traits}. ${char.fullDescription}. ` +
-    `Wearing: ${wardrobe}. ` +
-    (wardrobeOverride
-      ? `IMPORTANT: The character's CLOTHING must be exactly as described above (${wardrobe}), NOT the outfit in the reference image. Match the face and body only. `
-      : '') +
-    (isDaytime
-      ? `IMPORTANT: This is a BRIGHT DAYTIME scene. Do NOT darken the image, do NOT add rain, wet surfaces, or dark skies. Keep the bright warm lighting. `
-      : '') +
-    `CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. ` +
-    `Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. ` +
-    `Keep the scene composition, background, and other characters unchanged. ` +
-    `Only modify this character's face, hair, body, and clothing to match the description.`
-  );
-}
-
-function buildTwoCharacterFixPrompt(
-  char1: MiniDramaCharacter,
-  char2: MiniDramaCharacter,
-  wardrobeOverrides?: Record<string, string>,
-  environment?: ShotEnvironment,
-): string {
-  const traits1 = char1.baseTraits ?? (char1.gender === 'female' ? FEMALE_BASE_TRAITS : MALE_BASE_TRAITS);
-  const traits2 = char2.baseTraits ?? (char2.gender === 'female' ? FEMALE_BASE_TRAITS : MALE_BASE_TRAITS);
-  const wardrobe1 = wardrobeOverrides?.[char1.name.toUpperCase()] ?? char1.wardrobe;
-  const wardrobe2 = wardrobeOverrides?.[char2.name.toUpperCase()] ?? char2.wardrobe;
-  const hasOverride = wardrobeOverrides && Object.keys(wardrobeOverrides).length > 0;
-  const isDaytime = environment && DAYTIME_ENVIRONMENTS.has(environment);
-  return (
-    `Make both characters match their reference images' FACE AND BODY PROPORTIONS ONLY. ` +
-    `Image 2 is the reference for ${char1.name} (${traits1}, ${char1.fullDescription}, wearing ${wardrobe1}). ` +
-    `Image 3 is the reference for ${char2.name} (${traits2}, ${char2.fullDescription}, wearing ${wardrobe2}). ` +
-    (hasOverride
-      ? `IMPORTANT: Characters' CLOTHING must match the descriptions above, NOT the outfits in the reference images. Match faces and bodies only. `
-      : '') +
-    (isDaytime
-      ? `IMPORTANT: This is a BRIGHT DAYTIME scene. Do NOT darken the image, do NOT add rain, wet surfaces, or dark skies. Keep the bright warm lighting. `
-      : '') +
-    `CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference images' layout. ` +
-    `Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. ` +
-    `Keep the scene composition and background unchanged. Fix character appearance only.`
-  );
-}
 
 export async function fixPanel(
   client: VeniceClient,
@@ -106,14 +41,10 @@ export async function fixPanel(
     throw new Error(`No matching characters found for: ${characterNames.join(', ')}`);
   }
 
-  const charRefs: string[] = [];
-  const charRefPaths: string[] = [];
-  // Multi-edit accepts up to 3 images total (base + 2 refs). Characters come
-  // first; a location environment ref (when provided) takes the last free
-  // slot. With 2+ characters both ref slots are full, so the location ref is
-  // dropped with a warning (4-image cap, characters first — plan B4).
+  // Multi-edit accepts up to 3 images total (base + 2 refs): characters first,
+  // a location environment ref (when provided) takes the last free slot.
   const wantLocationRef = Boolean(environmentRefPath) && existsSync(environmentRefPath!);
-  for (const char of chars.slice(0, 2)) {
+  const referencesOf = (char: MiniDramaCharacter): CharacterFixReference => {
     const charDir = getCharacterDir(series, char.name);
     // anchor.png (harvested from an approved render) outranks the generated
     // sheets — same precedence as the reference-slot allocator and the
@@ -126,43 +57,26 @@ export async function fixPanel(
     if (!primaryPath) {
       throw new Error(`No reference image found for ${char.name} in ${charDir} (looked for anchor.png, front.png, three-quarter.png)`);
     }
-    charRefs.push(await loadImageAsDataUri(primaryPath));
-    charRefPaths.push(primaryPath);
-    // For single-character shots, use a second angle for stronger identity
-    // anchoring — UNLESS a location ref wants that last slot.
-    if (chars.length === 1 && !wantLocationRef) {
-      const secondPath = ['three-quarter.png', 'profile.png', 'full-body.png']
-        .map(f => join(charDir, f))
-        .find(p => existsSync(p) && p !== primaryPath);
-      if (secondPath) {
-        charRefs.push(await loadImageAsDataUri(secondPath));
-        charRefPaths.push(secondPath);
-      }
-    }
+    const secondAngle = ['three-quarter.png', 'profile.png', 'full-body.png']
+      .map(f => join(charDir, f))
+      .find(p => existsSync(p) && p !== primaryPath);
+    return { primary: primaryPath, ...(secondAngle ? { secondAngle } : {}) };
+  };
+  const plan = planCharacterFix({
+    characters: chars,
+    referencesOf,
+    ...(wantLocationRef ? { environmentRef: environmentRefPath! } : {}),
+    customPrompt,
+    episodeWardrobe,
+    environment,
+  });
+  if (plan.locationDropped) {
+    console.warn('  ⚠ Location environment ref dropped: character refs fill the multi-edit slot budget (2+ characters).');
   }
-
-  let includedLocationRef = false;
-  if (wantLocationRef) {
-    if (charRefs.length < 2) {
-      charRefs.push(await loadImageAsDataUri(environmentRefPath!));
-      charRefPaths.push(environmentRefPath!);
-      includedLocationRef = true;
-    } else {
-      console.warn('  ⚠ Location environment ref dropped: character refs fill the multi-edit slot budget (2+ characters).');
-    }
-  }
-
-  let prompt: string;
-  if (customPrompt) {
-    prompt = customPrompt;
-  } else if (chars.length === 1) {
-    prompt = buildCharacterFixPrompt(chars[0], episodeWardrobe?.[chars[0].name.toUpperCase()], environment);
-  } else {
-    prompt = buildTwoCharacterFixPrompt(chars[0], chars[1], episodeWardrobe, environment);
-  }
-  if (includedLocationRef) {
-    prompt += ` The final reference image is the location environment — match its setting, architecture, and lighting; it is not a character.`;
-  }
+  const { prompt } = plan;
+  const charRefPaths = plan.references;
+  const charRefs: string[] = [];
+  for (const path of charRefPaths) charRefs.push(await loadImageAsDataUri(path));
 
   // Warn about 16:9 close-ups losing forehead/chin after 1:1→16:9 crop
   if (origW > origH && origW / origH > 1.5) {
@@ -200,7 +114,6 @@ export async function fixPanel(
   // called with at least one character reference, so the panel now
   // contains a human face.
   const editModelUsed = model ?? DEFAULT_IMAGE_EDIT_MODEL;
-  const anchoredNames = chars.slice(0, 2).map(c => c.name);
   await appendRecipePass(panelPath, {
     kind: 'multi-edit',
     role: 'identity',
@@ -218,8 +131,8 @@ export async function fixPanel(
       // supersedes the draft's record.
       referenceUsage: {
         base: 'panel',
-        anchored: anchoredNames,
-        textOnly: chars.slice(2).map(c => c.name),
+        anchored: plan.anchored,
+        textOnly: plan.textOnly,
       },
     },
   }, { provenance: 'edit', hasFace: true });
@@ -261,15 +174,7 @@ export async function refineStyleConsistency(
   const panelDataUri = await loadImageAsDataUri(panelPath);
   const anchorDataUri = await loadImageAsDataUri(styleAnchorPath);
 
-  const isDaytime = environment && DAYTIME_ENVIRONMENTS.has(environment);
-  const prompt =
-    `Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. ` +
-    `Style: ${aesthetic}. ` +
-    (isDaytime
-      ? `IMPORTANT: This is a BRIGHT DAYTIME scene. Keep bright warm lighting. Do NOT add rain, dark skies, or wet surfaces. `
-      : '') +
-    `CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. ` +
-    `Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.`;
+  const prompt = buildStyleMatchPrompt(aesthetic, environment);
 
   console.log(`  Style-matching panel against anchor image...`);
 

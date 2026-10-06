@@ -202,6 +202,33 @@
   body, sidecar and saved character across 12 generator cases and 10
   `add-character` runs, captured before the move.
 
+- **Storyboard panel requests are in core.** `storyboard-episode`'s
+  decisions and prompts moved to
+  `venice-video-harness/core/mini-drama/storyboard-panels.js`:
+  - `planPanelDraft` decides how pass 1 drafts a panel: composed into the
+    location plate, a t2i draft then an identity composite, an edit of the
+    plate, or plain t2i. It also builds the `/image/generate` body and the
+    multi-edit composition.
+  - `buildReferenceDraftPrompt` and `referenceDraftLayers` build the draft
+    prompt and trim the layers to the multi-edit budget.
+  - `panelRefineStep` and `panelRefineOrder` decide pass 2, and
+    `styleAnchorShot` picks the style anchor.
+  - The panel fixer's prompts and reference selection are now
+    `planCharacterFix`, `buildCharacterFixPrompt` and
+    `buildTwoCharacterFixPrompt`.
+  - `buildStyleMatchPrompt` and `buildSceneRefPrompt` build the style-match
+    and scene-ref prompts.
+
+  Every helper takes images as the host names them (paths on the CLI). The
+  CLI keeps the disk probing, the Venice calls, the files and the sidecars.
+  Output is unchanged: `tests/storyboard-panels-golden.test.mjs` pins every
+  request body, sidecar and log line across four `storyboard-episode` runs,
+  captured before the move. `tests/support/fake-venice-images.mjs` now also
+  answers `/image/multi-edit`. Two opt-in settings let a test trace the
+  images it sends back: `FAKE_VENICE_IMAGE_VARY` returns a different PNG per
+  request, and `FAKE_VENICE_IMAGE_ROOT` labels each sent image with the
+  project files that have its bytes.
+
 - **Duration and resolution are validated before the paid call instead of
   silently corrected.** `queueVideo` used to snap an unsupported duration to
   the nearest valid one, and `buildModelParams` swapped an unsupported
