@@ -138,7 +138,7 @@ export async function generateCharacterReferences(
         aspectRatio,
         resolution,
         extra: returnedSeed !== undefined ? { returnedSeed } : undefined,
-      }, { provenance: 'generate', hasFace: true });
+      }, { provenance: 'generate', hasFace: (character.kind ?? 'person') !== 'object' });
 
       generated.push(finalPath);
     } catch (err) {

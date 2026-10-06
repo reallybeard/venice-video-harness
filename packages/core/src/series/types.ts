@@ -483,8 +483,31 @@ export function recommendedSeedanceCompatibility(
 // Character (general-purpose, not mini-drama specific)
 // ---------------------------------------------------------------------------
 
+/**
+ * What a `Character` entry depicts. Omitted means `'person'`.
+ *
+ * - `'person'`: a human (or anything with a face). Its reference sheets
+ *   carry `hasFace: true`, so a shot that places it on screen must never
+ *   go to a faces-off (`-basic`) Seedance id and its identity line reads
+ *   `@ImageN is NAME — wearing WARDROBE`.
+ * - `'object'`: a recurring hero prop or vehicle riding the character system
+ *   for identity anchoring (a locked reference, angle views, an `@ImageN`
+ *   slot). It has no face: an object-only shot stays on a faces-off id, its
+ *   undecided references are not assumed to show a person, and its identity
+ *   line reads `@ImageN is NAME: its shape, material and markings`.
+ *   `gender` / `age` / `voiceDescription` / `wardrobe` remain on the type
+ *   and are ignored for objects.
+ */
+export type CharacterKind = 'person' | 'object';
+
 export interface Character {
   name: string;
+  /**
+   * `'person'` (default when absent) or `'object'`. Read everywhere as
+   * `char.kind ?? 'person'`, so a `series.json` written before this field
+   * existed behaves exactly as before. See `CharacterKind`.
+   */
+  kind?: CharacterKind;
   gender: 'male' | 'female' | 'other';
   age: string;
   description: string;

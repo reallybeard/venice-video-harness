@@ -85,6 +85,15 @@ export interface FacesOffCheckInput {
    * sidecar says so -- the panel and character sheets will.
    */
   characters?: string[];
+  /**
+   * Kind of each name in `characters`, when the caller knows it (the series'
+   * `Character.kind`, default `'person'`). When every character on screen is
+   * an `'object'` (a hero prop riding the character system), nothing in the
+   * shot has a face, so undecided sidecars are treated as `hasFace: false`
+   * the same way they are for a shot with no characters at all. An explicit
+   * `hasFace: true` still blocks. A name missing from the map is a person.
+   */
+  characterKinds?: Record<string, 'person' | 'object' | undefined>;
 }
 
 export interface FacesOffViolation {
@@ -112,6 +121,26 @@ export class FacesOffModelError extends Error {
   }
 }
 
+/**
+ * Build the `characterKinds` map for a preflight call from the series' cast.
+ * Names are keyed as given AND upper-cased; unknown names are omitted (the
+ * check treats them as people).
+ */
+export function characterKindsFor(
+  series: { characters: Array<{ name: string; kind?: 'person' | 'object' }> },
+  names: string[],
+): Record<string, 'person' | 'object'> {
+  const out: Record<string, 'person' | 'object'> = {};
+  for (const name of names) {
+    const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
+    if (!char) continue;
+    const kind = char.kind ?? 'person';
+    out[name] = kind;
+    out[name.toUpperCase()] = kind;
+  }
+  return out;
+}
+
 function isLocalPath(p: string): boolean {
   return Boolean(p) && !p.startsWith('data:') && !/^https?:\/\//i.test(p);
 }
@@ -123,10 +152,12 @@ function isLocalPath(p: string): boolean {
  *
  * An image counts as showing a face when its provenance sidecar says
  * `hasFace: true`, OR when the sidecar is missing / undecided
- * (`hasFace` absent) and the shot has characters. Only an explicit
+ * (`hasFace` absent) and the shot has a person on screen. Only an explicit
  * `hasFace: false` clears an image. Location plates and other faceless
  * references are written with `hasFace:false` (rule 41), so a shot with no
- * people and only location refs passes.
+ * people and only location refs passes. Object cast members
+ * (`characterKinds[name] === 'object'`) are not people: a shot whose every
+ * character is an object treats undecided sidecars as faceless too.
  */
 export async function checkFacesOffCompatible(
   input: FacesOffCheckInput,
@@ -136,20 +167,22 @@ export async function checkFacesOffCompatible(
   if (localPaths.length === 0) return undefined;
 
   const characters = input.characters ?? [];
-  const hasCharacters = characters.length > 0;
+  const kinds = input.characterKinds ?? {};
+  const people = characters.filter(name => (kinds[name] ?? kinds[name.toUpperCase()] ?? 'person') === 'person');
+  const hasPeople = people.length > 0;
   const faceImages: string[] = [];
   for (const path of localPaths) {
     const prov = await readImageProvenance(path);
     const hasFace = prov?.hasFace;
     if (hasFace === true) faceImages.push(path);
-    else if (hasFace === undefined && hasCharacters) faceImages.push(path);
+    else if (hasFace === undefined && hasPeople) faceImages.push(path);
   }
   if (faceImages.length === 0) return undefined;
 
   const faceCapableModel = faceCapableTwinId(input.model);
   const twinKnown = Boolean(getVideoModel(faceCapableModel));
-  const who = hasCharacters
-    ? `shows ${characters.length === 1 ? characters[0] : `${characters.length} characters`}`
+  const who = hasPeople
+    ? `shows ${people.length === 1 ? people[0] : `${people.length} characters`}`
     : `sends ${faceImages.length === 1 ? 'an image' : `${faceImages.length} images`} with a face`;
   const message =
     `This shot ${who}, and ${input.model} runs without Seedance's face handling, `

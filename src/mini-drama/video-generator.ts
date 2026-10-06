@@ -49,7 +49,7 @@ import { mustRenderAsExactLipSync, parseShotDuration } from './generation-planne
 import { dialogueFileForShot, shotKey } from './shot-paths.js';
 import { getVideoModel, modelSupportsDuration, resolveBitrateMode, validateCameraTrajectory, type BitrateMode } from 'venice-video-harness/core/venice/models.js';
 import type { CameraKeyframe } from 'venice-video-harness/core/venice/types.js';
-import { assertFacesOffCompatible, FacesOffModelError } from '../venice/seedance-preflight.js';
+import { assertFacesOffCompatible, characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { classifyVideoRetrieveStatus, VideoGenerationFailedError } from '../venice/video.js';
 import {
@@ -304,6 +304,7 @@ async function renderSeedanceKeyframe(
     aspectRatio: series.storyboardAspectRatio ?? '16:9',
     seedanceCompatibility: series.videoDefaults.seedanceCompatibility,
     characters: stageAShot.characters,
+    characterKinds: characterKindsFor(series, stageAShot.characters),
     project: series.outputDir,
   });
 
@@ -582,6 +583,11 @@ export interface RenderVideoOptions {
    */
   characters?: string[];
   /**
+   * `Character.kind` per name in `characters` (see `characterKindsFor`). An
+   * object-only shot has no face, so it may stay on a faces-off id.
+   */
+  characterKinds?: Record<string, 'person' | 'object'>;
+  /**
    * Voice-donor reference clips (on-disk paths), ordered to match the prompt's
    * @Audio1, @Audio2, … bindings. Sent as `reference_audio_urls` only when the
    * effective model supports reference audio AND at least one reference image
@@ -739,6 +745,7 @@ export async function renderVideoFile(
   await assertFacesOffCompatible({
     model: effectiveModel,
     characters: options.characters,
+    characterKinds: options.characterKinds,
     imagePaths: [
       anchorImagePath,
       endFrameImagePath,
@@ -1677,6 +1684,7 @@ async function renderSingleShotUnit(
     aspectRatio: series.storyboardAspectRatio ?? '16:9',
     seedanceCompatibility: series.videoDefaults.seedanceCompatibility,
     characters: shot.characters,
+    characterKinds: characterKindsFor(series, shot.characters),
     project: series.outputDir,
     resolution: series.videoDefaults.resolution,
   };
@@ -1872,6 +1880,7 @@ async function renderMultiShotUnit(
     aspectRatio: series.storyboardAspectRatio ?? '16:9',
     seedanceCompatibility: series.videoDefaults.seedanceCompatibility,
     characters: Array.from(new Set(shots.flatMap(shot => shot.characters))),
+    characterKinds: characterKindsFor(series, shots.flatMap(shot => shot.characters)),
     project: series.outputDir,
   });
 
@@ -1982,6 +1991,7 @@ async function renderMontageUnit(
     aspectRatio: series.storyboardAspectRatio ?? '16:9',
     seedanceCompatibility: series.videoDefaults.seedanceCompatibility,
     characters: Array.from(new Set(shots.flatMap(shot => shot.characters))),
+    characterKinds: characterKindsFor(series, shots.flatMap(shot => shot.characters)),
     project: series.outputDir,
   });
 
