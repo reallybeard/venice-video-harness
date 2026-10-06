@@ -25,10 +25,10 @@ import type { Character, SeriesState } from 'venice-video-harness/core/series/ty
 import { generateSeedAudio, DEFAULT_VENICE_SEED_AUDIO_MODEL } from '../venice/audio.js';
 import { getCharacterDir } from '../series/manager.js';
 import { appendRecipePass } from '../venice/recipe.js';
+import { VOICE_REF_MIN_SEC, VOICE_REF_MAX_SEC } from 'venice-video-harness/core/venice/request-builder.js';
 
-/** Venice `reference_audio_urls` per-clip bounds. */
-export const VOICE_REF_MIN_SEC = 2;
-export const VOICE_REF_MAX_SEC = 15;
+/** Venice `reference_audio_urls` per-clip bounds (defined in core, next to the request builder that enforces them). */
+export { VOICE_REF_MIN_SEC, VOICE_REF_MAX_SEC };
 /** Target length of an auto-generated voice-donor clip (well within 2-15s). */
 export const VOICE_REF_TARGET_SEC = 10;
 

@@ -17,12 +17,9 @@ import {
   MODELS_SUPPORTING_ELEMENTS,
   MODELS_SUPPORTING_REFERENCE_IMAGES,
   MODELS_SUPPORTING_SCENE_IMAGES,
-  MODELS_SUPPORTING_END_IMAGE,
   MODELS_SUPPORTING_AUDIO_INPUT,
-  MODELS_SUPPORTING_PER_REFERENCE_AUDIO,
   MODELS_SUPPORTING_REFERENCE_AUDIO,
   MODELS_LIP_SYNC_VIA_REFERENCE_AUDIO,
-  LIP_SYNC_REFERENCE_AUDIO_MAX_SEC,
   MODELS_USING_IMAGE_TAGS,
   isSeedanceVideoModel,
   DEFAULT_CHARACTER_CONSISTENCY_MODEL,
@@ -43,14 +40,22 @@ import { assertShotDurationsValid } from 'venice-video-harness/core/mini-drama/d
 import {
   generateVoiceReference,
   resolveVoiceReferenceAbsPath,
-  VOICE_REF_MIN_SEC,
-  VOICE_REF_MAX_SEC,
 } from './voice-reference.js';
 import { mustRenderAsExactLipSync, parseShotDuration } from './generation-planner.js';
 import { dialogueFileForShot, shotKey } from './shot-paths.js';
 import { dialogueLines, isVoiceOverLine, onCameraDialogueLines } from 'venice-video-harness/core/series/dialogue.js';
-import { getVideoModel, resolveBitrateMode, validateCameraTrajectory, type BitrateMode } from 'venice-video-harness/core/venice/models.js';
-import type { CameraKeyframe } from 'venice-video-harness/core/venice/types.js';
+import type { BitrateMode } from 'venice-video-harness/core/venice/models.js';
+import type { CameraKeyframe, VideoElement as WireVideoElement } from 'venice-video-harness/core/venice/types.js';
+import {
+  MAX_VOICE_REFERENCE_CLIPS,
+  buildVideoQueueRequest,
+  isNeedsConsentError,
+  planLipSyncReferenceAudio,
+  planVideoQueueRequest,
+  videoQueueReferenceImages,
+  voiceReferenceClipIssue,
+  withSeedanceFaceConsent,
+} from 'venice-video-harness/core/venice/request-builder.js';
 import { assertFacesOffCompatible, characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { classifyVideoRetrieveStatus, VideoGenerationFailedError } from '../venice/video.js';
@@ -688,21 +693,10 @@ async function submitVideoQueue(
         throw err;
       }
 
-      const isNeedsConsent = err.status === 409
-        && (err.body as { error?: { code?: string } } | undefined)?.error?.code === 'needs_consent';
-      if (isNeedsConsent && !consented) {
+      if (isNeedsConsentError(err.status, err.body) && !consented) {
         console.log('  Seedance face consent requested (409 needs_consent) — resubmitting with attestation.');
         consented = true;
-        current = {
-          ...current,
-          consents: {
-            seedance: {
-              confirmed_terms_and_privacy: true,
-              confirmed_legal_right: true,
-              confirmed_screening_acknowledged: true,
-            },
-          },
-        };
+        current = withSeedanceFaceConsent(current);
         continue;
       }
 
@@ -768,126 +762,30 @@ export async function renderVideoFile(
     ].filter((p): p is string => Boolean(p)),
   });
 
+  // Core decides what goes in the body (`buildVideoQueueRequest`); this
+  // function prepares only the media the plan says will be sent — reads files
+  // into data: URIs, pads and probes audio — and hands it over as strings.
+  // The plan also validates a camera trajectory, so a malformed orbit fails
+  // before any media is prepared rather than as a paid queue round-trip.
+  //
   // Pure reference mode (2026-07-30): on @Image-tag R2V models with a full
-  // slot plan, the references carry ALL consistency — character sheets,
-  // storyboard blocking plates, and location angles. No start image is sent;
-  // a start frame would fight the blocking plate for compositional authority
-  // and re-introduce the panel-drift problem R2V exists to solve. Shots with
-  // no references at all (rare: no characters, no location, no storyboard)
-  // still anchor on the panel.
-  const hasSlotPlan = (prompt.referenceSlots?.length ?? 0) > 0;
-  const hasReferenceImages = Boolean(referenceImagePaths && referenceImagePaths.length > 0);
-  // Reference-audio lip-sync (Wan 3.0 R2V) is sent in the only shape probed
-  // live: reference image(s) + the dialogue clip, no start frame.
-  const lipSyncViaReferenceAudio = MODELS_LIP_SYNC_VIA_REFERENCE_AUDIO.has(effectiveModel)
-    && Boolean(audioPath)
-    && hasReferenceImages;
-  const refsOnly = lipSyncViaReferenceAudio
-    || (hasSlotPlan && MODELS_USING_IMAGE_TAGS.has(effectiveModel) && hasReferenceImages);
-
-  const body: Record<string, unknown> = {
+  // slot plan the references carry ALL consistency and no start image is sent
+  // (see `VideoQueuePlan.referencesOnly`). Shots with no references at all
+  // (rare: no characters, no location, no storyboard) still anchor on the panel.
+  const plan = planVideoQueueRequest({
     model: effectiveModel,
-    prompt: prompt.prompt,
-    duration: prompt.duration,
-    audio: prompt.audio,
-  };
+    referenceSlotCount: prompt.referenceSlots?.length,
+    hasReferenceImages: Boolean(referenceImagePaths && referenceImagePaths.length > 0),
+    hasDialogueAudio: Boolean(audioPath),
+    cameraTrajectory: options.cameraTrajectory,
+  });
 
-  // Models with audioConfigurable:false (e.g. HappyHorse 1.1) return HTTP 400
-  // when the `audio` field is present with a non-default value — probed
-  // 2026-07-30 (`audio: false` 400'd on happyhorse-1-1-reference-to-video).
-  // Omit the field entirely for those models.
-  const modelSpecForAudio = getVideoModel(effectiveModel);
-  if (modelSpecForAudio && modelSpecForAudio.audioConfigurable === false) {
-    if (prompt.audio === false) {
-      console.warn(`  ⚠ ${effectiveModel} does not support audio toggling; omitting audio:false (model output will include native audio).`);
-    }
-    delete body.audio;
-  }
-
-  if (refsOnly) {
-    console.log('  Start frame: none (pure reference mode — refs carry consistency)');
-  } else if (anchorImagePath && existsSync(anchorImagePath)) {
-    body.image_url = imageToDataUri(anchorImagePath);
-  } else if (!effectiveModel.includes('text-to-video')) {
-    console.warn(`  ⚠ No start image available (${anchorImagePath ?? 'none'}) and not in reference mode — request may fail on i2v models.`);
-  }
-
-  if (negativePrompt) {
-    body.negative_prompt = negativePrompt;
-  }
-
-  if (endFrameImagePath && existsSync(endFrameImagePath) && MODELS_SUPPORTING_END_IMAGE.has(effectiveModel)) {
-    body.end_image_url = imageToDataUri(endFrameImagePath);
-  }
-
-  // camera_trajectory: MiniMax H3 Max Multi-Angle only. Validate up front so a
-  // malformed orbit path fails here, not as a paid queue round-trip.
-  if (options.cameraTrajectory && options.cameraTrajectory.length > 0) {
-    if (getVideoModel(effectiveModel)?.supportsCameraTrajectory) {
-      const { ok, errors } = validateCameraTrajectory(options.cameraTrajectory);
-      if (!ok) throw new Error(`Invalid camera_trajectory for ${effectiveModel}: ${errors.join('; ')}`);
-      body.camera_trajectory = options.cameraTrajectory;
-      console.log(`  Camera trajectory: ${options.cameraTrajectory.length} keyframe(s), azimuth ${options.cameraTrajectory[0].azimuth}°→${options.cameraTrajectory[options.cameraTrajectory.length - 1].azimuth}°`);
-    } else {
-      console.warn(`  ⚠ Model ${effectiveModel} does not support camera_trajectory; dropping it.`);
-    }
-  }
-
-  // Explicit override wins, but only when the model actually lists it —
-  // otherwise a stray value would 400 the render. Falls through to the
-  // family defaults below when absent or unsupported. The loop-preview engine
-  // uses this to pin MiniMax H3 Max Turbo to its 480P draft tier.
-  const resolutionOverride = options.resolution;
-  const overrideSpec = resolutionOverride ? getVideoModel(effectiveModel) : undefined;
-  if (resolutionOverride && overrideSpec?.resolutions.includes(resolutionOverride)) {
-    body.resolution = resolutionOverride;
-  } else if (resolutionOverride) {
-    console.warn(`  ⚠ Resolution override ${resolutionOverride} not valid for ${effectiveModel}; using the model default.`);
-  }
-
-  if (body.resolution !== undefined) {
-    // Already pinned by the override above.
-  } else if (effectiveModel.includes('seedance')) {
-    body.resolution = '720p';
-  } else if (effectiveModel.includes('minimax-h3-max')) {
-    // H3 Max / Max Turbo top out at 768P and reject 2K outright. This branch
-    // MUST stay above the `minimax-h3` one — the substring match below would
-    // otherwise pin them to 2K and 400 every render. 480P exists as a draft
-    // tier but is not auto-selected; 768P is the finish resolution.
-    body.resolution = '768P';
-  } else if (effectiveModel.includes('minimax-h3')) {
-    // 2K is H3's only resolution — anything else is a hard 400.
-    body.resolution = '2K';
-  } else if (effectiveModel.includes('veo')) {
-    body.resolution = '720p';
-  } else if (effectiveModel.includes('wan-2.6') || effectiveModel.includes('wan-2.5')) {
-    body.resolution = '1080p';
-  } else if (effectiveModel.includes('ltx-2')) {
-    body.resolution = '1080p';
-  } else if (effectiveModel.includes('sora-2-pro')) {
-    body.resolution = '1080p';
-  } else if (effectiveModel.includes('sora-2')) {
-    body.resolution = '720p';
-  }
-
-  // bitrate_mode: Seedance 2.5 encodes at 'high' by default — ~5-6x the
-  // bitrate for a sharp, artifact-free file at no extra token cost. Other
-  // families don't accept the field, so resolveBitrateMode returns undefined
-  // and it's left off the body.
-  const bitrateMode = resolveBitrateMode(effectiveModel, options.bitrateMode);
-  if (bitrateMode) body.bitrate_mode = bitrateMode;
-
-  // Image-to-video inherits aspect from the start image. Reference-to-video
-  // and text-to-video variants take aspect_ratio explicitly — MiniMax H3 / H3
-  // Max t2v go further and return HTTP 400 ("aspect_ratio: Required") without
-  // it, which made loop watch mode's opening t2v take unqueueable.
-  if (
-    effectiveModel.includes('reference-to-video')
-    || effectiveModel.includes('text-to-video')
-    || (effectiveModel.includes('seedance') && !effectiveModel.includes('image-to-video'))
-  ) {
-    body.aspect_ratio = options.aspectRatio ?? '16:9';
-  }
+  const startImageUrl = !plan.referencesOnly && anchorImagePath && existsSync(anchorImagePath)
+    ? imageToDataUri(anchorImagePath)
+    : undefined;
+  const endImageUrl = endFrameImagePath && existsSync(endFrameImagePath) && plan.acceptsEndImage
+    ? imageToDataUri(endFrameImagePath)
+    : undefined;
 
   // audio_url attach with Wan 2.7 minimum-duration pre-flight.
   // - `audioPath` (preferred for new callers) runs ffprobe + ffmpeg apad to
@@ -897,39 +795,23 @@ export async function renderVideoFile(
   //   was too short. Migrate callers to `audioPath` when possible.
   // - `wan-2-7-reference-to-video` uses per_reference_audio inside elements
   //   instead of a global audio_url — see element loop below.
-  if (MODELS_SUPPORTING_AUDIO_INPUT.has(effectiveModel)) {
-    if (audioPath) {
-      try {
-        const result = await padAudioForModel({ model: effectiveModel, audioPath });
-        if (result.padded) {
-          console.log(`  Padded ${audioPath} -> ${result.outputPath} (${result.durationSec.toFixed(2)}s) for ${effectiveModel}.`);
-        }
-        body.audio_url = fileToDataUri(result.outputPath, 'audio/mpeg') ?? audioUrl;
-      } catch (err) {
-        console.warn(`  Wan audio pre-flight failed (${(err as Error).message}). Falling back to raw audioUrl.`);
-        if (audioUrl) body.audio_url = audioUrl;
+  let requestAudioUrl = audioUrl;
+  if (plan.acceptsAudioUrl && audioPath) {
+    try {
+      const result = await padAudioForModel({ model: effectiveModel, audioPath });
+      if (result.padded) {
+        console.log(`  Padded ${audioPath} -> ${result.outputPath} (${result.durationSec.toFixed(2)}s) for ${effectiveModel}.`);
       }
-    } else if (audioUrl) {
-      body.audio_url = audioUrl;
-    }
-  } else if (MODELS_LIP_SYNC_VIA_REFERENCE_AUDIO.has(effectiveModel) && audioPath) {
-    // Attached as reference_audio_urls after the reference images are set.
-  } else if (audioPath || audioUrl) {
-    // Model doesn't accept audio_url — drop quietly rather than 400.
-    // For per-reference-audio R2V models, the audio attaches per element below.
-    if (!MODELS_SUPPORTING_PER_REFERENCE_AUDIO.has(effectiveModel)) {
-      console.warn(`  Model ${effectiveModel} does not accept audio_url; dropping audio attach.`);
+      requestAudioUrl = fileToDataUri(result.outputPath, 'audio/mpeg') ?? audioUrl;
+    } catch (err) {
+      console.warn(`  Wan audio pre-flight failed (${(err as Error).message}). Falling back to raw audioUrl.`);
     }
   }
 
-  if (videoUrl) {
-    body.video_url = videoUrl;
-  }
-
-  if (elements && elements.length > 0 && MODELS_SUPPORTING_ELEMENTS.has(effectiveModel)) {
-    const supportsPerRefAudio = MODELS_SUPPORTING_PER_REFERENCE_AUDIO.has(effectiveModel);
-    const apiElements = await Promise.all(elements.map(async el => {
-      const out: Record<string, unknown> = {};
+  let wireElements: WireVideoElement[] | undefined;
+  if (elements && elements.length > 0 && plan.acceptsElements) {
+    wireElements = await Promise.all(elements.map(async el => {
+      const out: WireVideoElement = {};
       if (el.frontalImageUrl) {
         out.frontal_image_url = el.frontalImageUrl.startsWith('data:')
           ? el.frontalImageUrl
@@ -943,7 +825,7 @@ export async function renderVideoFile(
       if (el.videoUrl) out.video_url = el.videoUrl;
       // per-reference audio for Wan 2.7 R2V — each element drives
       // a different character's lip-sync. Run the same pad pre-flight here.
-      if (supportsPerRefAudio) {
+      if (plan.acceptsPerElementAudio) {
         if (el.audioPath) {
           try {
             const result = await padAudioForModel({ model: effectiveModel, audioPath: el.audioPath });
@@ -963,65 +845,33 @@ export async function renderVideoFile(
       }
       return out;
     }));
-    body.elements = apiElements;
-    console.log(`  Elements: ${apiElements.length} character/object reference(s)`);
   }
 
-  if (referenceImagePaths && referenceImagePaths.length > 0
-    && MODELS_SUPPORTING_REFERENCE_IMAGES.has(effectiveModel)) {
-    const refBudget = getMaxReferenceImages(effectiveModel);
-    if (referenceImagePaths.length > refBudget) {
-      console.warn(`  ⚠ ${referenceImagePaths.length} reference images exceed ${effectiveModel}'s ${refBudget}-image budget; truncating (check the slot allocator).`);
-    }
-    body.reference_image_urls = referenceImagePaths
-      .slice(0, refBudget)
+  // Past the model's budget the builder drops references (and says so), so
+  // only the ones it keeps are read.
+  const referenceImageUrls = (referenceImagePaths ?? []).map((p, i) =>
+    i < plan.referenceImageBudget && !p.startsWith('data:') ? (fileToDataUri(p) ?? p) : p,
+  );
+
+  const sceneImageUrls = plan.acceptsSceneImages && sceneImagePaths
+    ? sceneImagePaths
+      .slice(0, plan.sceneImageBudget)
       .map(p => p.startsWith('data:') ? p : (fileToDataUri(p) ?? p))
-      .filter(Boolean);
-    console.log(`  Reference images (@Image1..@Image${(body.reference_image_urls as string[]).length}): ${(body.reference_image_urls as string[]).length}`);
-  }
+    : undefined;
 
-  if (sceneImagePaths && sceneImagePaths.length > 0
-    && MODELS_SUPPORTING_SCENE_IMAGES.has(effectiveModel)) {
-    body.scene_image_urls = sceneImagePaths
-      .slice(0, 4)
-      .map(p => p.startsWith('data:') ? p : (fileToDataUri(p) ?? p))
-      .filter(Boolean);
-    console.log(`  Scene images: ${(body.scene_image_urls as string[]).length}`);
-  }
-
-  if (MODELS_LIP_SYNC_VIA_REFERENCE_AUDIO.has(effectiveModel) && audioPath) {
-    if (!lipSyncViaReferenceAudio) {
-      console.warn('  ⚠ Lip-sync audio present but no reference image — dropping it (Venice rejects audio-only reference audio).');
-    } else if (!existsSync(audioPath)) {
+  let lipSyncReferenceAudioUrl: string | undefined;
+  if (plan.lipSyncViaReferenceAudio && audioPath) {
+    if (!existsSync(audioPath)) {
       console.warn(`  ⚠ Lip-sync audio missing on disk, rendering without it: ${audioPath}`);
     } else {
       const audioSec = await probeAudioDurationSec(audioPath);
-      // An MP3's probed length includes encoder padding (~20-50ms, varies by
-      // encoder build); the clip is re-cut to at most the cap below, so only
-      // refuse a line that is really over it.
-      if (audioSec > LIP_SYNC_REFERENCE_AUDIO_MAX_SEC + 0.05) {
-        throw new Error(
-          `Lip-sync audio ${audioPath} is ${audioSec.toFixed(2)}s; ${effectiveModel} accepts at most ` +
-          `${LIP_SYNC_REFERENCE_AUDIO_MAX_SEC}s of reference audio per render (split the line). Not queued.`,
-        );
-      }
-      const renderSec = parseInt(String(prompt.duration), 10);
-      // Unpadded tails get invented speech, so pad with silence to the render
-      // length. Always sent as PCM WAV: an MP3's encoder delay decodes ~50ms
-      // long on the provider side, which tips a 15.0s clip over the cap.
-      let targetSec = audioSec;
-      if (Number.isFinite(renderSec)) {
-        if (audioSec > renderSec + 0.05) {
-          // Wan re-performs the reference instead of following it when the
-          // clip outruns the render, so the mouth no longer matches the file.
-          console.warn(`  ⚠ Lip-sync audio is ${audioSec.toFixed(2)}s but the render is ${renderSec}s; Wan will re-perform it rather than follow it.`);
-        } else {
-          targetSec = Math.min(renderSec, LIP_SYNC_REFERENCE_AUDIO_MAX_SEC);
-          if (renderSec > LIP_SYNC_REFERENCE_AUDIO_MAX_SEC) {
-            console.warn(`  ⚠ Render is ${renderSec}s but reference audio caps at ${LIP_SYNC_REFERENCE_AUDIO_MAX_SEC}s; the model may invent speech after it.`);
-          }
-        }
-      }
+      const { targetSec, warnings } = planLipSyncReferenceAudio({
+        model: effectiveModel,
+        audioSec,
+        duration: prompt.duration,
+        label: audioPath,
+      });
+      for (const warning of warnings) console.warn(warning);
       const sendPath = join(dirname(audioPath), 'padded', basename(audioPath).replace(/\.[^.]+$/, '') + '.wav');
       await mkdir(dirname(sendPath), { recursive: true });
       const ff = spawnSync('ffmpeg', [
@@ -1032,70 +882,75 @@ export async function renderVideoFile(
       if (ff.status !== 0) {
         throw new Error(`ffmpeg could not prepare lip-sync audio ${audioPath}: ${ff.stderr?.toString().trim()}`);
       }
-      const uri = fileToDataUri(sendPath, 'audio/wav');
-      if (uri) {
-        body.reference_audio_urls = [uri];
+      lipSyncReferenceAudioUrl = fileToDataUri(sendPath, 'audio/wav');
+      if (lipSyncReferenceAudioUrl) {
         console.log(`  Lip-sync audio (reference_audio_urls): ${audioSec.toFixed(2)}s, sent as ${targetSec.toFixed(2)}s WAV`);
       }
     }
   }
 
-  // Voice-donor reference audio (@Audio1, @Audio2, …). Gated on model support
-  // AND the presence of ≥1 reference image (Venice rejects audio-only). Each
-  // clip must be 2-15s with an aggregate ≤15s across ≤3 clips; out-of-budget
-  // clips are dropped with a warning so the render still proceeds.
+  // Voice-donor reference audio (@Audio1, @Audio2, …). Prepared only when the
+  // body will carry a reference image (Venice rejects audio-only). Each clip
+  // must be 2-15s with an aggregate ≤15s across ≤3 clips; out-of-budget clips
+  // are dropped with a warning so the render still proceeds.
+  const voiceReferenceUrls: string[] = [];
+  const bodyHasReferenceImage = (videoQueueReferenceImages(effectiveModel, referenceImageUrls)?.length ?? 0) > 0;
   if (voiceReferencePaths && voiceReferencePaths.length > 0
-    && MODELS_SUPPORTING_REFERENCE_AUDIO.has(effectiveModel)) {
-    const hasReferenceImage = Array.isArray(body.reference_image_urls)
-      && (body.reference_image_urls as string[]).length > 0;
-    if (!hasReferenceImage) {
-      console.warn('  ⚠ Voice references present but no reference image — dropping (Venice rejects audio-only reference audio).');
-    } else {
-      const accepted: string[] = [];
-      let aggregateSec = 0;
-      for (const p of voiceReferencePaths) {
-        if (accepted.length >= 3) {
-          console.warn(`  ⚠ Voice reference budget: >3 clips, dropping extras.`);
-          break;
-        }
-        if (p.startsWith('data:')) { accepted.push(p); continue; }
-        if (!existsSync(p)) { console.warn(`  ⚠ Voice reference missing on disk, skipping: ${p}`); continue; }
-        let durSec: number;
-        try {
-          durSec = await probeAudioDurationSec(p);
-        } catch (err) {
-          console.warn(`  ⚠ Could not probe voice reference (${(err as Error).message}); skipping ${p}`);
-          continue;
-        }
-        if (durSec < VOICE_REF_MIN_SEC || durSec > VOICE_REF_MAX_SEC) {
-          console.warn(`  ⚠ Voice reference ${p} is ${durSec.toFixed(2)}s (must be ${VOICE_REF_MIN_SEC}-${VOICE_REF_MAX_SEC}s); skipping.`);
-          continue;
-        }
-        if (aggregateSec + durSec > VOICE_REF_MAX_SEC) {
-          console.warn(`  ⚠ Voice reference aggregate would exceed ${VOICE_REF_MAX_SEC}s; skipping ${p}.`);
-          continue;
-        }
-        const mime = p.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg';
-        const uri = fileToDataUri(p, mime);
-        if (uri) { accepted.push(uri); aggregateSec += durSec; }
+    && plan.acceptsReferenceAudio && bodyHasReferenceImage) {
+    let aggregateSec = 0;
+    for (const p of voiceReferencePaths) {
+      if (voiceReferenceUrls.length >= MAX_VOICE_REFERENCE_CLIPS) {
+        console.warn(`  ⚠ Voice reference budget: >3 clips, dropping extras.`);
+        break;
       }
-      if (accepted.length > 0) {
-        body.reference_audio_urls = accepted;
-        console.log(`  Reference audio (@Audio1..@Audio${accepted.length}): ${accepted.length} voice clip(s), ${aggregateSec.toFixed(2)}s total`);
+      if (p.startsWith('data:')) { voiceReferenceUrls.push(p); continue; }
+      if (!existsSync(p)) { console.warn(`  ⚠ Voice reference missing on disk, skipping: ${p}`); continue; }
+      let durSec: number;
+      try {
+        durSec = await probeAudioDurationSec(p);
+      } catch (err) {
+        console.warn(`  ⚠ Could not probe voice reference (${(err as Error).message}); skipping ${p}`);
+        continue;
       }
+      const issue = voiceReferenceClipIssue(p, durSec, aggregateSec);
+      if (issue) {
+        console.warn(issue);
+        continue;
+      }
+      const mime = p.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg';
+      const uri = fileToDataUri(p, mime);
+      if (uri) { voiceReferenceUrls.push(uri); aggregateSec += durSec; }
     }
-  } else if (voiceReferencePaths && voiceReferencePaths.length > 0) {
-    console.warn(`  ⚠ Model ${effectiveModel} does not support reference_audio_urls; dropping ${voiceReferencePaths.length} voice reference(s).`);
+    if (voiceReferenceUrls.length > 0) {
+      console.log(`  Reference audio (@Audio1..@Audio${voiceReferenceUrls.length}): ${voiceReferenceUrls.length} voice clip(s), ${aggregateSec.toFixed(2)}s total`);
+    }
   }
 
-  if (options.aspectRatio && body.aspect_ratio && body.aspect_ratio !== options.aspectRatio) {
-    console.warn(`  ⚠ Aspect ratio mismatch: sending ${body.aspect_ratio} but series expects ${options.aspectRatio}`);
-  }
-
-  if (prompt.characterElements && prompt.characterElements.length > 0
-    && !effectiveModel.includes('reference-to-video')) {
-    console.warn(`  ⚠ Shot has characters but model ${effectiveModel} is NOT R2V — character identity may drift`);
-  }
+  const body = buildVideoQueueRequest({
+    model: effectiveModel,
+    prompt: prompt.prompt,
+    duration: prompt.duration,
+    audio: prompt.audio,
+    negativePrompt,
+    aspectRatio: options.aspectRatio,
+    resolution: options.resolution,
+    bitrateMode: options.bitrateMode,
+    referenceSlotCount: prompt.referenceSlots?.length,
+    hasCharacterElements: Boolean(prompt.characterElements && prompt.characterElements.length > 0),
+    startImageUrl,
+    startImageLabel: anchorImagePath,
+    endImageUrl,
+    referenceImageUrls,
+    sceneImageUrls,
+    elements: wireElements,
+    audioUrl: requestAudioUrl,
+    hasDialogueAudio: Boolean(audioPath),
+    lipSyncReferenceAudioUrl,
+    referenceAudioUrls: voiceReferenceUrls,
+    voiceReferenceCount: voiceReferencePaths?.length,
+    videoUrl,
+    cameraTrajectory: options.cameraTrajectory,
+  }) as unknown as Record<string, unknown>;
 
   console.log(`  Queueing video: model=${effectiveModel}, duration=${prompt.duration}, aspect=${body.aspect_ratio ?? 'default'}, prompt=${(prompt.prompt).length} chars`);
 

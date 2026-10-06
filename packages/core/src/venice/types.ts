@@ -128,6 +128,24 @@ export interface VideoElement {
   frontal_image_url?: string;
   reference_image_urls?: string[];
   video_url?: string;
+  /** Per-element dialogue clip, only on `per_reference_audio` models (Wan 2.7 R2V). */
+  audio_url?: string;
+}
+
+/**
+ * Seedance face-media attestation. Venice answers a face-bearing Seedance
+ * request without it with a non-charging 409 `needs_consent`; the same body
+ * resubmitted with this attached is accepted.
+ * https://docs.venice.ai/guides/media/seedance-face-consent
+ */
+export interface SeedanceFaceConsent {
+  confirmed_terms_and_privacy: boolean;
+  confirmed_legal_right: boolean;
+  confirmed_screening_acknowledged: boolean;
+}
+
+export interface VideoQueueConsents {
+  seedance?: SeedanceFaceConsent;
 }
 
 /**
@@ -195,6 +213,8 @@ export interface VideoQueueRequest {
    * The harness attaches `'high'` to Seedance 2.5 renders by default.
    */
   bitrate_mode?: 'standard' | 'high';
+  /** Face-media attestations (Seedance), attached after a 409 `needs_consent`. */
+  consents?: VideoQueueConsents;
 }
 
 export interface VideoQueueResponse {

@@ -16,19 +16,18 @@ import type {
   VideoRetrieveStatus,
   VideoQuoteRequest,
   VideoQuoteResponse,
-  CameraKeyframe,
 } from 'venice-video-harness/core/venice/types.js';
 import {
-  getVideoModel,
-  buildModelParams,
-  resolveBitrateMode,
   validateVideoRequest,
-  type BitrateMode,
   type VideoRequestIssue,
 } from 'venice-video-harness/core/venice/models.js';
-import { MODELS_SUPPORTING_REFERENCE_AUDIO } from 'venice-video-harness/core/series/types.js';
 import { assertNotSilentRejectVideo } from 'venice-video-harness/core/venice/rejection.js';
 import { classifyVideoRetrieveStatus } from 'venice-video-harness/core/venice/retrieve-status.js';
+import {
+  buildRegistryVideoQueueRequest,
+  snapVideoRequest,
+  type RegistryVideoQueueRequestOptions,
+} from 'venice-video-harness/core/venice/request-builder.js';
 
 const VIDEO_QUEUE_PATH = '/api/v1/video/queue';
 const VIDEO_RETRIEVE_PATH = '/api/v1/video/retrieve';
@@ -133,44 +132,7 @@ export async function quoteVideo(
 
 // ---- Queue ----------------------------------------------------------------
 
-export interface QueueVideoOptions {
-  model: string;
-  prompt: string;
-  duration: string;
-  imageUrl?: string;
-  endImageUrl?: string;
-  negativePrompt?: string;
-  aspectRatio?: string;
-  resolution?: string;
-  audio?: boolean;
-  audioUrl?: string;
-  videoUrl?: string;
-  referenceImageUrls?: string[];
-  elements?: Array<{
-    frontal_image_url?: string;
-    reference_image_urls?: string[];
-    video_url?: string;
-  }>;
-  sceneImageUrls?: string[];
-  /**
-   * Voice-donor reference clips (data URLs or HTTP URLs), bound in-prompt as
-   * @Audio1, @Audio2, …. Only sent to reference-audio-capable models and only
-   * when at least one reference image is present (Venice rejects audio-only).
-   */
-  referenceAudioUrls?: string[];
-  /**
-   * Camera-orbit keyframes for MiniMax H3 Max Multi-Angle. Only sent to models
-   * that accept `camera_trajectory` (`supportsCameraTrajectory`); validated in
-   * `buildModelParams` before the request goes out. Build with
-   * `buildOrbitTrajectory` / `buildStartEndTrajectory`.
-   */
-  cameraTrajectory?: CameraKeyframe[];
-  /**
-   * Output encoding bitrate mode. Only sent to models that accept it (Seedance
-   * 2.x). When omitted, Seedance 2.5 defaults to `'high'` — a large fidelity
-   * gain at no extra cost. Pass `'standard'` to opt back into smaller files.
-   */
-  bitrateMode?: BitrateMode;
+export interface QueueVideoOptions extends RegistryVideoQueueRequestOptions {
   /**
    * Opt in to the old behaviour: an unsupported duration is snapped to the
    * closest valid one and an unsupported resolution falls back to the model
@@ -194,94 +156,15 @@ export async function queueVideo(
   client: VeniceClient,
   options: QueueVideoOptions,
 ): Promise<VideoQueueResponse> {
-  const modelSpec = getVideoModel(options.model);
-
   let duration = options.duration;
   let resolution = options.resolution;
   const issues = validateVideoRequest(options.model, { duration, resolution });
   if (issues.length > 0) {
     if (!options.snap) throw new VideoRequestValidationError(options.model, issues);
-    for (const issue of issues) {
-      console.warn(`  ${issue.message}. Snapping to ${issue.suggestion ?? '(model default)'}.`);
-      if (issue.field === 'duration') duration = issue.suggestion ?? duration;
-      if (issue.field === 'resolution') resolution = issue.suggestion;
-    }
+    ({ duration, resolution } = snapVideoRequest({ duration, resolution }, issues));
   }
 
-  const body: Record<string, unknown> = {
-    model: options.model,
-    prompt: options.prompt,
-    duration,
-    audio: options.audio ?? true,
-  };
-
-  // Models with audioConfigurable:false (H3 Max family incl. Multi-Angle,
-  // HappyHorse 1.1, …) return HTTP 400 "This model does not support audio
-  // configuration" when the `audio` field is present. Omit it entirely — the
-  // render still carries the model's native audio.
-  if (modelSpec && modelSpec.audioConfigurable === false) {
-    delete body.audio;
-  }
-
-  if (options.imageUrl) body.image_url = options.imageUrl;
-  if (options.negativePrompt) body.negative_prompt = options.negativePrompt;
-  if (options.audioUrl) body.audio_url = options.audioUrl;
-  if (options.videoUrl) body.video_url = options.videoUrl;
-
-  // R2V models require aspect_ratio — warn if not explicitly set
-  if (modelSpec?.id.includes('reference-to-video') && !options.aspectRatio) {
-    console.warn(`  ⚠ No aspect_ratio provided for R2V model ${options.model} — defaulting to 16:9. Set explicitly to avoid wrong orientation.`);
-  }
-
-  const modelParams = buildModelParams(options.model, {
-    aspectRatio: options.aspectRatio,
-    resolution,
-    endImageUrl: options.endImageUrl,
-    cameraTrajectory: options.cameraTrajectory,
-  });
-  Object.assign(body, modelParams);
-
-  // bitrate_mode: Seedance 2.5 defaults to 'high' (sharper encode, no price
-  // change); other models don't accept the field, so it's omitted for them.
-  const bitrateMode = resolveBitrateMode(options.model, options.bitrateMode);
-  if (bitrateMode) body.bitrate_mode = bitrateMode;
-
-  if (options.elements && options.elements.length > 0) {
-    if (!modelSpec || modelSpec.supportsElements) {
-      body.elements = options.elements;
-    }
-  }
-
-  if (options.referenceImageUrls && options.referenceImageUrls.length > 0) {
-    if (!modelSpec || modelSpec.supportsReferenceImages) {
-      body.reference_image_urls = options.referenceImageUrls;
-    }
-  }
-
-  if (options.sceneImageUrls && options.sceneImageUrls.length > 0) {
-    if (!modelSpec || modelSpec.supportsSceneImages) {
-      body.scene_image_urls = options.sceneImageUrls;
-    }
-  }
-
-  // Voice-donor reference audio (@Audio1, @Audio2, …). Gated on model support
-  // AND on the presence of at least one reference image — Venice rejects
-  // audio-only reference_audio_urls at validation.
-  if (options.referenceAudioUrls && options.referenceAudioUrls.length > 0) {
-    const supportsRefAudio = modelSpec
-      ? modelSpec.supportsReferenceAudio === true
-      : MODELS_SUPPORTING_REFERENCE_AUDIO.has(options.model);
-    const hasReferenceImage = Array.isArray(body.reference_image_urls)
-      && (body.reference_image_urls as string[]).length > 0;
-    if (supportsRefAudio && hasReferenceImage) {
-      // Enforce the aggregate ≤3-clip budget defensively.
-      body.reference_audio_urls = options.referenceAudioUrls.slice(0, 3);
-    } else if (supportsRefAudio && !hasReferenceImage) {
-      console.warn(`  ⚠ Dropping reference_audio_urls for ${options.model}: no reference image present (Venice rejects audio-only reference audio).`);
-    } else {
-      console.warn(`  ⚠ Model ${options.model} does not support reference_audio_urls; dropping.`);
-    }
-  }
+  const body = buildRegistryVideoQueueRequest({ ...options, duration, resolution }) as unknown as Record<string, unknown>;
 
   // Never auto-retry the queue call. Venice can accept and bill the job before
   // a 5xx or dropped connection reaches us; a blind retry would queue the same
