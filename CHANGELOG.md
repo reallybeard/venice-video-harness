@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **A `kind: 'object'` prop gets a product reference sheet, not a portrait.**
+  `buildCharacterReferencePromptParts` chose the product-plate angles and the
+  person-suppressing negatives only when `baseTraits` began "inanimate
+  object". A prop marked only `kind: 'object'` got "front portrait, looking
+  at camera" plus the default male traits ("handsome, strong features"). Both
+  now count, and a prop with no `baseTraits` gets no default traits. The
+  `objectCast` path sets both fields, so its sheets are unchanged. Test: the
+  `kind: object` case in `tests/character-references-golden.test.mjs`.
 - **Location plates keep `kind: 'object'` props out of the room.** The plate
   prompts left a recurring prop out of the plate (a clean-plate clause and a
   negative) only when its `baseTraits` began "inanimate object", the

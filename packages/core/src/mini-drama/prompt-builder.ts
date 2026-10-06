@@ -1557,7 +1557,6 @@ export function buildCharacterReferencePromptParts(
     negativePromptStrategy?: 'auto' | 'stylized' | 'photoreal' | 'none';
   },
 ): { positive: string; negativeAdditions: string[] } {
-  const baseTraits = char.baseTraits ?? (char.gender === 'female' ? FEMALE_BASE_TRAITS : MALE_BASE_TRAITS);
   const cap = options?.maxChars
     ?? getMaxPositivePromptChars(options?.model ?? 'seedream-v5-lite');
 
@@ -1567,7 +1566,11 @@ export function buildCharacterReferencePromptParts(
   // people-heavy series style overwhelms "inanimate object" and renders a
   // person (the THE-PHONE-as-detective failure, 2026-08-11). Objects get
   // product-plate angle language and person-suppressing negatives instead.
-  const isObject = /^\s*inanimate object/i.test(char.baseTraits ?? '');
+  // A prop is `kind: 'object'`, or (projects from before `kind`) `baseTraits`
+  // opening with "inanimate object". A prop has no default portrait traits.
+  const isObject = char.kind === 'object' || /^\s*inanimate object/i.test(char.baseTraits ?? '');
+  const baseTraits = char.baseTraits
+    ?? (isObject ? '' : char.gender === 'female' ? FEMALE_BASE_TRAITS : MALE_BASE_TRAITS);
 
   const personAnglePrompts: Record<string, string> = {
     'front': 'front portrait, looking at camera, centered, studio lighting, neutral background',
@@ -1604,7 +1607,7 @@ export function buildCharacterReferencePromptParts(
     ? ''
     : char.wardrobe;
   const identityBudget = Math.max(cap - anglePart.length - 1, 120);
-  const fixedIdentity = [`${baseTraits}.`, wardrobe ? `${wardrobe}.` : '']
+  const fixedIdentity = [baseTraits ? `${baseTraits}.` : '', wardrobe ? `${wardrobe}.` : '']
     .filter(Boolean).join(' ');
   let descBudget = identityBudget - fixedIdentity.length - 1;
   let desc = char.fullDescription;
