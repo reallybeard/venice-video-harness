@@ -130,6 +130,10 @@ import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
 import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
 import { generateLocationReferences } from './location-generator.js';
+import { runStoryboardQa, runVideoQa } from './qa-loops.js';
+import { characterFrontSheet } from './video-qa.js';
+import { createCliPorts, createCliVisionJudge } from '../ports/index.js';
+import { tmpdir } from 'node:os';
 import {
   ensureEpisodeStoryboardReferences,
   generateStoryboardReference,
@@ -3023,106 +3027,44 @@ program
     const qaModel = opts.model ?? intelligenceFor(series).visionModel;
     console.log(`QA Storyboard: Episode ${opts.episode} (${shotsToCheck.length} shots, model: ${qaModel})\n`);
 
-    const results: ShotQaResult[] = [];
-    const { readFileSync: readFs } = await import('node:fs');
-    const toDataUri = (p: string) => `data:image/png;base64,${readFs(p).toString('base64')}`;
-
-    const systemPrompt = STORYBOARD_QA_SYSTEM_PROMPT;
-
-    for (let i = 0; i < shotsToCheck.length; i++) {
-      const shot = shotsToCheck[i];
-      const shotNum = String(shot.shotNumber).padStart(3, '0');
-      const panelPath = join(sceneDir, `shot-${shotNum}.png`);
-
-      if (!existsSync(panelPath)) {
-        results.push(missingPanelResult(shot));
-        console.log(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: MISSING`);
-        continue;
-      }
-
-      const images: string[] = [toDataUri(panelPath)];
-
-      for (const charName of shot.characters.slice(0, 2)) {
-        const charDir = getCharacterDir(series, charName);
-        const frontPath = join(charDir, 'front.png');
-        if (existsSync(frontPath)) {
-          images.push(toDataUri(frontPath));
+    // The loop (panel + sheets + prior same-location panel, the model chain
+    // onto the paired vision companion, UNCHECKED when both fail) is core's
+    // runStoryboardQa. An explicit --model is still tried FIRST; the
+    // companion is a rescue for intermittent empties, not a substitution.
+    const panelFor = async (shot: { shotNumber: number }) => {
+      const panelPath = join(sceneDir, `shot-${String(shot.shotNumber).padStart(3, '0')}.png`);
+      return existsSync(panelPath) ? panelPath : undefined;
+    };
+    const report: StoryboardQaReport = await runStoryboardQa(createCliPorts({ client }), {
+      episode: opts.episode,
+      series,
+      shots: script.shots,
+      check: shotsToCheck,
+      model: qaModel,
+      companionModel: intelligenceFor(series).visionModel,
+      panel: panelFor,
+      characterSheet: async name => characterFrontSheet(series, name),
+      onEvent: event => {
+        const at = `  [${event.index + 1}/${event.total}] Shot ${String(event.shot.shotNumber).padStart(3, '0')}:`;
+        if (event.type === 'missing') {
+          console.log(`${at} MISSING`);
+        } else if (event.type === 'checked') {
+          const { verdict, issues } = event.result;
+          const icon = verdict === 'PASS' ? '✓' : verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
+          const via = event.viaFallback ? ` (via fallback ${event.model})` : '';
+          console.log(`${at} ${icon} ${verdict}${via}${issues.length > 0 ? ' -- ' + issues[0] : ''}`);
+        } else if (event.type === 'retry') {
+          console.warn(`${at} ${event.model} failed — retrying on vision companion ${event.nextModel}...`);
+        } else {
+          console.warn(`${at} QA failed - ${event.reason}`);
         }
-      }
-
-      // Spatial continuity: attach the nearest PRIOR panel from the same
-      // location (when one exists) so the vision model can verify screen
-      // sides, eyelines, and landmark geography against actual coverage
-      // instead of prose alone.
-      let prevPanelNote = '';
-      const prior = priorShotInLocation(script.shots, shot);
-      if (prior) {
-        const priorPath = join(sceneDir, `shot-${String(prior.shotNumber).padStart(3, '0')}.png`);
-        if (existsSync(priorPath)) {
-          images.push(toDataUri(priorPath));
-          prevPanelNote = priorPanelNote(prior);
-        }
-      }
-
-      const shotLocation = shot.location ? getLocation(series, shot.location) : undefined;
-
-      const userPrompt = buildStoryboardQaUserPrompt({
-        shot, characters: series.characters, location: shotLocation, priorPanelNote: prevPanelNote,
-      });
-
-      // Fallback chain: the chosen model, then the project's paired vision
-      // companion (same privacy tier by construction). kimi-k3 dropped 5 of
-      // 14 vision reads on canopy-run (2026-08-10) and the whole run needed
-      // a human to notice and re-run on grok-4-5 — now the harness does that
-      // itself. An explicit --model is still tried FIRST; the companion is a
-      // rescue for intermittent empties, not a substitution.
-      const fallbackModel = intelligenceFor(series).visionModel;
-      const modelChain = storyboardQaModelChain(qaModel, fallbackModel);
-      let checked = false;
-      let lastReason = '';
-      for (const [chainIndex, model] of modelChain.entries()) {
-        try {
-          const parsed = await client.chatJson<StoryboardQaReply>({
-            model,
-            systemPrompt,
-            userPrompt,
-            images,
-            maxTokens: 4000,
-            temperature: 0.3,
-            label: `shot ${shotNum} QA`,
-          });
-
-          results.push(shotQaFromReply(shot, parsed));
-
-          const icon = parsed.verdict === 'PASS' ? '✓' : parsed.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
-          const via = chainIndex > 0 ? ` (via fallback ${model})` : '';
-          console.log(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: ${icon} ${parsed.verdict}${via}${parsed.issues.length > 0 ? ' -- ' + parsed.issues[0] : ''}`);
-          checked = true;
-          break;
-        } catch (err) {
-          lastReason = err instanceof Error ? err.message : String(err);
-          if (chainIndex < modelChain.length - 1) {
-            console.warn(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: ${model} failed — retrying on vision companion ${modelChain[chainIndex + 1]}...`);
-          }
-        }
-      }
-      if (!checked) {
-        results.push(shotQaFailure(shot, lastReason));
-        console.warn(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: QA failed - ${lastReason}`);
-      }
-    }
+      },
+    });
+    const results = report.results;
 
     // A shot the model never managed to look at is not a low-severity finding,
     // it is an unchecked shot. Counting it as FLAG-LOW alone once let a whole
     // storyboard read as "no critical issues" when every call had failed.
-    // Persist QA report
-    const report: StoryboardQaReport = {
-      episode: opts.episode,
-      model: qaModel,
-      analyzedAt: new Date().toISOString(),
-      summary: summarizeStoryboardQa(results),
-      results,
-    };
     const erroredCount = report.summary.errored;
 
     const reportPath = join(episodeDir, 'qa-report.json');
@@ -3244,91 +3186,69 @@ program
       console.error('No generation plan found — run generate-videos first.');
       process.exit(1);
     }
-    const {
-      detectHeadGlitch, frameLuma, ffprobeDurationSec, sampleUnitFrames,
-      checkUnitIdentity, checkCrossUnitIdentity, saveVideoQaReport,
-      classifyBoundary, emptyCrossUnitResult, pickHeroFrames, pickProtagonist, summarizeVideoQa,
-    } = await import('./video-qa.js');
+    const { saveVideoQaReport } = await import('./video-qa.js');
 
     const units = plan.units.filter(u => existsSync(join(sceneDir, u.outputFile)));
     console.log(`QA Videos: Episode ${opts.episode} — ${units.length} rendered unit(s)\n`);
 
-    // ---- Layer 1: programmatic (free) ----
+    // The checks (head-glitch scan, boundary jumps, frame sampling, per-unit
+    // and cross-unit identity) are core's runVideoQa over the ports; this
+    // command finds the rendered units, prints, and writes the report.
     console.log('Programmatic checks:');
-    const headGlitches: import('./video-qa.js').HeadGlitchFinding[] = [];
-    for (const unit of units) {
-      const finding = detectHeadGlitch(join(sceneDir, unit.outputFile), unit.unitId);
-      if (finding) {
-        headGlitches.push(finding);
-        console.log(`  ✗ ${unit.unitId}: head-glitch flash at frame ${finding.frameIndex} (luma Δ${finding.lumaDelta})`);
-      }
-    }
-    if (headGlitches.length === 0) console.log('  ✓ no head-glitch flashes detected');
-
-    const boundaries: import('./video-qa.js').BoundaryFinding[] = [];
-    for (let i = 1; i < units.length; i++) {
-      const prevPath = join(sceneDir, units[i - 1].outputFile);
-      const nextPath = join(sceneDir, units[i].outputFile);
-      const prevLuma = frameLuma(prevPath, Math.max(ffprobeDurationSec(prevPath) - 0.2, 0));
-      const nextLuma = frameLuma(nextPath, 0.2);
-      if (prevLuma === undefined || nextLuma === undefined) continue;
-      const finding = classifyBoundary(units[i - 1].unitId, units[i].unitId, prevLuma, nextLuma);
-      if (finding) {
-        boundaries.push(finding);
-        const delta = Math.abs(nextLuma - prevLuma);
-        console.log(`  ${finding.severity === 'fail' ? '✗' : '⚠'} boundary ${units[i - 1].unitId} → ${units[i].unitId}: luma jump Δ${delta.toFixed(1)}`);
-      }
-    }
-    if (boundaries.length === 0) console.log('  ✓ no boundary lighting jumps');
-
-    // ---- Layer 2: vision ----
-    let unitIdentity: import('./video-qa.js').UnitIdentityResult[] = [];
-    let crossUnit: import('./video-qa.js').CrossUnitResult = emptyCrossUnitResult();
-    if (!opts.skipVision) {
-      const apiKey = await getVeniceApiKey();
-      const client = new VeniceClient(apiKey);
-      const qaModel = opts.model ?? intelligenceFor(series).visionModel;
-      console.log(`\nVision checks (model: ${qaModel}):`);
-
-      const samples = sampleUnitFrames(units, sceneDir, script);
-
-      // Per-unit identity vs the reference sheets.
-      for (const unit of units) {
-        const unitFrames = samples.filter(s => s.unitId === unit.unitId);
-        if (unitFrames.length === 0) continue;
-        const charNames = [...new Set(unit.shotNumbers
-          .flatMap(n => script.shots.find(s => s.shotNumber === n)?.characters ?? []))];
-        const result = await checkUnitIdentity(client, qaModel, series, unit.unitId, unitFrames, charNames);
-        unitIdentity.push(result);
-        const icon = result.errored ? '?' : result.verdict === 'PASS' ? '✓' : result.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
-        console.log(`  ${icon} ${unit.unitId}: ${result.errored ? 'UNCHECKED' : result.verdict}${result.issues.length > 0 ? ' — ' + result.issues[0] : ''}`);
-      }
-
-      // Cross-unit identity: one hero frame per unit, one call.
-      // The protagonist is the character appearing in the most shots.
-      const protagonist = pickProtagonist(script.shots);
-      if (protagonist) {
-        const heroFrames = pickHeroFrames(units.map(u => u.unitId), samples, script.shots, protagonist);
-        crossUnit = await checkCrossUnitIdentity(client, qaModel, heroFrames, protagonist);
-        const icon = crossUnit.errored ? '?' : crossUnit.verdict === 'PASS' ? '✓' : crossUnit.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
-        console.log(`  ${icon} cross-unit (${protagonist}, ${heroFrames.length} units): ${crossUnit.errored ? 'UNCHECKED' : crossUnit.verdict}`);
-        for (const issue of crossUnit.issues) console.log(`      ${issue}`);
-        if (crossUnit.driftingUnits.length > 0) {
-          console.log(`      drifting units: ${crossUnit.driftingUnits.join(', ')}`);
-        }
-      }
-    }
-
-    const summary = summarizeVideoQa({ units: units.length, headGlitches, boundaries, unitIdentity, crossUnit });
-    const { criticals, errored: erroredCount } = summary;
-
-    const report: import('./video-qa.js').VideoQaReport = {
+    let client: VeniceClient | undefined;
+    const framesDir = join(tmpdir(), `video-qa-${Date.now()}`);
+    const ports = { ...createCliPorts(), vision: createCliVisionJudge(() => client!) };
+    const iconFor = (r: { verdict: string; errored?: boolean }) =>
+      r.errored ? '?' : r.verdict === 'PASS' ? '✓' : r.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
+    const report = await runVideoQa(ports, {
       episode: opts.episode,
-      model: opts.skipVision ? 'programmatic-only' : (opts.model ?? intelligenceFor(series).visionModel),
-      analyzedAt: new Date().toISOString(),
-      headGlitches, boundaries, unitIdentity, crossUnit,
-      summary,
-    };
+      units: units.map(u => ({ unitId: u.unitId, clip: join(sceneDir, u.outputFile), shotNumbers: u.shotNumbers, segments: u.segments })),
+      shots: script.shots,
+      model: opts.model ?? intelligenceFor(series).visionModel,
+      skipVision: opts.skipVision,
+      characterSheet: async name => characterFrontSheet(series, name),
+      frameRef: (unitId, shotNumber) => join(framesDir, `${unitId}-shot-${String(shotNumber).padStart(3, '0')}.png`),
+      onEvent: async event => {
+        switch (event.type) {
+          case 'head-glitch':
+            console.log(`  ✗ ${event.finding.unitId}: head-glitch flash at frame ${event.finding.frameIndex} (luma Δ${event.finding.lumaDelta})`);
+            break;
+          case 'head-glitch-scan-done':
+            if (event.findings.length === 0) console.log('  ✓ no head-glitch flashes detected');
+            break;
+          case 'boundary': {
+            const { finding } = event;
+            const delta = Math.abs(event.nextLuma - event.prevLuma);
+            console.log(`  ${finding.severity === 'fail' ? '✗' : '⚠'} boundary ${finding.fromUnit} → ${finding.toUnit}: luma jump Δ${delta.toFixed(1)}`);
+            break;
+          }
+          case 'boundary-scan-done':
+            if (event.findings.length === 0) console.log('  ✓ no boundary lighting jumps');
+            break;
+          case 'vision-start':
+            client = new VeniceClient(await getVeniceApiKey());
+            console.log(`\nVision checks (model: ${event.model}):`);
+            await mkdir(framesDir, { recursive: true });
+            break;
+          case 'unit-identity': {
+            const { result } = event;
+            console.log(`  ${iconFor(result)} ${result.unitId}: ${result.errored ? 'UNCHECKED' : result.verdict}${result.issues.length > 0 ? ' — ' + result.issues[0] : ''}`);
+            break;
+          }
+          case 'cross-unit': {
+            const { result } = event;
+            console.log(`  ${iconFor(result)} cross-unit (${event.protagonist}, ${event.frames} units): ${result.errored ? 'UNCHECKED' : result.verdict}`);
+            for (const issue of result.issues) console.log(`      ${issue}`);
+            if (result.driftingUnits.length > 0) {
+              console.log(`      drifting units: ${result.driftingUnits.join(', ')}`);
+            }
+            break;
+          }
+        }
+      },
+    });
+    const { headGlitches, crossUnit } = report;
+    const { criticals, errored: erroredCount } = report.summary;
     const reportPath = await saveVideoQaReport(episodeDir, report);
 
     console.log(`\n${'─'.repeat(50)}`);
