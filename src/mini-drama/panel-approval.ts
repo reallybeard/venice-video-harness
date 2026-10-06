@@ -22,7 +22,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
+import type { ApprovalBinding, SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
 import { getCharacterDir, getLocation, getLocationDir } from '../series/manager.js';
 import { DEFAULT_IMAGE_EDIT_MODEL, DEFAULT_IMAGE_GENERATION_MODEL } from 'venice-video-harness/core/series/types.js';
 import { buildImagePrompt } from './prompt-builder.js';
@@ -46,12 +46,15 @@ export interface PanelSettings {
   skipRefine?: boolean;
 }
 
-export interface ShotApproval {
-  /** sha256 of the panel file's bytes at approval time. */
-  panelSha256: string;
-  /** sha256 of the canonical JSON of `PanelSettings` at approval time. */
-  settingsDigest: string;
-}
+/**
+ * The per-shot binding stored in `qa-approved.json`: `{ panelSha256,
+ * settingsDigest }`. The shape now lives in core as `ApprovalBinding` so the
+ * panel review and the take review share it; this is the same type under the
+ * name #40 introduced, kept so call sites and `qa-approved.json` readers are
+ * unchanged.
+ */
+export type ShotApproval = ApprovalBinding;
+export type { ApprovalBinding };
 
 export interface ApprovalArtifact {
   episode: number;
