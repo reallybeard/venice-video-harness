@@ -480,6 +480,31 @@ export function recommendedSeedanceCompatibility(
 }
 
 // ---------------------------------------------------------------------------
+// Reference check
+//
+// A vision check of a locked reference image against its own description,
+// run once at lock time: "does `front.png` show what `description` says?"
+// Panels and every shot copy the reference, so a wrong one is cheapest to
+// catch there. Informational: nothing in the CLI gates on it.
+// ---------------------------------------------------------------------------
+
+export interface ReferenceCheck {
+  /**
+   * The reference that was checked (path relative to the series output dir,
+   * e.g. `characters/mara/front.png`); counts only while `ref` is still the
+   * locked reference. A regenerated or swapped reference invalidates the
+   * check — re-run it rather than trusting a verdict on a different image.
+   */
+  ref: string;
+  /** Did the reference match its description? */
+  pass: boolean;
+  /** Specific mismatches the vision model called out; empty when `pass`. */
+  issues: string[];
+  /** One- or two-sentence plain-language verdict. */
+  summary: string;
+}
+
+// ---------------------------------------------------------------------------
 // Character (general-purpose, not mini-drama specific)
 // ---------------------------------------------------------------------------
 
@@ -531,6 +556,12 @@ export interface Character {
   voiceReferencePath?: string;
   /** Model that produced the voice reference (e.g. `seed-audio-1-0`), or `user-supplied`. */
   voiceReferenceModel?: string;
+  /**
+   * Vision check of the locked reference sheet against `description`;
+   * counts only while `ref` is still the locked reference. Optional and
+   * informational — see `ReferenceCheck`.
+   */
+  referenceCheck?: ReferenceCheck;
   locked: boolean;
   seed: number;
 }
@@ -583,6 +614,12 @@ export interface Location {
   seed: number;
   /** Image-generation model used for the reference angles (default nano-banana-pro). */
   referenceModel?: string;
+  /**
+   * Vision check of the locked hero plate against `description`; counts
+   * only while `ref` is still the locked reference. Optional and
+   * informational — see `ReferenceCheck`.
+   */
+  referenceCheck?: ReferenceCheck;
 }
 
 // ---------------------------------------------------------------------------

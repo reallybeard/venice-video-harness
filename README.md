@@ -1679,7 +1679,7 @@ Bug reports are how we'll catch the gaps — the test fixture confirms structure
 |---------|---------|
 | `new-series` | Create a new series with locked aesthetics |
 | `add-character` | Add a character with reference images |
-| `lock-character` | Lock a character's voice (add `--voice-reference <file>` to import a voice-donor clip) |
+| `lock-character` | Lock a character's voice (add `--voice-reference <file>` to import a voice-donor clip; `--check-reference` vision-checks the reference sheet against the description and stores `referenceCheck`, informational only) |
 | `lock-characters` | Batch voice locking |
 | `generate-voice-reference` | Generate/import a character voice-donor clip (`reference_audio_urls` / @AudioN, Seedance & HappyHorse R2V) |
 | `add-location` | Add a location with 4 wide reference plates (north / south / east / west) |
