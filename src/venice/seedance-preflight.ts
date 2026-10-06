@@ -17,15 +17,28 @@
 //    every time -- 31 of 32 takes in one project -- and the error text blames
 //    the prompt, so operators rewrite prompts that were never the problem.
 //    `assertFacesOffCompatible` blocks that combination before the paid call
-//    and names the face-capable twin as the fix.
+//    and names the face-capable twin as the fix. The decision itself is core's
+//    `decideFacesOff`; this module reads the `hasFace` sidecars it decides on.
 //
 // NOTE: the Seedance face *consent* attestation (HTTP 409 `needs_consent`) is a
 // SEPARATE mechanism handled at queue time in `video-generator.ts`.
 // ---------------------------------------------------------------------------
 
 import type { VeniceClient } from './client.js';
-import { faceCapableTwinId, getVideoModel, isFacesOffModel } from 'venice-video-harness/core/venice/models.js';
+import { isFacesOffModel } from 'venice-video-harness/core/venice/models.js';
+import {
+  decideFacesOff,
+  FacesOffModelError,
+  type FacesOffImage,
+  type FacesOffViolation,
+} from 'venice-video-harness/core/venice/faces-off.js';
 import { readImageProvenance } from './provenance.js';
+
+export {
+  characterKindsFor,
+  FacesOffModelError,
+  type FacesOffViolation,
+} from 'venice-video-harness/core/venice/faces-off.js';
 
 // ---- Types ----------------------------------------------------------------
 
@@ -96,68 +109,15 @@ export interface FacesOffCheckInput {
   characterKinds?: Record<string, 'person' | 'object' | undefined>;
 }
 
-export interface FacesOffViolation {
-  model: string;
-  /** The face-capable id to switch to. */
-  faceCapableModel: string;
-  /** Images whose provenance says (or does not deny) a face. */
-  faceImages: string[];
-  /** Characters the shot shows, when supplied. */
-  characters: string[];
-  message: string;
-}
-
-/**
- * Thrown by `assertFacesOffCompatible`. Carries the structured violation so a
- * CLI or UI can offer the one-click fix (switch to `faceCapableModel`).
- */
-export class FacesOffModelError extends Error {
-  public readonly violation: FacesOffViolation;
-
-  constructor(violation: FacesOffViolation) {
-    super(violation.message);
-    this.name = 'FacesOffModelError';
-    this.violation = violation;
-  }
-}
-
-/**
- * Build the `characterKinds` map for a preflight call from the series' cast.
- * Names are keyed as given AND upper-cased; unknown names are omitted (the
- * check treats them as people).
- */
-export function characterKindsFor(
-  series: { characters: Array<{ name: string; kind?: 'person' | 'object' }> },
-  names: string[],
-): Record<string, 'person' | 'object'> {
-  const out: Record<string, 'person' | 'object'> = {};
-  for (const name of names) {
-    const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
-    if (!char) continue;
-    const kind = char.kind ?? 'person';
-    out[name] = kind;
-    out[name.toUpperCase()] = kind;
-  }
-  return out;
-}
-
 function isLocalPath(p: string): boolean {
   return Boolean(p) && !p.startsWith('data:') && !/^https?:\/\//i.test(p);
 }
 
 /**
  * Decide whether a request to `model` with these inputs would be refused for
- * showing a person on a faces-off id. Returns `undefined` when the request is
- * fine (not a faces-off model, no images, or every image is known faceless).
- *
- * An image counts as showing a face when its provenance sidecar says
- * `hasFace: true`, OR when the sidecar is missing / undecided
- * (`hasFace` absent) and the shot has a person on screen. Only an explicit
- * `hasFace: false` clears an image. Location plates and other faceless
- * references are written with `hasFace:false` (rule 41), so a shot with no
- * people and only location refs passes. Object cast members
- * (`characterKinds[name] === 'object'`) are not people: a shot whose every
- * character is an object treats undecided sidecars as faceless too.
+ * showing a person on a faces-off id (`decideFacesOff` in core), reading each
+ * on-disk image's `hasFace` from its provenance sidecar. Returns `undefined`
+ * when the request is fine.
  */
 export async function checkFacesOffCompatible(
   input: FacesOffCheckInput,
@@ -166,31 +126,17 @@ export async function checkFacesOffCompatible(
   const localPaths = Array.from(new Set(input.imagePaths.filter(isLocalPath)));
   if (localPaths.length === 0) return undefined;
 
-  const characters = input.characters ?? [];
-  const kinds = input.characterKinds ?? {};
-  const people = characters.filter(name => (kinds[name] ?? kinds[name.toUpperCase()] ?? 'person') === 'person');
-  const hasPeople = people.length > 0;
-  const faceImages: string[] = [];
+  const images: FacesOffImage[] = [];
   for (const path of localPaths) {
     const prov = await readImageProvenance(path);
-    const hasFace = prov?.hasFace;
-    if (hasFace === true) faceImages.push(path);
-    else if (hasFace === undefined && hasPeople) faceImages.push(path);
+    images.push({ ref: path, hasFace: prov?.hasFace });
   }
-  if (faceImages.length === 0) return undefined;
-
-  const faceCapableModel = faceCapableTwinId(input.model);
-  const twinKnown = Boolean(getVideoModel(faceCapableModel));
-  const who = hasPeople
-    ? `shows ${people.length === 1 ? people[0] : `${people.length} characters`}`
-    : `sends ${faceImages.length === 1 ? 'an image' : `${faceImages.length} images`} with a face`;
-  const message =
-    `This shot ${who}, and ${input.model} runs without Seedance's face handling, `
-    + `so Venice refuses images of people on it (422 provider_content_policy). `
-    + `Use ${faceCapableModel}${twinKnown ? '' : ' (the same model with face handling)'} instead. `
-    + `No request was submitted.`;
-
-  return { model: input.model, faceCapableModel, faceImages, characters, message };
+  return decideFacesOff({
+    model: input.model,
+    images,
+    characters: input.characters,
+    characterKinds: input.characterKinds,
+  });
 }
 
 /** Throw `FacesOffModelError` when `checkFacesOffCompatible` finds a violation. */
