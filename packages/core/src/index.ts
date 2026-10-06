@@ -124,3 +124,7 @@ export * from './venice/video-errors.js';
 export * from './venice/render-job.js';
 // Pipeline gates: whether a stage may run and what clears it (the commands and status share them).
 export * from './session/gates.js';
+// QA steps, one unit of work each: one storyboard panel's check (input, then
+// the model chain), the video probes and identity judges, and one unit's
+// verdict out of a report. The loops over shots and units are each host's.
+export * from './mini-drama/qa-steps.js';

@@ -53,6 +53,8 @@ import {
   type UnitFrameSample,
   type UnitIdentityReply,
   type UnitIdentityResult,
+  type VideoQaReport,
+  type VideoQaVerdict,
 } from './video-qa.js';
 
 const errorMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err));
@@ -377,4 +379,113 @@ export async function judgeCrossUnitIdentity(
   } catch (err) {
     return crossUnitFailure(errorMessage(err));
   }
+}
+
+// ---- One unit's verdict out of a report -------------------------------------
+
+/** One unit's share of a `VideoQaReport`. */
+export type VideoQaUnitVerdict =
+  | {
+    unitId: string;
+    status: 'checked';
+    /** The worst of its own findings (below), on the report's scale. */
+    verdict: VideoQaVerdict;
+    issues: string[];
+    /** Which checks ran on the unit and what each said, one line each. */
+    notes: string[];
+    /** Its identity result, when the report has one. */
+    identity?: UnitIdentityResult;
+    headGlitch?: HeadGlitchFinding;
+    /** The join into this unit (the boundary whose `toUnit` it is), when it was flagged. */
+    boundaryIn?: BoundaryFinding;
+    /** The cross-unit check named this unit as drifting from the protagonist's majority identity. */
+    drifting: boolean;
+  }
+  | {
+    unitId: string;
+    /** A vision call this unit's verdict depends on failed: UNCHECKED, never a pass (rules 46, 52). */
+    status: 'unchecked';
+    reason: string;
+    issues: string[];
+  };
+
+const VERDICT_RANK: Record<VideoQaVerdict, number> = {
+  PASS: 0, 'FLAG-LOW': 1, 'FLAG-MODERATE': 2, 'FLAG-CRITICAL': 3,
+};
+const worse = (a: VideoQaVerdict, b: VideoQaVerdict): VideoQaVerdict => (VERDICT_RANK[b] > VERDICT_RANK[a] ? b : a);
+
+/**
+ * One unit's verdict, read out of a whole report with the same weights as
+ * `summarizeVideoQa`: a head glitch on the unit and a failing join into it
+ * are FLAG-CRITICAL, a warning join is FLAG-LOW, its identity verdict counts
+ * as given, and drifting in the cross-unit check takes that check's verdict.
+ * So a report that passes has no unit worse than FLAG-MODERATE, and every
+ * FLAG-CRITICAL unit is counted in the report's `criticals`. (A cross-unit
+ * FLAG-CRITICAL that names no drifting unit fails the report without marking
+ * any one unit.)
+ *
+ * UNCHECKED when the unit's identity call failed or the cross-unit call
+ * failed: the unit was never fully read.
+ */
+export function videoQaUnitVerdict(report: VideoQaReport, unitId: string): VideoQaUnitVerdict {
+  const identity = report.unitIdentity.find(u => u.unitId === unitId);
+  const failed = [
+    ...(identity?.errored ? identity.issues : []),
+    ...(report.crossUnit.errored ? report.crossUnit.issues : []),
+  ];
+  if (identity?.errored || report.crossUnit.errored) {
+    return {
+      unitId,
+      status: 'unchecked',
+      reason: failed.join('; ') || 'A vision check failed.',
+      issues: failed,
+    };
+  }
+
+  const issues: string[] = [];
+  const notes: string[] = [];
+  let verdict: VideoQaVerdict = 'PASS';
+
+  if (identity) {
+    verdict = worse(verdict, identity.verdict);
+    issues.push(...identity.issues);
+    notes.push(`identity: ${identity.verdict}`);
+  } else {
+    notes.push(report.model === 'programmatic-only'
+      ? 'identity: not run (programmatic checks only)'
+      : 'identity: not run (no frame with a character)');
+  }
+
+  const headGlitch = report.headGlitches.find(g => g.unitId === unitId);
+  if (headGlitch) {
+    verdict = worse(verdict, 'FLAG-CRITICAL');
+    issues.push(`head glitch at frame ${headGlitch.frameIndex} (luma jump ${headGlitch.lumaDelta.toFixed(1)})`);
+  }
+  notes.push(headGlitch ? 'head glitch: found' : 'head glitch: none');
+
+  const boundaryIn = report.boundaries.find(b => b.toUnit === unitId);
+  if (boundaryIn) {
+    verdict = worse(verdict, boundaryIn.severity === 'fail' ? 'FLAG-CRITICAL' : 'FLAG-LOW');
+    issues.push(`luma jump ${boundaryIn.lumaDelta.toFixed(1)} at the cut from ${boundaryIn.fromUnit} (${boundaryIn.severity})`);
+    notes.push(`join from ${boundaryIn.fromUnit}: ${boundaryIn.severity}`);
+  }
+
+  const drifting = report.crossUnit.driftingUnits.includes(unitId);
+  if (drifting) {
+    verdict = worse(verdict, report.crossUnit.verdict);
+    issues.push(...report.crossUnit.issues);
+    notes.push(`cross-unit: drifting (${report.crossUnit.verdict})`);
+  }
+
+  return {
+    unitId,
+    status: 'checked',
+    verdict,
+    issues,
+    notes,
+    ...(identity ? { identity } : {}),
+    ...(headGlitch ? { headGlitch } : {}),
+    ...(boundaryIn ? { boundaryIn } : {}),
+    drifting,
+  };
 }
