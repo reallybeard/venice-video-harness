@@ -43,7 +43,7 @@ import {
   unitCharacterNames,
   type CharacterSheetLookup,
   type VideoQaUnit,
-} from './qa-steps.js';
+} from 'venice-video-harness/core/mini-drama/qa-steps.js';
 
 // ---- Storyboard QA ---------------------------------------------------------
 

@@ -15,9 +15,9 @@
 // loops are `runStoryboardQa` / `runVideoQa` in src/mini-drama/qa-loops.ts.
 // ---------------------------------------------------------------------------
 
-import type { ImageProbe, MediaRef, VisionJudge } from 'venice-video-harness/core/ports.js';
-import type { SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
-import { getLocation } from 'venice-video-harness/core/series/locations.js';
+import type { ImageProbe, MediaRef, VisionJudge } from '../ports.js';
+import type { SeriesState, ShotScript } from '../series/types.js';
+import { getLocation } from '../series/locations.js';
 import {
   STORYBOARD_QA_SYSTEM_PROMPT,
   buildStoryboardQaUserPrompt,
@@ -29,7 +29,7 @@ import {
   storyboardQaModelChain,
   type ShotQaResult,
   type StoryboardQaReply,
-} from 'venice-video-harness/core/mini-drama/storyboard-qa.js';
+} from './storyboard-qa.js';
 import {
   CROSS_UNIT_SYSTEM_PROMPT,
   HEAD_GLITCH_WINDOW_FRAMES,
@@ -53,7 +53,7 @@ import {
   type UnitFrameSample,
   type UnitIdentityReply,
   type UnitIdentityResult,
-} from 'venice-video-harness/core/mini-drama/video-qa.js';
+} from './video-qa.js';
 
 const errorMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 

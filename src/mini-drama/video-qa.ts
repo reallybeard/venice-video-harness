@@ -48,7 +48,7 @@ import {
   type UnitIdentityResult,
   type VideoQaReport,
 } from 'venice-video-harness/core/mini-drama/video-qa.js';
-import { judgeCrossUnitIdentity, judgeUnitIdentity } from './qa-steps.js';
+import { judgeCrossUnitIdentity, judgeUnitIdentity } from 'venice-video-harness/core/mini-drama/qa-steps.js';
 
 export type {
   BoundaryFinding,
