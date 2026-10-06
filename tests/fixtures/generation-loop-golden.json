@@ -1019,7 +1019,7 @@
       "log:   Auto-enabled: reference images",
       "log:   Start frame: panel image",
       "log:   End frame: natural",
-      "log:   Reference audio (@Audio1..@Audio1): 1 voice clip(s), 4.00s total",
+      "log:   Reference audio (@Audio1..@Audio1): 1 voice clip(s), 4s total",
       "log:   Start frame: none (pure reference mode — refs carry consistency)",
       "log:   Reference images (@Image1..@Image4): 4",
       "log:   Queueing video: model=seedance-2-5-reference-to-video, duration=5s, aspect=16:9, prompt=1099 chars",

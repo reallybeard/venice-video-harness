@@ -228,6 +228,9 @@ function makeNormalizer(root) {
     for (const f of forms) out = out.replaceAll(f, '<P>');
     for (const f of cfgForms) out = out.replaceAll(f, '<CFG>');
     out = out.replaceAll(FIX, '<FIX>').replaceAll(WORK, '<WORK>');
+    // A probed MP3 length includes encoder padding, which varies by ffmpeg build
+    // (the 4s voice clip probes as 4.00s on macOS, 4.05s on Linux CI).
+    out = out.replace(/(voice clip\(s\), )(\d+\.\d+)s total/g, (_, p, n) => `${p}${Math.round(Number(n))}s total`);
     return out.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, '<T>');
   };
 }
