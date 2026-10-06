@@ -37,6 +37,13 @@ import {
 import { cutMontageIntoShots } from './montage.js';
 import { assertShotDurationsValid } from 'venice-video-harness/core/mini-drama/duration-preflight.js';
 import {
+  MULTISHOT_RETRY_DELAY_MS,
+  generationUnitContext,
+  renderFailureDisposition,
+  resolveUnitShots,
+  unitFrameTargets,
+} from 'venice-video-harness/core/mini-drama/generation-steps.js';
+import {
   generateVoiceReference,
   resolveVoiceReferenceAbsPath,
 } from './voice-reference.js';
@@ -53,9 +60,8 @@ import {
 import { characterKindsFor } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { VideoGenerationFailedError } from '../venice/video.js';
-import { currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
+import { abortableSleep, currentSignal, reportProgress } from '../venice/operation-context.js';
 import { renderVideo } from 'venice-video-harness/core/mini-drama/render-video.js';
-import { runGenerationUnits, type GenerationUnitRenderer } from 'venice-video-harness/core/mini-drama/generation-loop.js';
 import { createCliClock } from '../ports/clock.js';
 import { createCliLogger } from '../ports/logger.js';
 import { createCliReferenceStore } from '../ports/reference-store.js';
@@ -886,9 +892,11 @@ function chooseAnchorImagePath(
   const firstShotNumber = unit.shotNumbers[0];
   const panelPath = explicitPanelPath ?? getShotPanelPath(sceneDir, firstShotNumber);
 
-  if (unit.startFrameStrategy === 'previous-last-frame'
-    && previousRenderedShotPath
-    && existsSync(previousRenderedShotPath)) {
+  const { start } = unitFrameTargets(unit, { previousRenderedShot: previousRenderedShotPath }, {
+    hasNextPanel: false,
+    hasPreviousClip: previousRenderedShotPath !== undefined && existsSync(previousRenderedShotPath),
+  });
+  if (start === 'chain' && previousRenderedShotPath) {
     const lastFramePath = unitOutputPath.replace(/\.mp4$/, '-lastframe.png');
     extractLastFrame(previousRenderedShotPath, lastFramePath);
     console.log('  Start frame: chained from previous rendered shot');
@@ -904,18 +912,16 @@ function chooseEndFrameImagePath(
   sceneDir: string,
   nextShotNumber?: number,
 ): string | undefined {
-  if (unit.endFrameStrategy !== 'next-panel-target' || nextShotNumber === undefined) {
-    console.log('  End frame: natural');
+  const nextPanelPath = nextShotNumber === undefined ? undefined : getShotPanelPath(sceneDir, nextShotNumber);
+  const targets = unitFrameTargets(unit, { nextShotNumber }, {
+    hasNextPanel: nextPanelPath !== undefined && existsSync(nextPanelPath),
+  });
+  if (targets.end === 'natural') {
+    console.log(targets.endFallback === 'next-panel-missing' ? '  End frame: natural (next panel missing)' : '  End frame: natural');
     return undefined;
   }
 
-  const nextPanelPath = getShotPanelPath(sceneDir, nextShotNumber);
-  if (!existsSync(nextPanelPath)) {
-    console.log('  End frame: natural (next panel missing)');
-    return undefined;
-  }
-
-  console.log(`  End frame: targeting shot-${String(nextShotNumber).padStart(3, '0')}`);
+  console.log(`  End frame: targeting shot-${String(targets.nextShotNumber).padStart(3, '0')}`);
   return nextPanelPath;
 }
 
@@ -1499,6 +1505,54 @@ async function renderMontageUnit(
   return shotPaths;
 }
 
+async function renderMultiShotUnitUntilSuccess(
+  client: VeniceClient,
+  series: SeriesState,
+  shots: ShotScript[],
+  unit: GenerationUnit,
+  sceneDir: string,
+  previousRenderedShotPath: string | undefined,
+  nextShotNumber: number | undefined,
+): Promise<string[]> {
+  let attempt = 1;
+
+  while (true) {
+    try {
+      if (attempt > 1) {
+        console.log(`  ${unit.unitId}: retrying multi-shot render (attempt ${attempt})`);
+      }
+
+      return await renderMultiShotUnit(
+        client,
+        series,
+        shots,
+        unit,
+        sceneDir,
+        previousRenderedShotPath,
+        nextShotNumber,
+      );
+    } catch (err) {
+      // Core decides which failures no retry can fix: a cancelled operation
+      // (it fails the same way every 15s, forever), a classified refusal (a
+      // face-screening refusal fails on the same images every time, and a
+      // provider refusal has already had its one refunded retry inside
+      // submitVideoQueue; anti-pattern 27b), a FAILED render (its record is
+      // cleared, so a retry re-queues and re-bills the same body) and a
+      // faces-off refusal (thrown before the queue call, every time).
+      if (renderFailureDisposition(err).final) throw err;
+      if (err instanceof VeniceRequestError) {
+        console.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed (HTTP ${err.status}): ${err.message}`);
+        console.warn(`  Error body: ${JSON.stringify(err.body, null, 2)}`);
+      } else {
+        console.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed - ${err}`);
+      }
+      console.warn(`  ${unit.unitId}: keeping multi-shot strategy, retrying in ${(MULTISHOT_RETRY_DELAY_MS / 1000).toFixed(0)}s`);
+      attempt += 1;
+      await abortableSleep(MULTISHOT_RETRY_DELAY_MS);
+    }
+  }
+}
+
 export interface GenerateEpisodeVideosResult {
   videoPaths: string[];
   plan: GenerationPlan;
@@ -1514,43 +1568,71 @@ export async function generateEpisodeVideos(
   plan: GenerationPlan,
   episodeAudioMix?: import('venice-video-harness/core/series/types.js').AudioMixDefaults,
 ): Promise<GenerateEpisodeVideosResult> {
-  const renderer: GenerationUnitRenderer = {
-    single: (shot, unit, context) => renderSingleShotUnit(
-      client,
-      series,
-      shot,
-      unit,
-      sceneDir,
-      context.previousRenderedShot,
-      context.nextShotNumber,
-      context.previousShot,
-      episodeAudioMix,
-    ),
-    montage: (unitShots, unit) => renderMontageUnit(client, series, unitShots, unit, sceneDir),
-    multishot: (unitShots, unit, context) => renderMultiShotUnit(
-      client,
-      series,
-      unitShots,
-      unit,
-      sceneDir,
-      context.previousRenderedShot,
-      context.nextShotNumber,
-    ),
-    // A classified refusal is final: a face-screening refusal fails on the
-    // same images every time, and a provider refusal has already had its one
-    // refunded retry inside submitVideoQueue (anti-pattern 27b). A FAILED
-    // render and a faces-off refusal are final in core itself
-    // (isFinalMultiShotError).
-    isFinalError: err => isAbortError(err) || err instanceof VideoRefusalError,
-    describeHttpError: err => (err instanceof VeniceRequestError
-      ? { status: err.status, message: err.message, body: err.body }
-      : undefined),
-  };
-  return runGenerationUnits(
-    { logger: createCliLogger(), clock: createCliClock() },
-    renderer,
-    shots,
-    plan,
-    { signal: currentSignal() },
-  );
+  // Fail fast on duration / model mismatches before any Venice queue call.
+  assertShotDurationsValid(shots, plan);
+
+  const videoPaths: string[] = [];
+  // Each unit's shots (cursor first, so an insert "13b" is not handed its
+  // base shot) and its context come from core; the walk is this host's.
+  const unitShotLists = resolveUnitShots(shots, plan);
+
+  for (let unitIndex = 0; unitIndex < plan.units.length; unitIndex++) {
+    const unit = plan.units[unitIndex];
+    const unitShots = unitShotLists[unitIndex];
+
+    if (unitShots.length === 0) continue;
+    const {
+      previousRenderedShot: previousRenderedShotPath,
+      previousShot,
+      nextShotNumber,
+    } = generationUnitContext(plan, unitShotLists, unitIndex, videoPaths);
+
+    // Feeds the shell's `/jobs` view, so a backgrounded episode render reports
+    // "unit 3/12 shot 5" instead of only whatever the current poll is doing.
+    reportProgress({
+      phase: 'render',
+      current: unitIndex + 1,
+      total: plan.units.length,
+      detail: `unit ${unitIndex + 1}/${plan.units.length} · shot ${unitShots[0].shotNumber}`,
+    });
+
+    try {
+      const savedPaths = unit.unitType === 'single'
+        ? await renderSingleShotUnit(
+          client,
+          series,
+          unitShots[0],
+          unit,
+          sceneDir,
+          previousRenderedShotPath,
+          nextShotNumber,
+          previousShot,
+          episodeAudioMix,
+        )
+        : unit.unitType === 'montage'
+          ? await renderMontageUnit(
+            client,
+            series,
+            unitShots,
+            unit,
+            sceneDir,
+          )
+          : await renderMultiShotUnitUntilSuccess(
+            client,
+            series,
+            unitShots,
+            unit,
+            sceneDir,
+            previousRenderedShotPath,
+            nextShotNumber,
+          );
+
+      videoPaths.push(...savedPaths);
+      console.log('');
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  return { videoPaths, plan };
 }

@@ -182,6 +182,11 @@ export function gateBlockLines(block: GateBlock, ctx: GateMessageContext): strin
         `  Review the panels, then re-approve:  ${stage('qa-approve')}`,
         '  --skip-qa bypasses this check; it does not clear QA and is not the fix.',
       ];
+    case 'approval-not-cleared':
+      return [
+        `Blocked: ${reason.shots.length} approved shot(s) did not pass storyboard QA and the approval was not forced: ${reason.shots.join(', ')}.`,
+        `  Fix or re-QA the panels, or approve them past QA:  ${stage('qa-approve')} --force`,
+      ];
     case 'video-qa-failed':
       return [
         `Blocked: video QA found ${reason.criticals ?? '?'} critical issue(s) in the rendered units.`,

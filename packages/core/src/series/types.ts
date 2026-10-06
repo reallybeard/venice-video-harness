@@ -1093,6 +1093,16 @@ export interface ApprovalBinding {
   panelSha256: string;
   /** sha256 of the canonical JSON of `PanelSettings` at approval time. */
   settingsDigest: string;
+  /**
+   * Approved although storyboard QA had not cleared the panel (a critical
+   * flag, or a shot QA never read): the CLI's `qa-approve --force`, or a
+   * host's approve-with-reason. Absent on an ordinary approval. A forced
+   * approval counts at the render gate the same way a QA-cleared one does
+   * (`approvalCounts`).
+   */
+  force?: boolean;
+  /** Why the approval was forced, when the approver said. */
+  reason?: string;
 }
 
 /**

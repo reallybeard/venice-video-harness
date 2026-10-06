@@ -139,7 +139,7 @@ import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
 import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
 import { generateLocationReferences } from './location-generator.js';
-import { runStoryboardQa, runVideoQa } from 'venice-video-harness/core/mini-drama/qa-loops.js';
+import { runStoryboardQa, runVideoQa } from './qa-loops.js';
 import { characterFrontSheet } from './video-qa.js';
 import { createCliPorts, createCliVisionJudge } from '../ports/index.js';
 import { tmpdir } from 'node:os';
@@ -2974,7 +2974,9 @@ program
   .requiredOption('-e, --episode <number>', 'Episode number', parseInt)
   .option('--notes <notes>', 'QA approval notes')
   .option('--force', 'Approve despite criticals/unchecked shots in the QA report (you have reviewed the panels yourself)', false)
-  .action(async (opts: { project: string; episode: number; notes?: string; force: boolean }) => {
+  .option('--reason <text>', 'With --force: why the panels are approved past QA (recorded on each shot\'s binding)')
+  .action(async (opts: { project: string; episode: number; notes?: string; force: boolean; reason?: string }) => {
+    if (opts.reason !== undefined && !opts.force) { console.error('--reason records why an approval was forced; it needs --force.'); process.exit(1); }
     const series = await loadSeries(resolve(opts.project));
     if (!series) { console.error('Series not found.'); process.exit(1); }
 
@@ -2987,12 +2989,13 @@ program
     // shots never actually read (2026-08-10). Now that requires --force.
     const reportPath = join(episodeDir, 'qa-report.json');
     const qaReported = existsSync(reportPath);
-    const qaGate = gateFor(
-      'qa-approve',
-      { episode: opts.episode, qaReported, qaReport: qaReported ? readQaReportFacts(reportPath) : undefined },
-      { bypass: opts.force ? ['qa-issues'] : [] },
-    );
+    const qaFacts = { episode: opts.episode, qaReported, qaReport: qaReported ? readQaReportFacts(reportPath) : undefined };
+    const qaGate = gateFor('qa-approve', qaFacts, { bypass: opts.force ? ['qa-issues'] : [] });
     if (qaGate.blocked) exitBlocked(qaGate, { project: series.outputDir, episode: opts.episode, episodeDir });
+    // Forced only when --force actually waived QA issues: each binding then
+    // says so (ApprovalBinding.force, with the reason when given), and counts
+    // at the render gate the same way a QA-cleared approval does.
+    const forced = opts.force && gateFor('qa-approve', qaFacts).blocked;
 
     // Bind the approval to the panels a human actually reviewed: per shot, a
     // hash of the panel bytes plus a digest of the settings the panel depends
@@ -3005,7 +3008,7 @@ program
       for (const shot of script.shots) {
         const binding = approvalForShot(series, shot, panelDir);
         const key = shotKey(shotIdOf(shot));
-        if (binding) approvedShots[key] = binding;
+        if (binding) approvedShots[key] = forced ? { ...binding, force: true, ...(opts.reason ? { reason: opts.reason } : {}) } : binding;
         else missing.push(key);
       }
       if (missing.length > 0) {

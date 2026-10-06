@@ -133,11 +133,14 @@ export * from './venice/video-errors.js';
 export * from './venice/render-job.js';
 // Pipeline gates: whether a stage may run and what clears it (the commands and status share them).
 export * from './session/gates.js';
-// The QA loops (qa-storyboard, qa-videos) over the ports: vision judge, image probe, clock.
-export * from './mini-drama/qa-loops.js';
+// QA steps, one unit of work each: one storyboard panel's check (input, then
+// the model chain), the video probes and identity judges, and one unit's
+// verdict out of a report. The loops over shots and units are each host's.
+export * from './mini-drama/qa-steps.js';
 // One video render over the ports (references, video backend, clock, logger)
 // plus injected media callbacks: faces-off, request plan, media, body, job, recipe.
 export * from './mini-drama/render-video.js';
-// The episode generation loop: units in plan order, chaining state, the
-// multi-shot retry; the lanes are the host's GenerationUnitRenderer.
-export * from './mini-drama/generation-loop.js';
+// Generation steps: each unit's shots and context, its start and end frame
+// targets, and what a failed render means for a retry. The walk over the
+// plan is each host's (the CLI's is generateEpisodeVideos).
+export * from './mini-drama/generation-steps.js';

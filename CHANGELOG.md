@@ -4,22 +4,6 @@
 
 ### Fixed
 
-- **A `kind: 'object'` prop gets a product reference sheet, not a portrait.**
-  `buildCharacterReferencePromptParts` chose the product-plate angles and the
-  person-suppressing negatives only when `baseTraits` began "inanimate
-  object". A prop marked only `kind: 'object'` got "front portrait, looking
-  at camera" plus the default male traits ("handsome, strong features"). Both
-  now count, and a prop with no `baseTraits` gets no default traits. The
-  `objectCast` path sets both fields, so its sheets are unchanged. Test: the
-  `kind: object` case in `tests/character-references-golden.test.mjs`.
-- **Location plates keep `kind: 'object'` props out of the room.** The plate
-  prompts left a recurring prop out of the plate (a clean-plate clause and a
-  negative) only when its `baseTraits` began "inanimate object", the
-  convention from before `Character.kind`. A prop marked only
-  `kind: 'object'` was painted into every plate, then composited again per
-  shot from its own reference. Both now count. The `objectCast` path sets
-  both fields, so its projects' plates are unchanged. Test: a new case in
-  `tests/location-plates-golden.test.mjs`.
 - **Video registry corrections checked against `/video/quote` (drift issue
   #50).** Quote is free and validates `duration` and `resolution` with the
   same enum errors as the queue, so each change below rests on it plus the
@@ -36,6 +20,22 @@
   model's ladder that rejects the durations the registry recorded. They stay
   in the registry for old projects but are no longer offered. Test:
   `tests/registry-quote-verified.test.mjs`.
+- **A `kind: 'object'` prop gets a product reference sheet, not a portrait.**
+  `buildCharacterReferencePromptParts` chose the product-plate angles and the
+  person-suppressing negatives only when `baseTraits` began "inanimate
+  object". A prop marked only `kind: 'object'` got "front portrait, looking
+  at camera" plus the default male traits ("handsome, strong features"). Both
+  now count, and a prop with no `baseTraits` gets no default traits. The
+  `objectCast` path sets both fields, so its sheets are unchanged. Test: the
+  `kind: object` case in `tests/character-references-golden.test.mjs`.
+- **Location plates keep `kind: 'object'` props out of the room.** The plate
+  prompts left a recurring prop out of the plate (a clean-plate clause and a
+  negative) only when its `baseTraits` began "inanimate object", the
+  convention from before `Character.kind`. A prop marked only
+  `kind: 'object'` was painted into every plate, then composited again per
+  shot from its own reference. Both now count. The `objectCast` path sets
+  both fields, so its projects' plates are unchanged. Test: a new case in
+  `tests/location-plates-golden.test.mjs`.
 - **A stream that stops itself is settled before it reports stopped.** After
   three consecutive failures (or on reaching its budget) the `StreamEngine`
   worker set `running = false`, awaited `persist()`, and only then set
@@ -178,18 +178,6 @@
   the process was killed. Abort errors now propagate, and the retry wait is
   abortable. Test: `tests/generation-loop-golden.test.mjs`
   (`multishot-cancel-during-retry`).
-- **Core's multi-shot retry treats a FAILED render and a faces-off refusal
-  as final for every host.** The multi-shot retry moved into core's
-  `runGenerationUnits`, where the host's `GenerationUnitRenderer.isFinalError`
-  decides what ends it. A host that only named its own errors (cancel,
-  refusal) would bring back the endless re-queue that the
-  `VideoGenerationFailedError` / `FacesOffModelError` fix above removed.
-  Both classes live in core, so the loop now rethrows them itself
-  (`isFinalMultiShotError`, on the core barrel) before asking the host; the
-  CLI's `isFinalError` keeps cancel and refusal. Tests:
-  `tests/core-generation-loop.test.mjs` (a renderer whose `isFinalError`
-  returns false still stops after one attempt, with no retry wait) and
-  `tests/multishot-final-errors.test.mjs` (unchanged, through the CLI).
 
 ### Changed
 
@@ -780,57 +768,69 @@
   output and request bodies are unchanged (the chatJson and queue
   refactors were checked against the previous implementations).
   Tests: `tests/core-port-helpers.test.mjs`, `tests/core-render-job.test.mjs`.
-- **The QA loops run in core over the ports.** `qa-storyboard` and `qa-videos`
-  are now thin callers of `runStoryboardQa` / `runVideoQa`
-  (`packages/core/src/mini-drama/qa-loops.ts`, on the barrel). Storyboard QA
-  attaches the panel, up to two front sheets and the nearest earlier panel
-  from the same location, then walks the model chain: the chosen reader,
-  then the project's paired vision companion, then UNCHECKED and counted in
-  `summary.errored` (rule 55). Video QA runs the head-glitch luma scan and
-  the boundary luma jumps over `ImageProbe`, then mid-beat frame sampling,
-  per-unit identity and the single cross-unit identity call over
-  `VisionJudge` (rule 52). The pieces are exported too (`probeHeadGlitch`,
-  `probeBoundary`, `probeUnitFrames`, `judgeUnitIdentity`,
-  `judgeCrossUnitIdentity`). Core takes the ports plus plain inputs: the
-  host finds the panels, sheets and unit masters, says where sampled frames
-  go, renders the typed progress events and writes the report. Console
-  output, both reports and every vision request are byte-identical, pinned
-  by `tests/qa-loops-golden.test.mjs` (the real CLI against a stubbed
-  `VeniceClient`). One adapter change: the CLI `ImageProbe` answers a
-  one-frame `frameLumas` window with a single seek at any start, so the
-  boundary check runs the ffmpeg command it always did. Test:
-  `tests/core-qa-loops.test.mjs`.
-- **One video render moves into core as `renderVideo`
-  (`venice-video-harness/core/mini-drama/render-video.js`, also on the core
-  barrel).** `renderVideo(ports, media, request, options)` runs the
-  faces-off check, `planVideoQueueRequest`, the reference URLs (through
-  `ReferenceStore.url`), the audio pads, `buildVideoQueueRequest`,
-  `runVideoJob` with `RENDER_FILE_VIDEO_JOB_POLICY`, the gone-job requeue
-  and the recipe pass. IO with no port (file existence, `hasFace`
-  sidecars, audio durations and pads, the recipe write) comes in as
-  `RenderVideoMedia` callbacks. `prepareVideoRequest` builds the body
-  without queueing. `renderVideoFile` is now a thin caller over the CLI
-  ports plus `createCliRenderMedia` (`src/ports/render-media.ts`). Bodies
-  are byte-identical. `createCliVideoBackend` gains `{ validateRequests }`
-  (default `true`); the render path passes `false`, as before.
-  Test: `tests/core-render-video.test.mjs`.
-- **The episode unit loop moves into core as `runGenerationUnits`
-  (`venice-video-harness/core/mini-drama/generation-loop.js`, also on the
-  core barrel).** It runs the duration preflight, resolves each unit's
-  shots (`resolveUnitShots`, cursor first), reports progress, and dispatches
-  each unit to the host's `GenerationUnitRenderer` (`single`, `multishot`,
-  `montage`). It carries the chaining context between units and retries a
-  multi-shot unit with `Clock.sleep` (`renderMultiShotUntilSuccess`). Core
-  ends the retry on a FAILED render or a faces-off refusal; the host decides
-  which other errors are final. `generateEpisodeVideos` is now a thin caller.
-  The new `tests/generation-loop-golden.test.mjs` pins it: 20
-  cases across the lanes, with every request, console line, timer wait,
-  pending job and file
-  captured before the change. Test: `tests/core-generation-loop.test.mjs`.
-- **`scripts/verify-generation-loop-live.ts`.** Renders one 5s MiniMax H3
-  Max Turbo unit through the new path (`--live`, est. $0.06). It first
-  checks offline that the pre-change build sends the same `/video/queue`
-  body.
+- **Core exports the steps the QA and generation loops are built from; the
+  loops stay in the CLI.** Core holds the decisions, each host its own
+  control flow, so a host walking shots or units its own way (the web app)
+  composes the same steps the CLI's loops do.
+  - QA (`venice-video-harness/core/mini-drama/qa-steps.js`):
+    `storyboardQaInput(shot, shots, series)` (pure: the panel, up to two
+    sheets and the nearest earlier same-location panel to attach, the
+    prompts, `maxTokens` 4000, temperature 0.3), `checkStoryboardPanel`
+    (one panel: the chosen reader, then the paired vision companion, then
+    UNCHECKED, rule 55), `probeHeadGlitch`, `probeBoundary`,
+    `probeUnitFrames`, `unitCharacterNames`, `judgeUnitIdentity`,
+    `judgeCrossUnitIdentity` (rule 52), and `videoQaUnitVerdict(report,
+    unitId)`: one unit's verdict out of a report, weighted like
+    `summarizeVideoQa`, or UNCHECKED when a vision call it depends on
+    failed. `qa-storyboard` and `qa-videos` keep their loops
+    (`src/mini-drama/qa-loops.ts`) and call these. Console output, both
+    reports and every vision request are byte-identical, pinned by
+    `tests/qa-loops-golden.test.mjs` (the real CLI against a stubbed
+    `VeniceClient`). One adapter change: the CLI `ImageProbe` answers a
+    one-frame `frameLumas` window with a single seek at any start, so the
+    boundary check runs the ffmpeg command it always did.
+    Test: `tests/qa-steps.test.mjs`.
+  - One render (`mini-drama/render-video.js`): `renderVideo(ports, media,
+    request, options)` runs the faces-off check, `planVideoQueueRequest`,
+    the reference URLs (through `ReferenceStore.url`), the audio pads,
+    `buildVideoQueueRequest`, `runVideoJob` with
+    `RENDER_FILE_VIDEO_JOB_POLICY`, the gone-job requeue and the recipe
+    pass. IO with no port (file existence, `hasFace` sidecars, audio
+    durations and pads, the recipe write) comes in as `RenderVideoMedia`
+    callbacks. `prepareVideoRequest` builds the body without queueing.
+    `renderVideoFile` is now a thin caller over the CLI ports plus
+    `createCliRenderMedia` (`src/ports/render-media.ts`).
+    `createCliVideoBackend` gains `{ validateRequests }` (default `true`);
+    the render path passes `false`, as before.
+    Test: `tests/core-render-video.test.mjs`.
+  - Generation (`mini-drama/generation-steps.js`, pure):
+    `resolveUnitShots` (cursor first), `generationUnitContext(plan,
+    unitShots, index, renderedSoFar)`, `unitFrameTargets(unit, context,
+    facts)` (start `chain` | `panel`, end `next-panel` | `natural`; the rule
+    the CLI's start and end frame choice applies), `isFinalMultiShotError`,
+    `MULTISHOT_RETRY_DELAY_MS`, and `renderFailureDisposition(err)`: whether
+    a failed render is final, whether its pending record is kept, whether it
+    is a provider refusal, and whether a retry re-bills. The CLI's
+    multi-shot retry stops exactly when `final` is true.
+    `generateEpisodeVideos` keeps its loop and calls these.
+    Test: `tests/generation-steps.test.mjs`.
+
+  `tests/generation-loop-golden.test.mjs` pins the episode render: 20 cases
+  across the lanes, with every request, console line, timer wait, pending
+  job and file, captured before the change. Only the two fixes above change
+  it. Request bodies are byte-identical (the 18k-case dump described in
+  PR C).
+- **A forced storyboard approval is recorded and counts at the render
+  gate.** `ApprovalBinding` gains optional `force` and `reason`.
+  `qa-approve --force` sets `force` on every binding when it actually waived
+  QA issues, with the reason from the new `--reason` flag (`--reason`
+  needs `--force`); a clean report's approval is written as before. Core
+  `approvalCounts(binding, qaCleared)` counts an approval when QA cleared
+  the shot or the approval was forced, and `gateFor('render')` takes an
+  optional per-shot `approvedShots` fact from a host that approves panel by
+  panel, blocking with `approval-not-cleared` when an approved shot neither
+  passed QA nor was forced. The CLI's own gate output is unchanged.
+  Test: `tests/approval-force.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

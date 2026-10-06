@@ -96,6 +96,16 @@ export function compareApproval(
   return out;
 }
 
+/**
+ * Whether an approval counts toward the render gate: storyboard QA cleared
+ * the shot (no critical flag, actually read), or the approval was forced past
+ * QA. Freshness is `compareApproval`'s question, not this one.
+ */
+export function approvalCounts(binding: Pick<ApprovalBinding, 'force'> | undefined, qaCleared: boolean): boolean {
+  if (!binding) return false;
+  return qaCleared || binding.force === true;
+}
+
 export const CHARACTER_REF_ORDER = ['anchor.png', 'front.png', 'three-quarter.png'];
 export const LOCATION_REF_ORDER = ['north.png', 'south.png', 'east.png', 'west.png', 'wide.png', 'angle-2.png', 'angle-3.png', 'angle-4.png', 'medium.png', 'detail.png'];
 

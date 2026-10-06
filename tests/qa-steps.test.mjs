@@ -1,20 +1,24 @@
-// The QA loops in core (packages/core/src/mini-drama/qa-loops.ts) over
-// in-memory fake ports: a scripted vision judge, an image probe answering
-// from per-clip luma arrays, and a fixed clock. No files, no ffmpeg, no
-// network. The CLI wiring is pinned separately by tests/qa-loops-golden.test.mjs.
+// The QA steps in core (packages/core/src/mini-drama/qa-steps.ts) and the
+// CLI's loops composed from them (src/mini-drama/qa-loops.ts), over in-memory
+// fake ports: a scripted vision judge, an image probe answering from per-clip
+// luma arrays, and a fixed clock. No files, no ffmpeg, no network. The CLI
+// commands are pinned separately by tests/qa-loops-golden.test.mjs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  checkStoryboardPanel,
   judgeCrossUnitIdentity,
   judgeUnitIdentity,
   probeBoundary,
   probeHeadGlitch,
   probeUnitFrames,
-  runStoryboardQa,
-  runVideoQa,
-} from '../packages/core/dist/mini-drama/qa-loops.js';
+  storyboardQaInput,
+  unitCharacterNames,
+  videoQaUnitVerdict,
+} from '../packages/core/dist/mini-drama/qa-steps.js';
+import { runStoryboardQa, runVideoQa } from '../dist/mini-drama/qa-loops.js';
 import {
   STORYBOARD_QA_SYSTEM_PROMPT,
   missingPanelResult,
@@ -466,8 +470,151 @@ test('runVideoQa: a progress handler that throws aborts the run', async () => {
   );
 });
 
-test('the core barrel exports the QA loops', () => {
-  for (const name of ['runStoryboardQa', 'runVideoQa', 'probeHeadGlitch', 'probeBoundary', 'probeUnitFrames', 'judgeUnitIdentity', 'judgeCrossUnitIdentity']) {
+test('the core barrel exports the QA steps and no QA loop', () => {
+  for (const name of [
+    'storyboardQaInput', 'checkStoryboardPanel', 'probeHeadGlitch', 'probeBoundary', 'probeUnitFrames',
+    'unitCharacterNames', 'judgeUnitIdentity', 'judgeCrossUnitIdentity', 'videoQaUnitVerdict',
+    'pickProtagonist', 'pickHeroFrames', 'summarizeVideoQa',
+  ]) {
     assert.equal(typeof barrel[name], 'function', name);
   }
+  assert.equal(barrel.runStoryboardQa, undefined);
+  assert.equal(barrel.runVideoQa, undefined);
+});
+
+// ---- Storyboard steps, called one panel at a time ---------------------------
+
+test('storyboardQaInput: the images a panel check wants, the prompts and the request parameters (pure)', () => {
+  const run = storyboardRun();
+  const input = storyboardQaInput(run.shots[2], run.shots, SERIES);
+  assert.deepEqual(input.images, [
+    { kind: 'panel', shot: run.shots[2] },
+    { kind: 'sheet', character: 'JUNO' },
+    { kind: 'prior-panel', shot: run.shots[0] },
+  ]);
+  assert.equal(input.systemPrompt, STORYBOARD_QA_SYSTEM_PROMPT);
+  assert.equal(input.maxTokens, 4000);
+  assert.equal(input.temperature, 0.3);
+  assert.equal(input.label, 'shot 003 QA');
+  assert.ok(input.userPrompt.includes(priorPanelNote(run.shots[0])));
+  assert.ok(!input.userPromptWithoutPriorPanel.includes(priorPanelNote(run.shots[0])));
+
+  const first = storyboardQaInput(run.shots[0], run.shots, SERIES);
+  assert.deepEqual(first.images.map(i => i.kind), ['panel', 'sheet', 'sheet']);
+  assert.equal(first.userPrompt, first.userPromptWithoutPriorPanel);
+});
+
+test('checkStoryboardPanel: one panel, the request the loop sends; a missing prior panel drops its note', async () => {
+  const run = storyboardRun();
+  const input = storyboardQaInput(run.shots[2], run.shots, SERIES);
+
+  const vision = fakeVision();
+  const outcome = await checkStoryboardPanel(vision, {
+    input, refs: ['panel:3', 'sheet:JUNO', undefined], model: 'vision-a', companionModel: 'vision-b',
+  });
+  assert.equal(outcome.status, 'checked');
+  assert.equal(outcome.model, 'vision-a');
+  assert.equal(outcome.viaFallback, false);
+  assert.deepEqual(vision.calls[0].images, ['panel:3', 'sheet:JUNO']);
+  assert.equal(vision.calls[0].userPrompt, input.userPromptWithoutPriorPanel);
+
+  // The same panel through the loop sends the same request.
+  const loopVision = fakeVision();
+  await runStoryboardQa({ vision: loopVision, clock: fakeClock() }, {
+    ...run, check: [run.shots[2]], panel: async s => (s.shotNumber === 1 ? undefined : `panel:${s.shotNumber}`),
+  });
+  assert.deepEqual(loopVision.calls, vision.calls);
+});
+
+test('checkStoryboardPanel: no panel is MISSING without a call; every model failing is UNCHECKED', async () => {
+  const run = storyboardRun();
+  const input = storyboardQaInput(run.shots[1], run.shots, SERIES);
+  const none = fakeVision();
+  const missing = await checkStoryboardPanel(none, { input, refs: [undefined], model: 'vision-a', companionModel: 'vision-b' });
+  assert.equal(missing.status, 'missing');
+  assert.deepEqual(missing.result, missingPanelResult(run.shots[1]));
+  assert.equal(none.calls.length, 0);
+
+  const retries = [];
+  const down = fakeVision(req => { throw new Error(`${req.model} down`); });
+  const unchecked = await checkStoryboardPanel(down, {
+    input, refs: ['panel:2', undefined], model: 'vision-a', companionModel: 'vision-b',
+    onRetry: (model, next, reason) => { retries.push([model, next, reason]); },
+  });
+  assert.equal(unchecked.status, 'unchecked');
+  assert.equal(unchecked.result.errored, true);
+  assert.equal(unchecked.reason, 'vision-b down');
+  assert.equal(unchecked.model, 'vision-b');
+  assert.deepEqual(retries, [['vision-a', 'vision-b', 'vision-a down']]);
+});
+
+// ---- One unit's verdict out of a report ---------------------------------------
+
+const baseReport = (over = {}) => ({
+  episode: 1, model: 'vq', analyzedAt: NOW.toISOString(),
+  headGlitches: [], boundaries: [], unitIdentity: [], crossUnit: emptyCrossUnitResult(),
+  summary: { units: 3, criticals: 0, errored: 0, passed: true },
+  ...over,
+});
+
+test('videoQaUnitVerdict: identity, head glitch, the join into the unit and drift, weighted like summarizeVideoQa', () => {
+  const report = baseReport({
+    headGlitches: [{ unitId: 'u2', frameIndex: 3, lumaDelta: 80 }],
+    boundaries: [
+      { fromUnit: 'u1', toUnit: 'u2', lumaDelta: 40, severity: 'warn' },
+      { fromUnit: 'u2', toUnit: 'u3', lumaDelta: 70, severity: 'fail' },
+    ],
+    unitIdentity: [
+      { unitId: 'u1', verdict: 'PASS', issues: [] },
+      { unitId: 'u2', verdict: 'FLAG-LOW', issues: ['hair darker'] },
+    ],
+    crossUnit: { verdict: 'FLAG-MODERATE', issues: ['jacket differs'], driftingUnits: ['u1'] },
+  });
+
+  const u1 = videoQaUnitVerdict(report, 'u1');
+  assert.equal(u1.status, 'checked');
+  assert.equal(u1.verdict, 'FLAG-MODERATE');
+  assert.equal(u1.drifting, true);
+  assert.deepEqual(u1.issues, ['jacket differs']);
+
+  const u2 = videoQaUnitVerdict(report, 'u2');
+  assert.equal(u2.verdict, 'FLAG-CRITICAL');
+  assert.deepEqual(u2.headGlitch, report.headGlitches[0]);
+  assert.deepEqual(u2.boundaryIn, report.boundaries[0]);
+  assert.deepEqual(u2.issues, [
+    'hair darker', 'head glitch at frame 3 (luma jump 80.0)', 'luma jump 40.0 at the cut from u1 (warn)',
+  ]);
+
+  const u3 = videoQaUnitVerdict(report, 'u3');
+  assert.equal(u3.verdict, 'FLAG-CRITICAL');
+  assert.equal(u3.identity, undefined);
+  assert.ok(u3.notes.includes('identity: not run (no frame with a character)'));
+
+  // Every critical unit is counted by the summary; a passing summary has none.
+  const summary = summarizeVideoQa({ units: 3, ...report });
+  assert.equal(summary.passed, false);
+  assert.ok(summary.criticals >= 2);
+});
+
+test('videoQaUnitVerdict: a failed identity or cross-unit call is UNCHECKED, never a pass', () => {
+  const identityDown = baseReport({
+    unitIdentity: [{ unitId: 'u1', verdict: 'FLAG-LOW', issues: ['identity QA failed: timeout'], errored: true }],
+  });
+  assert.deepEqual(videoQaUnitVerdict(identityDown, 'u1'), {
+    unitId: 'u1', status: 'unchecked', reason: 'identity QA failed: timeout', issues: ['identity QA failed: timeout'],
+  });
+
+  const crossDown = baseReport({ crossUnit: { verdict: 'FLAG-LOW', issues: ['cross-unit QA failed: 500'], driftingUnits: [], errored: true } });
+  assert.equal(videoQaUnitVerdict(crossDown, 'u2').status, 'unchecked');
+
+  const clean = baseReport({ model: 'programmatic-only' });
+  const verdict = videoQaUnitVerdict(clean, 'u1');
+  assert.equal(verdict.verdict, 'PASS');
+  assert.ok(verdict.notes.includes('identity: not run (programmatic checks only)'));
+});
+
+test('unitCharacterNames: every character of the unit\'s shots, first seen first', () => {
+  const shots = [shot(1, { characters: ['MARA'] }), shot(2, { characters: ['JUNO', 'MARA'] }), shot(3, { characters: ['KAI'] })];
+  assert.deepEqual(unitCharacterNames({ shotNumbers: [1, 2] }, shots), ['MARA', 'JUNO']);
+  assert.deepEqual(unitCharacterNames({ shotNumbers: [9] }, shots), []);
 });
