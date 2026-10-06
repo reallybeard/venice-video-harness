@@ -53,7 +53,7 @@ import {
 import { characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { VideoGenerationFailedError } from '../venice/video.js';
-import { currentSignal, reportProgress } from '../venice/operation-context.js';
+import { abortableSleep, currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
 import { renderVideo } from 'venice-video-harness/core/mini-drama/render-video.js';
 import { createCliClock } from '../ports/clock.js';
 import { createCliLogger } from '../ports/logger.js';
@@ -91,10 +91,6 @@ function runCommand(command: string, args: string[]): string {
 interface QueueResponse {
   model: string;
   queue_id: string;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
 }
 
 /**
@@ -1530,6 +1526,9 @@ async function renderMultiShotUnitUntilSuccess(
         nextShotNumber,
       );
     } catch (err) {
+      // A cancelled operation is not a failed attempt: retrying it fails the
+      // same way every 15s, forever.
+      if (isAbortError(err)) throw err;
       // A classified refusal is final: a face-screening refusal fails on the
       // same images every time, and a provider refusal has already had its one
       // refunded retry inside submitVideoQueue. Looping here would only bill
@@ -1548,7 +1547,7 @@ async function renderMultiShotUnitUntilSuccess(
       }
       console.warn(`  ${unit.unitId}: keeping multi-shot strategy, retrying in ${(MULTISHOT_RETRY_DELAY_MS / 1000).toFixed(0)}s`);
       attempt += 1;
-      await sleep(MULTISHOT_RETRY_DELAY_MS);
+      await abortableSleep(MULTISHOT_RETRY_DELAY_MS);
     }
   }
 }

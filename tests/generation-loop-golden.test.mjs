@@ -53,6 +53,7 @@ const { buildGenerationPlan } = await import('../dist/mini-drama/generation-plan
 const { createSeries } = await import('../dist/series/manager.js');
 const { VeniceRequestError } = await import('../dist/venice/client.js');
 const { recordPendingJob, getJobStorePath } = await import('../dist/venice/job-store.js');
+const { runInOperation } = await import('../dist/venice/operation-context.js');
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -474,6 +475,17 @@ const CASES = [
     client: { queue: [err.e500] },
     run: runEpisode,
   },
+  (() => {
+    // Ctrl-C lands while the first multi-shot attempt is failing: the unit
+    // must stop, not retry the cancelled operation every 15s.
+    const controller = new AbortController();
+    return {
+      id: 'multishot-cancel-during-retry',
+      project: { videoDefaults: STANDARD, shots: [shot(1), shot(2, { description: 'Shot 2: MARA flips a switch.' })] },
+      client: { queue: [() => { controller.abort(); return err.e500(); }] },
+      run: (client, project) => runInOperation({ signal: controller.signal }, () => runEpisode(client, project)),
+    };
+  })(),
   {
     id: 'consent-409',
     project: { videoDefaults: STANDARD, shots: [shot(1)] },
