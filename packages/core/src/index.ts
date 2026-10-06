@@ -77,3 +77,5 @@ export * from './mini-drama/stream-choices.js';
 export * from './mini-drama/generation-planner.js';
 export * from './mini-drama/montage.js';
 export * from './mini-drama/shot-paths.js';
+// Music-cue placement and volume-automation expressions (rendering stays in the CLI).
+export * from './mini-drama/music-cues.js';

@@ -332,6 +332,17 @@
   `cutMontageIntoShots` (ffmpeg), the shot path builders and narration
   placement (`existsSync`). Those modules re-export the moved names, so
   every import site is unchanged. Test: `tests/core-planner.test.mjs`.
+- **Music-cue planning moves into core (phase 3 of the core split).**
+  `shotIdKey`, `resolveCueWindow`, `buildGainStopsExpr`, `buildMusicHoldExpr`,
+  the `PlacementMap` / `ResolvedMusicCue` types and the cue gain/fade
+  defaults (`DEFAULT_GAIN_DB`, `DEFAULT_FADE_IN`, `DEFAULT_FADE_OUT`) now live
+  in `packages/core/src/mini-drama/music-cues.ts`, on the barrel and at
+  `venice-video-harness/core/mini-drama/music-cues.js`, so a host can place
+  cues and build the `volume=` automation expressions without ffmpeg.
+  `renderMusicCuesTrack`, `applyMusicHoldAutomation` and `resolveMusicCues`
+  (which checks the cue audio exists on disk) stay in
+  `src/mini-drama/music-cues.ts`, which re-exports the moved names; no import
+  site or behaviour changes. Test: `tests/core-music-cues.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

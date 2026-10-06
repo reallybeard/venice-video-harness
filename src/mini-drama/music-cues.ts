@@ -11,7 +11,9 @@
 // This module is pure orchestration — it shells ffmpeg via execFile but does
 // not know how to call Venice. Cue audio is either supplied via
 // `cue.audioPath` or rendered separately and the path threaded in by the
-// caller (see the music-cue reference scripts).
+// caller (see the music-cue reference scripts). Cue placement and the
+// `volume=` expressions live in core (`venice-video-harness/core/
+// mini-drama/music-cues.js`) and are re-exported here.
 // ---------------------------------------------------------------------------
 
 import { execFile } from 'node:child_process';
