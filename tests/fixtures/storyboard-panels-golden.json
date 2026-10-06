@@ -1,0 +1,1284 @@
+{
+  "fresh storyboard, refine on": {
+    "status": 0,
+    "calls": [
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 1 action. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-002.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. Place the person from image 3 (JUNO: an engineer, wearing grease-stained overalls) into the scene — reproduce their exact face, hair, and body from image 3, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 3 action. BLOCKING: Juno crouches by the hatch behind Mara. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. JUNO (wiry young woman, shaved head): an engineer, wearing grease-stained overalls. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Juno crouches by the hatch behind Mara. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>",
+            "<image characters/mara/front.png>",
+            "<image characters/juno/anchor.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. Place the person from image 3 (JUNO: an engineer, wearing grease-stained overalls) into the scene — reproduce their exact face, hair, and body from image 3, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 4 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. JUNO (wiry young woman, shaved head): an engineer, wearing grease-stained overalls. TOMAS (handsome, strong features, detailed features): a nervous radio operator, wearing wool sweater. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>",
+            "<image characters/mara/front.png>",
+            "<image characters/juno/anchor.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 5 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 6 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 7 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 9 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 10 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-005.png>",
+            "<image locations/capsule/north.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. IMPORTANT: This is a BRIGHT DAYTIME scene. Keep bright warm lighting. Do NOT add rain, dark skies, or wet surfaces. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-006.png>",
+            "<image episodes/episode-001/scene-001/.style-anchor.png = episodes/episode-001/scene-001/shot-001.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-010.png>",
+            "<image episodes/episode-001/scene-001/.style-anchor.png = episodes/episode-001/scene-001/shot-001.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Paint the logo onto the console. Preserve the scene composition, characters, lighting, and cinematic framing exactly. Do not add text, speech bubbles, or panel borders.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-009.png>",
+            "<image props/logo.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Integrate the visual elements from the reference image(s) into this scene. Preserve the scene composition, characters, lighting, and cinematic framing exactly. Do not change the overall image. Do not add text, speech bubbles, or panel borders.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-010.png>",
+            "<image props/logo.png>"
+          ]
+        }
+      }
+    ],
+    "files": [
+      ".style-anchor.png",
+      "shot-001.png",
+      "shot-001.provenance.json",
+      "shot-001.recipe.json",
+      "shot-002.png",
+      "shot-002.provenance.json",
+      "shot-002.recipe.json",
+      "shot-003.png",
+      "shot-003.provenance.json",
+      "shot-003.recipe.json",
+      "shot-004.png",
+      "shot-004.provenance.json",
+      "shot-004.recipe.json",
+      "shot-005-pre-style.png",
+      "shot-005.png",
+      "shot-005.provenance.json",
+      "shot-005.recipe.json",
+      "shot-006-pre-style.png",
+      "shot-006.png",
+      "shot-006.provenance.json",
+      "shot-006.recipe.json",
+      "shot-007.png",
+      "shot-007.provenance.json",
+      "shot-007.recipe.json",
+      "shot-009-pre-scene-ref.png",
+      "shot-009.png",
+      "shot-009.provenance.json",
+      "shot-009.recipe.json",
+      "shot-010-pre-scene-ref.png",
+      "shot-010-pre-style.png",
+      "shot-010.png",
+      "shot-010.provenance.json",
+      "shot-010.recipe.json"
+    ],
+    "sidecars": {
+      "shot-001.provenance.json": {
+        "generationModel": "nano-banana-2-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-001.recipe.json": {
+        "asset": "shot-001.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 1 action. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-002.provenance.json": {
+        "generationModel": "nano-banana-2",
+        "editModels": [
+          "nano-banana-2-edit"
+        ],
+        "hasFace": true
+      },
+      "shot-002.recipe.json": {
+        "asset": "shot-002.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "nano-banana-2",
+            "label": "scene draft (pre-identity)",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+            "seed": 99,
+            "cfgScale": 10,
+            "aspectRatio": "16:9",
+            "resolution": "1K",
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (identity composite)",
+            "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/shot-002.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "scene-draft",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 2
+          }
+        ]
+      },
+      "shot-003.provenance.json": {
+        "generationModel": "nano-banana-2-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-003.recipe.json": {
+        "asset": "shot-003.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. Place the person from image 3 (JUNO: an engineer, wearing grease-stained overalls) into the scene — reproduce their exact face, hair, and body from image 3, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 3 action. BLOCKING: Juno crouches by the hatch behind Mara. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. JUNO (wiry young woman, shaved head): an engineer, wearing grease-stained overalls. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Juno crouches by the hatch behind Mara. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png",
+              "<dir>/project/characters/mara/front.png",
+              "<dir>/project/characters/juno/anchor.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [
+                  "MARA",
+                  "JUNO"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-004.provenance.json": {
+        "generationModel": "nano-banana-2-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-004.recipe.json": {
+        "asset": "shot-004.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. Place the person from image 3 (JUNO: an engineer, wearing grease-stained overalls) into the scene — reproduce their exact face, hair, and body from image 3, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 4 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. JUNO (wiry young woman, shaved head): an engineer, wearing grease-stained overalls. TOMAS (handsome, strong features, detailed features): a nervous radio operator, wearing wool sweater. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png",
+              "<dir>/project/characters/mara/front.png",
+              "<dir>/project/characters/juno/anchor.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [
+                  "MARA",
+                  "JUNO"
+                ],
+                "textOnly": [
+                  "TOMAS"
+                ]
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-005.provenance.json": {
+        "generationModel": "nano-banana-2-edit",
+        "editModels": [
+          "nano-banana-2-edit"
+        ],
+        "hasFace": false
+      },
+      "shot-005.recipe.json": {
+        "asset": "shot-005.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted establishing panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 5 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "look",
+            "model": "nano-banana-2-edit",
+            "label": "style match",
+            "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-005-pre-style.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale"
+            },
+            "pass": 2
+          }
+        ]
+      },
+      "shot-006.provenance.json": {
+        "generationModel": "nano-banana-2",
+        "editModels": [
+          "nano-banana-2-edit"
+        ],
+        "hasFace": false
+      },
+      "shot-006.recipe.json": {
+        "asset": "shot-006.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "nano-banana-2",
+            "label": "base panel",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 6 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+            "seed": 99,
+            "cfgScale": 10,
+            "aspectRatio": "16:9",
+            "resolution": "1K",
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "look",
+            "model": "nano-banana-2-edit",
+            "label": "style match",
+            "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. IMPORTANT: This is a BRIGHT DAYTIME scene. Keep bright warm lighting. Do NOT add rain, dark skies, or wet surfaces. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/.style-anchor.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-006-pre-style.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale"
+            },
+            "pass": 2
+          }
+        ]
+      },
+      "shot-007.provenance.json": {
+        "generationModel": "nano-banana-2",
+        "editModels": [],
+        "hasFace": false
+      },
+      "shot-007.recipe.json": {
+        "asset": "shot-007.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "nano-banana-2",
+            "label": "base panel",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 7 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander",
+            "seed": 99,
+            "cfgScale": 10,
+            "aspectRatio": "16:9",
+            "resolution": "1K",
+            "pass": 1
+          }
+        ]
+      },
+      "shot-009.provenance.json": {
+        "generationModel": "nano-banana-2-edit",
+        "editModels": [
+          "nano-banana-2-edit"
+        ],
+        "hasFace": true
+      },
+      "shot-009.recipe.json": {
+        "asset": "shot-009.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 9 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "content",
+            "model": "nano-banana-2-edit",
+            "label": "scene-ref injection",
+            "prompt": "Paint the logo onto the console. Preserve the scene composition, characters, lighting, and cinematic framing exactly. Do not add text, speech bubbles, or panel borders.",
+            "referenceImagePaths": [
+              "<dir>/project/props/logo.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-009-pre-scene-ref.png",
+            "pass": 2
+          }
+        ]
+      },
+      "shot-010.provenance.json": {
+        "generationModel": "nano-banana-2",
+        "editModels": [
+          "nano-banana-2-edit",
+          "nano-banana-2-edit"
+        ],
+        "hasFace": false
+      },
+      "shot-010.recipe.json": {
+        "asset": "shot-010.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "nano-banana-2",
+            "label": "base panel",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 10 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander",
+            "seed": 99,
+            "cfgScale": 10,
+            "aspectRatio": "16:9",
+            "resolution": "1K",
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "look",
+            "model": "nano-banana-2-edit",
+            "label": "style match",
+            "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/.style-anchor.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-010-pre-style.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale"
+            },
+            "pass": 2
+          },
+          {
+            "kind": "multi-edit",
+            "role": "content",
+            "model": "nano-banana-2-edit",
+            "label": "scene-ref injection",
+            "prompt": "Integrate the visual elements from the reference image(s) into this scene. Preserve the scene composition, characters, lighting, and cinematic framing exactly. Do not change the overall image. Do not add text, speech bubbles, or panel borders.",
+            "referenceImagePaths": [
+              "<dir>/project/props/logo.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-010-pre-scene-ref.png",
+            "pass": 3
+          }
+        ]
+      }
+    },
+    "episodeStatus": "storyboarded",
+    "stdout": [
+      "Generating storyboard for Episode 1: Pilot",
+      "9 shots to generate",
+      "  cfg_scale: 10 | seed: 99 | refine: true",
+      "Pass 1: Generating base panels...",
+      "  [1/9] Shot 001: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [2/9] Shot 002: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [3/9] Shot 003: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [4/9] Shot 004: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [5/9] Shot 005: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [6/9] Shot 006: saved (<t>s | ETA ~<n>min)",
+      "  [7/9] Shot 007: saved (<t>s | ETA ~<n>min)",
+      "  [8/9] Shot 009: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [9/9] Shot 010: saved (<t>s)",
+      "Pass 1 complete: 9 generated, 0 skipped (<t>s total)",
+      "Pass 2: Refining with multi-edit (nano-banana-2-edit)...",
+      "  [1/9] Shot 001: reference-drafted, identity refinement not needed, skipping",
+      "  [2/9] Shot 002: reference-drafted, identity refinement not needed, skipping",
+      "  [3/9] Shot 003: reference-drafted, identity refinement not needed, skipping",
+      "  [4/9] Shot 004: reference-drafted, identity refinement not needed, skipping",
+      "  [5/9] Shot 009: reference-drafted, identity refinement not needed, skipping",
+      "  Style-matching panel against anchor image...",
+      "  Style-matched panel saved: <dir>/project/episodes/episode-001/scene-001/shot-005.png",
+      "  [6/9] Shot 005: style-refined (<t>s, location anchor)",
+      "  Style-matching panel against anchor image...",
+      "  Style-matched panel saved: <dir>/project/episodes/episode-001/scene-001/shot-006.png",
+      "  [7/9] Shot 006: style-refined (<t>s)",
+      "  [8/9] Shot 007: refinement disabled (skipRefine), skipping",
+      "  Style-matching panel against anchor image...",
+      "  Style-matched panel saved: <dir>/project/episodes/episode-001/scene-001/shot-010.png",
+      "  [9/9] Shot 010: style-refined (<t>s)",
+      "Pass 2 complete (<t>s total)",
+      "Pass 3: Injecting scene references into 2 shots...",
+      "  [1/2] Shot 009: scene-ref injected (<t>s)",
+      "  [2/2] Shot 010: scene-ref injected (<t>s)",
+      "Pass 3 complete (<t>s total)",
+      "Storyboard complete. 9 panels in: <dir>/project/episodes/episode-001/scene-001",
+      "QA review comes next. A vision model compares every panel against the character",
+      "references and flags identity, wardrobe, setting and framing drift.",
+      "Next: qa-storyboard -p <dir>/project -e 1",
+      "Then: qa-approve -p <dir>/project -e 1"
+    ],
+    "stderr": [
+      "  Reference draft: multi-edit takes at most 2 reference layers — dropping TOMAS.",
+      "  [1/2] Shot 009: scene ref not found: <dir>/project/props/missing.png"
+    ]
+  },
+  "no refine, model, cfg and aspect overrides": {
+    "status": 0,
+    "calls": [
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "qwen-image-2-edit",
+          "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 1 action. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image locations/capsule/north.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "gpt-image-2",
+          "resolution": "1K",
+          "aspect_ratio": "9:16",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+          "steps": 30,
+          "cfg_scale": 7,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "qwen-image-2-edit",
+          "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-002.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "gpt-image-2",
+          "resolution": "1K",
+          "aspect_ratio": "9:16",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 6 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+          "steps": 30,
+          "cfg_scale": 7,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      }
+    ],
+    "files": [
+      "shot-001.png",
+      "shot-001.provenance.json",
+      "shot-001.recipe.json",
+      "shot-002.png",
+      "shot-002.provenance.json",
+      "shot-002.recipe.json",
+      "shot-006.png",
+      "shot-006.provenance.json",
+      "shot-006.recipe.json"
+    ],
+    "sidecars": {
+      "shot-001.provenance.json": {
+        "generationModel": "qwen-image-2-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-001.recipe.json": {
+        "asset": "shot-001.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "qwen-image-2-edit",
+            "label": "reference-drafted panel (location base)",
+            "prompt": "Image 1 is the scene location — keep its architecture, layout, landmarks, and lighting exactly as shown; do not rearrange or mirror it. Place the person from image 2 (MARA: a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit) into the scene — reproduce their exact face, hair, and body from image 2, not from this text. STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 1 action. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing orange flight suit. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Location: a cramped cockpit capsule Lighting: amber instrument glow. Fixed layout (never rearrange): pilot seat facing the forward window; hatch behind it. BLOCKING: Mara in the pilot seat, screen left, facing the forward window. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 774x1376 center crop + scale",
+              "referenceUsage": {
+                "base": "location",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-002.provenance.json": {
+        "generationModel": "gpt-image-2",
+        "editModels": [
+          "qwen-image-2-edit"
+        ],
+        "hasFace": true
+      },
+      "shot-002.recipe.json": {
+        "asset": "shot-002.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "gpt-image-2",
+            "label": "scene draft (pre-identity)",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+            "seed": 99,
+            "cfgScale": 7,
+            "aspectRatio": "9:16",
+            "resolution": "1K",
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "qwen-image-2-edit",
+            "label": "reference-drafted panel (identity composite)",
+            "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/shot-002.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 774x1376 center crop + scale",
+              "referenceUsage": {
+                "base": "scene-draft",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 2
+          }
+        ]
+      },
+      "shot-006.provenance.json": {
+        "generationModel": "gpt-image-2",
+        "editModels": [],
+        "hasFace": false
+      },
+      "shot-006.recipe.json": {
+        "asset": "shot-006.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "gpt-image-2",
+            "label": "base panel",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. Camera: static. Shot 6 action. Empty environment, no people present, no human figures, uninhabited scene. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops, people, person, human, figure, silhouette, crowd, pedestrian, bystander, rain, rain streaks, wet surfaces, wet pavement, dark sky, storm, night sky, outdoor rain, neon reflections on wet ground",
+            "seed": 99,
+            "cfgScale": 7,
+            "aspectRatio": "9:16",
+            "resolution": "1K",
+            "pass": 1
+          }
+        ]
+      }
+    },
+    "episodeStatus": "storyboarded",
+    "stdout": [
+      "Generating storyboard for Episode 1: Pilot",
+      "3 shots to generate",
+      "  cfg_scale: 7 | seed: 99 | refine: false",
+      "Pass 1: Generating base panels...",
+      "  Restored aspect ratio: 320x180 → 774x1376",
+      "  [1/3] Shot 001: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  Restored aspect ratio: 320x180 → 774x1376",
+      "  [2/3] Shot 002: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "  [3/3] Shot 006: saved (<t>s)",
+      "Pass 1 complete: 3 generated, 0 skipped (<t>s total)",
+      "Storyboard complete. 3 panels in: <dir>/project/episodes/episode-001/scene-001",
+      "QA review comes next. A vision model compares every panel against the character",
+      "references and flags identity, wardrobe, setting and framing drift.",
+      "Next: qa-storyboard -p <dir>/project -e 1",
+      "Then: qa-approve -p <dir>/project -e 1"
+    ],
+    "stderr": []
+  },
+  "existing panels: identity refine and style match, already-refined skips": {
+    "status": 0,
+    "calls": [
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: MARA. beautiful, elegant, detailed features. Mara, 40s, a weathered bush pilot. Wearing: oil-stained leather flight jacket. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description. The final reference image is the location environment — match its setting, architecture, and lighting; it is not a character.",
+          "images": [
+            "<image episodes/episode-001/scene-001/.style-anchor.png = episodes/episode-001/scene-001/shot-001.png>",
+            "<image characters/mara/front.png>",
+            "<image locations/capsule/north.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: MARA. beautiful, elegant, detailed features. Mara, 40s, a weathered bush pilot. Wearing: oil-stained leather flight jacket. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-002.png>",
+            "<image characters/mara/front.png>",
+            "<image characters/mara/three-quarter.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Make both characters match their reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the reference for MARA (beautiful, elegant, detailed features, Mara, 40s, a weathered bush pilot, wearing oil-stained leather flight jacket). Image 3 is the reference for JUNO (wiry young woman, shaved head, Juno, 20s, an engineer, wearing white lab coat). IMPORTANT: Characters' CLOTHING must match the descriptions above, NOT the outfits in the reference images. Match faces and bodies only. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference images' layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition and background unchanged. Fix character appearance only.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-003.png>",
+            "<image characters/mara/front.png>",
+            "<image characters/juno/anchor.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: JUNO. wiry young woman, shaved head. Juno, 20s, an engineer. Wearing: grease-stained overalls. IMPORTANT: This is a BRIGHT DAYTIME scene. Do NOT darken the image, do NOT add rain, wet surfaces, or dark skies. Keep the bright warm lighting. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description. The final reference image is the location environment — match its setting, architecture, and lighting; it is not a character.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-004.png>",
+            "<image characters/juno/anchor.png>",
+            "<image locations/capsule/north.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-006.png>",
+            "<image locations/capsule/north.png>"
+          ]
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "seedream-v5-lite-edit",
+          "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-008.png>",
+            "<image episodes/episode-001/scene-001/.style-anchor.png = episodes/episode-001/scene-001/shot-001-pre-fix.png>"
+          ]
+        }
+      }
+    ],
+    "files": [
+      ".style-anchor.png",
+      "shot-001-pre-fix.png",
+      "shot-001.png",
+      "shot-001.provenance.json",
+      "shot-001.recipe.json",
+      "shot-002-pre-fix.png",
+      "shot-002.png",
+      "shot-002.provenance.json",
+      "shot-002.recipe.json",
+      "shot-003-pre-fix.png",
+      "shot-003.png",
+      "shot-003.provenance.json",
+      "shot-003.recipe.json",
+      "shot-004-pre-fix.png",
+      "shot-004.png",
+      "shot-004.provenance.json",
+      "shot-004.recipe.json",
+      "shot-005-pre-fix.png",
+      "shot-005.png",
+      "shot-006-pre-style.png",
+      "shot-006.png",
+      "shot-006.provenance.json",
+      "shot-006.recipe.json",
+      "shot-007-pre-style.png",
+      "shot-007.png",
+      "shot-008-pre-style.png",
+      "shot-008.png",
+      "shot-008.provenance.json",
+      "shot-008.recipe.json"
+    ],
+    "sidecars": {
+      "shot-001.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-001.recipe.json": {
+        "asset": "shot-001.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "seedream-v5-lite-edit",
+            "label": "character refine",
+            "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: MARA. beautiful, elegant, detailed features. Mara, 40s, a weathered bush pilot. Wearing: oil-stained leather flight jacket. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description. The final reference image is the location environment — match its setting, architecture, and lighting; it is not a character.",
+            "referenceImagePaths": [
+              "<dir>/project/characters/mara/front.png",
+              "<dir>/project/locations/capsule/north.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-001-pre-fix.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale",
+              "referenceUsage": {
+                "base": "panel",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-002.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-002.recipe.json": {
+        "asset": "shot-002.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "seedream-v5-lite-edit",
+            "label": "character refine",
+            "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: MARA. beautiful, elegant, detailed features. Mara, 40s, a weathered bush pilot. Wearing: oil-stained leather flight jacket. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description.",
+            "referenceImagePaths": [
+              "<dir>/project/characters/mara/front.png",
+              "<dir>/project/characters/mara/three-quarter.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-002-pre-fix.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale",
+              "referenceUsage": {
+                "base": "panel",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-003.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-003.recipe.json": {
+        "asset": "shot-003.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "seedream-v5-lite-edit",
+            "label": "character refine",
+            "prompt": "Make both characters match their reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the reference for MARA (beautiful, elegant, detailed features, Mara, 40s, a weathered bush pilot, wearing oil-stained leather flight jacket). Image 3 is the reference for JUNO (wiry young woman, shaved head, Juno, 20s, an engineer, wearing white lab coat). IMPORTANT: Characters' CLOTHING must match the descriptions above, NOT the outfits in the reference images. Match faces and bodies only. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference images' layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition and background unchanged. Fix character appearance only.",
+            "referenceImagePaths": [
+              "<dir>/project/characters/mara/front.png",
+              "<dir>/project/characters/juno/anchor.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-003-pre-fix.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale",
+              "referenceUsage": {
+                "base": "panel",
+                "anchored": [
+                  "MARA",
+                  "JUNO"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-004.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": true
+      },
+      "shot-004.recipe.json": {
+        "asset": "shot-004.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "seedream-v5-lite-edit",
+            "label": "character refine",
+            "prompt": "Make the woman in the scene match the reference images' FACE AND BODY PROPORTIONS ONLY. Image 2 is the front-facing reference, Image 3 (if present) is the three-quarter reference — use both to accurately reconstruct the face, hair, and jaw. Character: JUNO. wiry young woman, shaved head. Juno, 20s, an engineer. Wearing: grease-stained overalls. IMPORTANT: This is a BRIGHT DAYTIME scene. Do NOT darken the image, do NOT add rain, wet surfaces, or dark skies. Keep the bright warm lighting. CRITICAL: Keep the scene as a single continuous image. Do NOT copy the reference image's layout. Do NOT add text labels, annotations, inset panels, detail callouts, or multi-view compositions. Keep the scene composition, background, and other characters unchanged. Only modify this character's face, hair, body, and clothing to match the description. The final reference image is the location environment — match its setting, architecture, and lighting; it is not a character.",
+            "referenceImagePaths": [
+              "<dir>/project/characters/juno/anchor.png",
+              "<dir>/project/locations/capsule/north.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-004-pre-fix.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale",
+              "referenceUsage": {
+                "base": "panel",
+                "anchored": [
+                  "JUNO"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-006.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": false
+      },
+      "shot-006.recipe.json": {
+        "asset": "shot-006.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "look",
+            "model": "seedream-v5-lite-edit",
+            "label": "style match",
+            "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+            "referenceImagePaths": [
+              "<dir>/project/locations/capsule/north.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-006-pre-style.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale"
+            },
+            "pass": 1
+          }
+        ]
+      },
+      "shot-008.provenance.json": {
+        "generationModel": "seedream-v5-lite-edit",
+        "editModels": [],
+        "hasFace": false
+      },
+      "shot-008.recipe.json": {
+        "asset": "shot-008.png",
+        "passes": [
+          {
+            "kind": "multi-edit",
+            "role": "look",
+            "model": "seedream-v5-lite-edit",
+            "label": "style match",
+            "prompt": "Match the visual style of the reference image: same rendering style, color palette, line weight, and lighting treatment. Style: Cinematic photography, warm amber palette, low-key practical lighting. CRITICAL: Keep the scene composition and content unchanged. Only harmonize the visual style. Do NOT add characters, people, text, labels, or inset panels. Do NOT change the scene's subject matter.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/.style-anchor.png"
+            ],
+            "archivedPrevious": "<dir>/project/episodes/episode-001/scene-001/shot-008-pre-style.png",
+            "extra": {
+              "aspectRestore": "1024x1024 -> 320x180 center crop + scale"
+            },
+            "pass": 1
+          }
+        ]
+      }
+    },
+    "episodeStatus": "storyboarded",
+    "stdout": [
+      "Generating storyboard for Episode 1: Pilot",
+      "8 shots to generate",
+      "  cfg_scale: 10 | seed: 99 | refine: true",
+      "Pass 1: Generating base panels...",
+      "  [1/8] Shot 001: already exists, skipping",
+      "  [2/8] Shot 002: already exists, skipping",
+      "  [3/8] Shot 003: already exists, skipping",
+      "  [4/8] Shot 004: already exists, skipping",
+      "  [5/8] Shot 005: already exists, skipping",
+      "  [6/8] Shot 006: already exists, skipping",
+      "  [7/8] Shot 007: already exists, skipping",
+      "  [8/8] Shot 008: already exists, skipping",
+      "Pass 1 complete: 0 generated, 8 skipped (<t>s total)",
+      "Pass 2: Refining with multi-edit (seedream-v5-lite-edit)...",
+      "  Multi-editing panel with 1 character reference(s)...",
+      "  Model: seedream-v5-lite-edit",
+      "  Archived original: <dir>/project/episodes/episode-001/scene-001/shot-001-pre-fix.png",
+      "  Fixed panel saved: <dir>/project/episodes/episode-001/scene-001/shot-001.png",
+      "  [1/8] Shot 001: character-refined (<t>s)",
+      "  Multi-editing panel with 1 character reference(s)...",
+      "  Model: seedream-v5-lite-edit",
+      "  Archived original: <dir>/project/episodes/episode-001/scene-001/shot-002-pre-fix.png",
+      "  Fixed panel saved: <dir>/project/episodes/episode-001/scene-001/shot-002.png",
+      "  [2/8] Shot 002: character-refined (<t>s)",
+      "  Multi-editing panel with 2 character reference(s)...",
+      "  Model: seedream-v5-lite-edit",
+      "  Archived original: <dir>/project/episodes/episode-001/scene-001/shot-003-pre-fix.png",
+      "  Fixed panel saved: <dir>/project/episodes/episode-001/scene-001/shot-003.png",
+      "  [3/8] Shot 003: character-refined (<t>s)",
+      "  Multi-editing panel with 1 character reference(s)...",
+      "  Model: seedream-v5-lite-edit",
+      "  Archived original: <dir>/project/episodes/episode-001/scene-001/shot-004-pre-fix.png",
+      "  Fixed panel saved: <dir>/project/episodes/episode-001/scene-001/shot-004.png",
+      "  [4/8] Shot 004: character-refined (<t>s)",
+      "  [5/8] Shot 005: already refined, skipping",
+      "  Style-matching panel against anchor image...",
+      "  Style-matched panel saved: <dir>/project/episodes/episode-001/scene-001/shot-006.png",
+      "  [6/8] Shot 006: style-refined (<t>s, location anchor)",
+      "  [7/8] Shot 007: already style-matched, skipping",
+      "  Style-matching panel against anchor image...",
+      "  Style-matched panel saved: <dir>/project/episodes/episode-001/scene-001/shot-008.png",
+      "  [8/8] Shot 008: style-refined (<t>s)",
+      "Pass 2 complete (<t>s total)",
+      "Storyboard complete. 8 panels in: <dir>/project/episodes/episode-001/scene-001",
+      "QA review comes next. A vision model compares every panel against the character",
+      "references and flags identity, wardrobe, setting and framing drift.",
+      "Next: qa-storyboard -p <dir>/project -e 1",
+      "Then: qa-approve -p <dir>/project -e 1"
+    ],
+    "stderr": [
+      "  ⚠ Multi-editing a 16:9 panel — the 1:1→16:9 crop will remove ~25% from top/bottom.",
+      "    Close-up face shots may lose foreheads. Consider generating from scratch instead.",
+      "  ⚠ Multi-editing a 16:9 panel — the 1:1→16:9 crop will remove ~25% from top/bottom.",
+      "    Close-up face shots may lose foreheads. Consider generating from scratch instead.",
+      "  ⚠ Location environment ref dropped: character refs fill the multi-edit slot budget (2+ characters).",
+      "  ⚠ Multi-editing a 16:9 panel — the 1:1→16:9 crop will remove ~25% from top/bottom.",
+      "    Close-up face shots may lose foreheads. Consider generating from scratch instead.",
+      "  ⚠ Multi-editing a 16:9 panel — the 1:1→16:9 crop will remove ~25% from top/bottom.",
+      "    Close-up face shots may lose foreheads. Consider generating from scratch instead."
+    ]
+  },
+  "--shots rebuilds the listed shots only": {
+    "status": 0,
+    "calls": [
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+          "negative_prompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 99,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+          "images": [
+            "<image episodes/episode-001/scene-001/shot-002.png>",
+            "<image characters/mara/front.png>"
+          ]
+        }
+      }
+    ],
+    "files": [
+      ".style-anchor.png",
+      "shot-001.png",
+      "shot-002-force-archive-<ts>.png",
+      "shot-002.png",
+      "shot-002.provenance.json",
+      "shot-002.recipe.json",
+      "shot-003.png"
+    ],
+    "sidecars": {
+      "shot-002.provenance.json": {
+        "generationModel": "nano-banana-2",
+        "editModels": [
+          "nano-banana-2-edit"
+        ],
+        "hasFace": true
+      },
+      "shot-002.recipe.json": {
+        "asset": "shot-002.png",
+        "passes": [
+          {
+            "kind": "generate",
+            "role": "content",
+            "model": "nano-banana-2",
+            "label": "scene draft (pre-identity)",
+            "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain.",
+            "negativePrompt": "comic panels, multiple panels, panel layout, panel borders, panel grid, speech bubbles, text bubbles, manga panels, comic strip, storyboard grid, split screen, multiple frames, deformed, blurry, bad anatomy, bad hands, extra fingers, mutation, poorly drawn face, watermark, text, signature, low quality, ugly, umbrella, holding umbrella, background music, soundtrack, score, musical score, sound effects, sfx, foley, orchestral hits, sound design, audio drops",
+            "seed": 99,
+            "cfgScale": 10,
+            "aspectRatio": "16:9",
+            "resolution": "1K",
+            "pass": 1
+          },
+          {
+            "kind": "multi-edit",
+            "role": "identity",
+            "model": "nano-banana-2-edit",
+            "label": "reference-drafted panel (identity composite)",
+            "prompt": "Image 1 is the scene draft — keep its composition, framing, and environment. Make the character MARA in the scene match the person in image 2 exactly — face, hair, and body from image 2, not from text. (a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket.) STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Single cinematic frame, one continuous image, NOT a comic panel layout, NO panel borders, NO speech bubbles, NO text overlays. Characters are engaged in the scene, NOT looking at the camera. This is NOT a portrait or headshot. The environment, props, and action are equally important as the character. Show the full scene composition with widescreen cinematic framing. Camera: static. Shot 2 action. MARA (beautiful, elegant, detailed features): a weathered bush pilot with a sun-creased face and cropped grey hair, always squinting, wearing oil-stained leather flight jacket. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic, shot on fine grain. Render as a single continuous cinematic frame. Do NOT copy the reference images’ poses, backgrounds, or layout — only the identities. No text, no labels, no inset panels, no multi-view composition, no speech bubbles. STYLE: Cinematic photography, warm amber palette, low-key practical lighting.",
+            "referenceImagePaths": [
+              "<dir>/project/episodes/episode-001/scene-001/shot-002.png",
+              "<dir>/project/characters/mara/front.png"
+            ],
+            "extra": {
+              "aspectRestore": "1024x1024 -> 1376x774 center crop + scale",
+              "referenceUsage": {
+                "base": "scene-draft",
+                "anchored": [
+                  "MARA"
+                ],
+                "textOnly": []
+              }
+            },
+            "pass": 2
+          }
+        ]
+      }
+    },
+    "episodeStatus": "storyboarded",
+    "stdout": [
+      "Targeted regeneration: shots 2 (existing panels archived and rebuilt; other shots untouched).",
+      "Generating storyboard for Episode 1: Pilot",
+      "1 shots to generate (of 3)",
+      "  cfg_scale: 10 | seed: 99 | refine: true",
+      "Pass 1: Generating base panels...",
+      "  [2/3] Shot 002: saved, reference-drafted (<t>s | ETA ~<n>min)",
+      "Pass 1 complete: 1 generated, 0 skipped (<t>s total)",
+      "Pass 2: Refining with multi-edit (nano-banana-2-edit)...",
+      "  [1/1] Shot 002: reference-drafted, identity refinement not needed, skipping",
+      "Pass 2 complete (<t>s total)",
+      "Storyboard complete. 3 panels in: <dir>/project/episodes/episode-001/scene-001",
+      "QA review comes next. A vision model compares every panel against the character",
+      "references and flags identity, wardrobe, setting and framing drift.",
+      "Next: qa-storyboard -p <dir>/project -e 1",
+      "Then: qa-approve -p <dir>/project -e 1"
+    ],
+    "stderr": [
+      "Ignoring shot numbers not in this episode's script: 9"
+    ]
+  }
+}
