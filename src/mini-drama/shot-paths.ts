@@ -19,30 +19,10 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-export type ShotId = number | string;
+import { shotKey, type ShotId, type PlacementMap } from 'venice-video-harness/core/mini-drama/shot-paths.js';
 
-/**
- * A timeline placement map keyed by shot id. The string keys are the
- * zero-padded form produced by `shotKey()` — numeric portion padded to 3
- * digits, suffix letters preserved as-is.
- */
-export type PlacementMap = Record<string, { startSec: number; endSec: number }>;
-
-/**
- * canonical shot-id key. Numeric portions are zero-padded to 3
- * digits; suffix letters ("b", "c", ...) are preserved as-is.
- *
- *   shotKey(3)       -> "003"
- *   shotKey("3b")    -> "003b"
- *   shotKey("002c")  -> "002c"
- *   shotKey("intro") -> "intro"  (unrecognized — passed through)
- */
-export function shotKey(id: ShotId): string {
-  if (typeof id === 'number') return String(id).padStart(3, '0');
-  const match = id.match(/^(\d+)([a-zA-Z]*)$/);
-  if (match) return String(match[1]).padStart(3, '0') + match[2];
-  return id;
-}
+export { shotKey };
+export type { ShotId, PlacementMap };
 
 /** Dialogue file path: `dialogueDir/dialogue-shot-<key>.mp3`. */
 export function dialogueFileForShot(dialogueDir: string, id: ShotId): string {
