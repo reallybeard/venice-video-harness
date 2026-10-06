@@ -129,3 +129,6 @@ export * from './mini-drama/qa-loops.js';
 // One video render over the ports (references, video backend, clock, logger)
 // plus injected media callbacks: faces-off, request plan, media, body, job, recipe.
 export * from './mini-drama/render-video.js';
+// The episode generation loop: units in plan order, chaining state, the
+// multi-shot retry; the lanes are the host's GenerationUnitRenderer.
+export * from './mini-drama/generation-loop.js';
