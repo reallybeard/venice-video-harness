@@ -487,6 +487,30 @@
   clock) and `tests/core-render-job-equivalence.test.mjs` (both presets
   against `renderVideoFile` / `generateVideo` on the same scripted retrieve
   sequences, through the CLI's own `VideoBackend`).
+- **Pipeline gates move into core as one function
+  (`venice-video-harness/core/session/gates.js`, also on the core barrel).**
+  `gateFor(stageId, facts, { bypass? })` decides whether `storyboard`,
+  `qa-approve`, `render` or `assemble` may run, and returns
+  `{ blocked: false, advisory? }` or `{ blocked: true, reason, summary,
+  remedy: { stageId?, action?, command } }`. It composes the script-approval
+  rule, the rule-54 reference preflight (`missingReferences`, over a host
+  storage probe), `storyboardApprovalBlock` (rule 55), the rule-63 approval
+  check and `videoQaBlocksAssembly` (rule 52). Remedies are pipeline stages,
+  or one of four actions outside the pipeline table (`GATE_REMEDY_COMMANDS`:
+  `add-character`, `generate-location-references`, `fix-panel`,
+  `harvest-anchor`); `pipeline` output is unchanged. `EpisodeFacts` gains
+  optional gate facts (`missingReferences`, `qaReport`, `approval`,
+  `videoQaReport`); an absent fact never blocks. `scriptApproved` moves from
+  `session/status.ts` to `session/gates.ts` (re-exported from status, so the
+  import path is unchanged).
+- **`storyboard-episode`, `qa-approve`, `generate-videos` and
+  `assemble-episode` decide through `gateFor`.** `src/session/gates.ts` reads
+  the facts from disk and prints each block exactly as before; stderr, stdout
+  and exit codes are pinned by the new `tests/gate-commands-golden.test.mjs`
+  (32 cases, captured before the change). `generate-videos` still blocks
+  before the API key is read. `collectProjectFacts` reads the same facts with
+  the same readers, so `status` sees what the command will see.
+  Test: `tests/core-gates.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

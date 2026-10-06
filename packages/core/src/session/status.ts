@@ -15,15 +15,17 @@
 // ---------------------------------------------------------------------------
 
 import { PIPELINE_BRANCHES, PIPELINE_STAGES } from '../agent/pipeline.js';
-import { scriptApproved } from './gates.js';
+import { scriptApproved, type EpisodeGateFacts } from './gates.js';
 
 export { scriptApproved };
 
 /**
- * What the classifier reads about one episode. Exactly the markers the CLI
- * checks on disk; nothing is inferred from file contents.
+ * What the classifier reads about one episode: the markers the CLI checks on
+ * disk, plus the optional gate facts (`EpisodeGateFacts`: missing references,
+ * the QA report, the approval check, the video-QA report) read from inside
+ * the artifacts.
  */
-export interface EpisodeFacts {
+export interface EpisodeFacts extends EpisodeGateFacts {
   episode: number;
   title?: string;
   /** script.json exists. */

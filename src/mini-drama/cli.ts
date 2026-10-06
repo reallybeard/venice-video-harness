@@ -77,6 +77,15 @@ import { OperationAbortedError } from '../venice/operation-context.js';
 import { applyContextDefaults } from '../session/program-context.js';
 import { collectProjectStatus, formatProjectStatus } from '../session/status.js';
 import {
+  exitBlocked,
+  gateAdvisoryLines,
+  gateFor,
+  missingReferencesOnDisk,
+  readApprovalFacts,
+  readQaReportFacts,
+  readVideoQaFacts,
+} from '../session/gates.js';
+import {
   clearPendingJob,
   isStale,
   listPendingJobs,
@@ -96,9 +105,7 @@ import { getMusicModel } from 'venice-video-harness/core/venice/models.js';
 import { buildImagePrompt, buildCharacterReferencePromptParts } from './prompt-builder.js';
 import {
   approvalForShot,
-  describeMismatch,
   shotIdOf,
-  verifyApproval,
   type ApprovalArtifact,
   type ShotApproval,
 } from './panel-approval.js';
@@ -112,7 +119,6 @@ import {
   priorShotInLocation,
   shotQaFailure,
   shotQaFromReply,
-  storyboardApprovalBlock,
   storyboardQaClean,
   storyboardQaModelChain,
   summarizeStoryboardQa,
@@ -120,7 +126,6 @@ import {
   type StoryboardQaReply,
   type StoryboardQaReport,
 } from 'venice-video-harness/core/mini-drama/storyboard-qa.js';
-import { videoQaBlocksAssembly } from 'venice-video-harness/core/mini-drama/video-qa.js';
 import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
 import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
@@ -2046,13 +2051,15 @@ program
     if (!series.aesthetic) { console.error('Set aesthetic first.'); process.exit(1); }
 
     const episodeDir = getEpisodeDir(series, opts.episode);
-    const scriptApprovedPath = join(episodeDir, 'script-approved.json');
-    if (!opts.skipApproval && script.status !== 'approved' && !existsSync(scriptApprovedPath)) {
-      console.error('Blocked: the script has not been approved, and approval is a human decision.');
-      console.error(`  Clear it with:  approve-script -p ${series.outputDir} -e ${opts.episode}`);
-      console.error('  --skip-approval only bypasses this check; it does not approve the script and is not the fix.');
-      process.exit(1);
-    }
+    const gateContext = { project: series.outputDir, episode: opts.episode, episodeDir };
+    const gateFacts = {
+      episode: opts.episode,
+      scriptApprovalArtifact: existsSync(join(episodeDir, 'script-approved.json')),
+      scriptStatusApproved: script.status === 'approved',
+    };
+    const gateOptions = { bypass: opts.skipApproval ? ['script-not-approved' as const] : [] };
+    const approvalGate = gateFor('storyboard', gateFacts, gateOptions);
+    if (approvalGate.blocked) exitBlocked(approvalGate, gateContext);
 
     // Targeted regeneration: --shots limits every pass to a subset of the
     // script. The listed shots are force-rebuilt (their existing panels are
@@ -2087,32 +2094,8 @@ program
       const preflightShots = shotFilter
         ? script.shots.filter(s => shotFilter!.has(s.shotNumber))
         : script.shots;
-      const scriptedChars = [...new Set(preflightShots.flatMap(s => s.characters.map(c => c.toUpperCase())))];
-      const missingChars = scriptedChars.filter(name => {
-        const dir = getCharacterDir(series, name);
-        return !['front.png', 'three-quarter.png'].some(f => existsSync(join(dir, f)));
-      });
-      const scriptedLocs = [...new Set(preflightShots.map(s => s.location).filter((l): l is string => Boolean(l)))];
-      const missingLocs = scriptedLocs.filter(slug => {
-        const loc = getLocation(series, slug);
-        if (!loc) return false; // unknown slug is a script problem, not a refs problem
-        const dir = getLocationDir(series, loc.slug);
-        return !['north.png', 'south.png', 'east.png', 'west.png', 'wide.png', 'angle-2.png', 'angle-3.png', 'angle-4.png', 'medium.png', 'detail.png'].some(f => existsSync(join(dir, f)));
-      });
-      if (missingChars.length > 0 || missingLocs.length > 0) {
-        console.error('Blocked: reference images are missing. Storyboarding without them wastes a full render pass.');
-        for (const name of missingChars) {
-          const char = series.characters.find(c => c.name.toUpperCase() === name);
-          console.error(`  Character ${name}: no reference sheet. Generate with:`);
-          console.error(`    add-character -p ${series.outputDir} --name "${char?.name ?? name}" --gender ${char?.gender ?? '<gender>'} --age "${char?.age ?? '<age>'}" --description "..." --wardrobe "..."`);
-        }
-        for (const slug of missingLocs) {
-          console.error(`  Location ${slug}: no reference angles. Generate with:`);
-          console.error(`    generate-location-references -p ${series.outputDir} -l "${slug}"`);
-        }
-        console.error('  Then re-run this command.');
-        process.exit(1);
-      }
+      const referenceGate = gateFor('storyboard', { ...gateFacts, missingReferences: missingReferencesOnDisk(series, preflightShots) }, gateOptions);
+      if (referenceGate.blocked) exitBlocked(referenceGate, gateContext);
     }
 
     const cfgScale = opts.cfgScale ?? 10;
@@ -3190,28 +3173,13 @@ program
     // to be possible blindly — canopy-run cleared this gate with 5 of 14
     // shots never actually read (2026-08-10). Now that requires --force.
     const reportPath = join(episodeDir, 'qa-report.json');
-    if (!existsSync(reportPath)) {
-      console.error('Blocked: no qa-report.json — run qa-storyboard before qa-approve.');
-      console.error(`  Run:  qa-storyboard -p ${series.outputDir} -e ${opts.episode}`);
-      process.exit(1);
-    }
-    try {
-      const qaReport = JSON.parse(readFileSync(reportPath, 'utf-8')) as {
-        summary?: { flagCritical?: number; errored?: number };
-      };
-      const { blocked, criticalCount, uncheckedCount } = storyboardApprovalBlock(qaReport.summary);
-      if (blocked && !opts.force) {
-        console.error(`Blocked: the latest QA report has ${criticalCount} critical issue(s) and ${uncheckedCount} unchecked shot(s).`);
-        console.error('  Approving unread or failing panels renders money into known defects.');
-        console.error(`  Fix panels (fix-panel) or re-run QA (qa-storyboard), then approve.`);
-        console.error('  If you have reviewed the panels yourself and accept them, re-run with --force.');
-        process.exit(1);
-      }
-    } catch (err) {
-      if (err && typeof err === 'object' && 'code' in (err as NodeJS.ErrnoException)) throw err;
-      console.error(`Blocked: qa-report.json could not be parsed (${err instanceof Error ? err.message : String(err)}). Re-run qa-storyboard.`);
-      process.exit(1);
-    }
+    const qaReported = existsSync(reportPath);
+    const qaGate = gateFor(
+      'qa-approve',
+      { episode: opts.episode, qaReported, qaReport: qaReported ? readQaReportFacts(reportPath) : undefined },
+      { bypass: opts.force ? ['qa-issues'] : [] },
+    );
+    if (qaGate.blocked) exitBlocked(qaGate, { project: series.outputDir, episode: opts.episode, episodeDir });
 
     // Bind the approval to the panels a human actually reviewed: per shot, a
     // hash of the panel bytes plus a digest of the settings the panel depends
@@ -3464,34 +3432,17 @@ program
 
     const episodeDir = getEpisodeDir(series, opts.episode);
     const qaPath = join(episodeDir, 'qa-approved.json');
-    if (!opts.skipQa && !existsSync(qaPath)) {
-      console.error('Blocked: rendering is billed at queue time and the QA gate has not been cleared by a human.');
-      console.error(`  Review:  qa-storyboard -p ${series.outputDir} -e ${opts.episode}`);
-      console.error(`  Clear it with:  qa-approve -p ${series.outputDir} -e ${opts.episode}`);
-      console.error('  --skip-qa only bypasses this check; it does not clear QA and is not the fix.');
-      process.exit(1);
-    }
     if (!opts.skipQa) {
       // The approval must still describe the panels on disk. A panel
       // regenerated or a prompt/reference/model changed after qa-approve
       // means a human has not reviewed what is about to be billed.
-      let artifact: ApprovalArtifact;
-      try {
-        artifact = JSON.parse(readFileSync(qaPath, 'utf-8')) as ApprovalArtifact;
-      } catch {
-        console.error(`Blocked: ${qaPath} could not be parsed. Re-run qa-approve.`);
-        process.exit(1);
-      }
-      const stale = verifyApproval(artifact, series, script.shots, join(episodeDir, 'scene-001'));
-      if (stale.length > 0) {
-        console.error(`Blocked: ${stale.length} shot(s) changed after QA approval (${artifact.approvedAt}); a human has not reviewed what would be billed.`);
-        for (const s of stale) {
-          console.error(`  shot ${s.shotKey}: ${s.mismatches.map(describeMismatch).join('; ')}`);
-        }
-        console.error(`  Review the panels, then re-approve:  qa-approve -p ${series.outputDir} -e ${opts.episode}`);
-        console.error('  --skip-qa bypasses this check; it does not clear QA and is not the fix.');
-        process.exit(1);
-      }
+      const qaApproved = existsSync(qaPath);
+      const renderGate = gateFor('render', {
+        episode: opts.episode,
+        qaApproved,
+        approval: qaApproved ? readApprovalFacts(qaPath, series, script.shots, join(episodeDir, 'scene-001')) : undefined,
+      });
+      if (renderGate.blocked) exitBlocked(renderGate, { project: series.outputDir, episode: opts.episode, episodeDir });
     }
 
     // commander's --no-<flag> negates the camelCase option. When the user
@@ -4106,25 +4057,15 @@ program
     // reviewed the footage themselves.
     if (!opts.skipVideoQa) {
       const videoQaPath = join(episodeDir, 'video-qa-report.json');
-      if (!existsSync(videoQaPath)) {
-        console.warn('⚠ No video-qa-report.json — the rendered units have not been checked for cross-unit');
-        console.warn(`  identity drift or head glitches. Recommended: qa-videos -p ${series.outputDir} -e ${opts.episode}`);
-        console.warn('  Assembling anyway (a missing report only warns; a failing one blocks).');
-      } else {
-        try {
-          const videoQa = JSON.parse(readFileSync(videoQaPath, 'utf-8')) as { summary?: { passed?: boolean; criticals?: number } };
-          if (videoQaBlocksAssembly(videoQa)) {
-            console.error(`Blocked: video QA found ${videoQa.summary?.criticals ?? '?'} critical issue(s) in the rendered units.`);
-            console.error('  Assembling drifted or glitched units bakes the defects into the master.');
-            console.error(`  Review: ${videoQaPath}`);
-            console.error(`  Fix the flagged units (or harvest-anchor + re-render), re-run qa-videos, then assemble.`);
-            console.error('  If you have reviewed the footage yourself and accept it, re-run with --skip-video-qa.');
-            process.exit(1);
-          }
-        } catch {
-          console.warn('⚠ video-qa-report.json could not be parsed — treating as missing.');
-        }
-      }
+      const videoQaReported = existsSync(videoQaPath);
+      const assembleGate = gateFor('assemble', {
+        episode: opts.episode,
+        videoQaReported,
+        videoQaReport: videoQaReported ? readVideoQaFacts(videoQaPath) : undefined,
+      });
+      const gateContext = { project: series.outputDir, episode: opts.episode, episodeDir };
+      if (assembleGate.blocked) exitBlocked(assembleGate, gateContext);
+      for (const line of gateAdvisoryLines(assembleGate, gateContext)) console.warn(line);
     }
 
     console.log(`Assembling Episode ${opts.episode}: ${script.title}`);
