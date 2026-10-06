@@ -1282,7 +1282,7 @@ program
               aspectRatio: sharedAspect,
               resolution: sharedResolution,
               extra: returnedSeed !== undefined ? { returnedSeed } : undefined,
-            }, { provenance: 'generate', hasFace: true });
+            }, { provenance: 'generate', hasFace: (character.kind ?? 'person') !== 'object' });
           }
         } catch (err) {
           console.warn(`  ${angle}: failed - ${err}`);
@@ -1841,6 +1841,7 @@ Respond with ONLY valid JSON matching this exact schema (no markdown, no code fe
           age: 'n/a',
           description: prop.description,
           fullDescription: prop.description,
+          kind: 'object',
           wardrobe: 'n/a',
           voiceDescription: 'n/a (inanimate object)',
           baseTraits: `inanimate object, prop; ${prop.description}; shown alone on a neutral background, clean product-plate framing, no people, no hands, no faces, no scene furniture`,

@@ -211,14 +211,22 @@ export function resolveVideoModel(
     : series.videoDefaults.atmosphereModel;
 
   const hasCharacters = shot.characters.length > 0;
+  // Object cast members (`kind: 'object'`) have no face; only a person on
+  // screen forces the faces-off swap below. A name not found on the series
+  // counts as a person (same conservative default as the preflight).
+  const hasPerson = shot.characters.some(name => {
+    const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
+    return (char?.kind ?? 'person') === 'person';
+  });
 
   // Faces-off twins (`seedance-*-basic`) refuse input images of people. A
-  // shot with characters sends character sheets and a panel, so any faces-off
+  // shot with a person sends character sheets and a panel, so any faces-off
   // id configured for the identity lanes is swapped for its face-capable twin
-  // here, before the prompt is built. Shots with no people keep the configured
-  // id (text-only and faceless-reference renders are fine on it).
+  // here, before the prompt is built. Shots with no people (empty, or objects
+  // only) keep the configured id (text-only and faceless-reference renders
+  // are fine on it).
   const faceSafe = (modelId: string): string =>
-    hasCharacters ? faceCapableTwinId(modelId) : modelId;
+    hasPerson ? faceCapableTwinId(modelId) : modelId;
   const configuredConsistencyModel =
     series.videoDefaults.characterConsistencyModel ?? DEFAULT_CHARACTER_CONSISTENCY_MODEL;
   const consistencyModel = faceSafe(configuredConsistencyModel);
@@ -289,8 +297,10 @@ export function resolveVideoModel(
     modelId: consistencyModel,
     upgraded: consistencyModel !== baseModel,
     reason: facesOffSwapped
-      ? `characters present — ${configuredConsistencyModel} runs without face handling and refuses images of people; using ${consistencyModel}`
-      : 'characters present — R2V for identity anchoring',
+      ? `person on screen — ${configuredConsistencyModel} runs without face handling and refuses images of people; using ${consistencyModel}`
+      : hasPerson
+        ? 'characters present — R2V for identity anchoring'
+        : 'objects only, no person on screen — R2V for identity anchoring (faces-off id kept)',
     autoUseElements: MODELS_SUPPORTING_ELEMENTS.has(consistencyModel),
     autoUseReferenceImages: MODELS_SUPPORTING_REFERENCE_IMAGES.has(consistencyModel),
     useImageTags: MODELS_USING_IMAGE_TAGS.has(consistencyModel),
@@ -469,6 +479,18 @@ function formatDialogueLine(who: string, line: string, improvise: boolean): stri
   return improvise ? `${who} conveys: "${line}"` : `${who}: "${line}"`;
 }
 
+/**
+ * The up-front `@ImageN is NAME …` identity declaration (rule 37). People
+ * bind on wardrobe; object cast members (`kind: 'object'`) have none, so
+ * they bind on the object's physical identity instead. One helper for the
+ * single, multi-shot and montage paths so the three can never disagree.
+ */
+function identityLine(index: number, char: MiniDramaCharacter, wardrobe: string): string {
+  return (char.kind ?? 'person') === 'object'
+    ? `@Image${index} is ${char.name}: its shape, material and markings.`
+    : `@Image${index} is ${char.name} — wearing ${wardrobe}.`;
+}
+
 export function buildVideoPrompt(
   shot: ShotScript,
   series: SeriesState,
@@ -548,7 +570,7 @@ export function buildVideoPrompt(
       );
       if (!char) continue;
       const wardrobe = shot.episodeWardrobe?.[char.name.toUpperCase()] ?? char.wardrobe;
-      parts.push(`@Image${slot.elementIndex} is ${char.name} — wearing ${wardrobe}.`);
+      parts.push(identityLine(slot.elementIndex, char, wardrobe));
     }
   }
 
@@ -914,7 +936,7 @@ export function buildMontagePrompt(
     );
     if (!char) continue;
     const wardrobe = wardrobeByChar.get(char.name.toUpperCase()) ?? char.wardrobe;
-    parts.push(`@Image${slot.elementIndex} is ${char.name} — wearing ${wardrobe}. Wardrobe locked, identical in every beat.`);
+    parts.push(`${identityLine(slot.elementIndex, char, wardrobe)} ${(char.kind ?? 'person') === 'object' ? 'Appearance' : 'Wardrobe'} locked, identical in every beat.`);
   }
   for (const slot of plan.slots) {
     if (slot.kind === 'character-primary') continue;
@@ -1141,7 +1163,7 @@ function buildSeedanceMultiShotPrompt(
     );
     if (!char) continue;
     const wardrobe = wardrobeByChar.get(char.name.toUpperCase()) ?? char.wardrobe;
-    parts.push(`@Image${slot.elementIndex} is ${char.name} — wearing ${wardrobe}.`);
+    parts.push(identityLine(slot.elementIndex, char, wardrobe));
   }
 
   // Role clauses for the non-character slots (plate, location angles), same

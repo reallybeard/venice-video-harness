@@ -285,6 +285,28 @@
   a check that `capabilities.json` matches `npm run manifest`, and a web UI
   typecheck + build. No API key in CI; `VENICE_VIDEO_CONFIG_DIR` points at
   an empty dir so no test can reach a paid endpoint.
+- **`Character.kind: 'person' | 'object'` (plan-schema-additions.md §4).**
+  Recurring hero props and vehicles already ride the character system for
+  identity anchoring (a locked reference, angle views, an `@ImageN` slot —
+  the workshop's "RECURRING PROPS ARE CAST" rule and the script writer's
+  `objectCast`), but three places assumed every character has a face. New
+  optional `kind` on `Character`, read everywhere as `char.kind ?? 'person'`
+  so a `series.json` written before the field existed renders byte-identical
+  prompts: (1) `resolveVideoModel`'s faces-off swap fires only when a
+  *person* is on screen, so an object-only shot stays on a configured
+  `-basic` Seedance id (the reason string says which); (2)
+  `checkFacesOffCompatible` takes an optional `characterKinds` map (built by
+  the new `characterKindsFor(series, names)`; `renderVideoFile` passes it
+  from every lane) and, when every character on screen is an object, treats
+  undecided sidecars as faceless — an explicit `hasFace: true` still blocks,
+  and a name missing from the map is a person; (3) the identity line reads
+  `@ImageN is NAME: its shape, material and markings.` for objects instead
+  of `— wearing n/a`, on the single, multi-shot and montage paths alike.
+  Character reference sheets for an object are written with
+  `hasFace: false`; the script writer's `objectCast` materialisation sets
+  `kind: 'object'`. `gender` / `age` / `voiceDescription` / `wardrobe` stay
+  on the type and are ignored for objects. Test:
+  `tests/character-kind.test.mjs`.
 - **`packages/core` — the pure half of the harness, exported as
   `venice-video-harness/core` (phase 2 of the core split).** An npm
   workspace holding the modules that were already pure, moved with
