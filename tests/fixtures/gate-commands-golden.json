@@ -1,0 +1,162 @@
+{
+  "storyboard/unapproved": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: the script has not been approved, and approval is a human decision.\n  Clear it with:  approve-script -p <WORKSPACE>/storyboard--unapproved -e 1\n  --skip-approval only bypasses this check; it does not approve the script and is not the fix.\n"
+  },
+  "storyboard/skip-approval-refs-missing": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: reference images are missing. Storyboarding without them wastes a full render pass.\n  Character MARA: no reference sheet. Generate with:\n    add-character -p <WORKSPACE>/storyboard--skip-approval-refs-missing --name \"MARA\" --gender female --age \"40s\" --description \"...\" --wardrobe \"...\"\n  Location capsule: no reference angles. Generate with:\n    generate-location-references -p <WORKSPACE>/storyboard--skip-approval-refs-missing -l \"capsule\"\n  Then re-run this command.\n"
+  },
+  "storyboard/refs-missing-character": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: reference images are missing. Storyboarding without them wastes a full render pass.\n  Character MARA: no reference sheet. Generate with:\n    add-character -p <WORKSPACE>/storyboard--refs-missing-character --name \"MARA\" --gender female --age \"40s\" --description \"...\" --wardrobe \"...\"\n  Then re-run this command.\n"
+  },
+  "storyboard/refs-missing-mixed": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: reference images are missing. Storyboarding without them wastes a full render pass.\n  Character JUNO: no reference sheet. Generate with:\n    add-character -p <WORKSPACE>/storyboard--refs-missing-mixed --name \"JUNO\" --gender female --age \"20s\" --description \"...\" --wardrobe \"...\"\n  Character GHOST: no reference sheet. Generate with:\n    add-character -p <WORKSPACE>/storyboard--refs-missing-mixed --name \"GHOST\" --gender <gender> --age \"<age>\" --description \"...\" --wardrobe \"...\"\n  Location capsule: no reference angles. Generate with:\n    generate-location-references -p <WORKSPACE>/storyboard--refs-missing-mixed -l \"capsule\"\n  Then re-run this command.\n"
+  },
+  "storyboard/approved-via-status-refs-missing": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: reference images are missing. Storyboarding without them wastes a full render pass.\n  Character MARA: no reference sheet. Generate with:\n    add-character -p <WORKSPACE>/storyboard--approved-via-status-refs-missing --name \"MARA\" --gender female --age \"40s\" --description \"...\" --wardrobe \"...\"\n  Location capsule: no reference angles. Generate with:\n    generate-location-references -p <WORKSPACE>/storyboard--approved-via-status-refs-missing -l \"capsule\"\n  Then re-run this command.\n"
+  },
+  "storyboard/shots-match-none": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Ignoring shot numbers not in this episode's script: 9\nBlocked: --shots matched no shots in this episode. Nothing to regenerate.\n"
+  },
+  "storyboard/shots-filter-skips-unrelated-missing-refs": {
+    "code": 1,
+    "stdout": "Targeted regeneration: shots 1 (existing panels archived and rebuilt; other shots untouched).\n\n",
+    "stderr": "Ignoring shot numbers not in this episode's script: 7\nerror: Venice API key is required. Run `venice-video setup` or set VENICE_API_KEY.\n"
+  },
+  "storyboard/pass": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "error: Venice API key is required. Run `venice-video setup` or set VENICE_API_KEY.\n"
+  },
+  "qa-approve/no-report": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: no qa-report.json — run qa-storyboard before qa-approve.\n  Run:  qa-storyboard -p <WORKSPACE>/qa-approve--no-report -e 1\n"
+  },
+  "qa-approve/criticals": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: the latest QA report has 2 critical issue(s) and 0 unchecked shot(s).\n  Approving unread or failing panels renders money into known defects.\n  Fix panels (fix-panel) or re-run QA (qa-storyboard), then approve.\n  If you have reviewed the panels yourself and accept them, re-run with --force.\n"
+  },
+  "qa-approve/unchecked": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: the latest QA report has 0 critical issue(s) and 1 unchecked shot(s).\n  Approving unread or failing panels renders money into known defects.\n  Fix panels (fix-panel) or re-run QA (qa-storyboard), then approve.\n  If you have reviewed the panels yourself and accept them, re-run with --force.\n"
+  },
+  "qa-approve/unparseable": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: qa-report.json could not be parsed (<parse error>). Re-run qa-storyboard.\n"
+  },
+  "qa-approve/criticals-force": {
+    "code": 0,
+    "stdout": "QA approved for Episode 1 (2 panel(s) bound).\n  Artifact: <WORKSPACE>/qa-approve--criticals-force/episodes/episode-001/qa-approved.json\n\nVideo generation is now unblocked. Run: generate-videos -p <WORKSPACE>/qa-approve--criticals-force -e 1\n",
+    "stderr": "  ⚠ 1 shot(s) have no panel on disk and were not bound: 003. They will be refused by generate-videos until storyboarded and re-approved.\n"
+  },
+  "qa-approve/no-summary": {
+    "code": 0,
+    "stdout": "QA approved for Episode 1 (3 panel(s) bound).\n  Artifact: <WORKSPACE>/qa-approve--no-summary/episodes/episode-001/qa-approved.json\n\nVideo generation is now unblocked. Run: generate-videos -p <WORKSPACE>/qa-approve--no-summary -e 1\n",
+    "stderr": ""
+  },
+  "qa-approve/clean": {
+    "code": 0,
+    "stdout": "QA approved for Episode 1 (3 panel(s) bound).\n  Artifact: <WORKSPACE>/qa-approve--clean/episodes/episode-001/qa-approved.json\n\nVideo generation is now unblocked. Run: generate-videos -p <WORKSPACE>/qa-approve--clean -e 1\n",
+    "stderr": ""
+  },
+  "generate-videos/no-approval": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: rendering is billed at queue time and the QA gate has not been cleared by a human.\n  Review:  qa-storyboard -p <WORKSPACE>/generate-videos--no-approval -e 1\n  Clear it with:  qa-approve -p <WORKSPACE>/generate-videos--no-approval -e 1\n  --skip-qa only bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/unparseable": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: <WORKSPACE>/generate-videos--unparseable/episodes/episode-001/qa-approved.json could not be parsed. Re-run qa-approve.\n"
+  },
+  "generate-videos/legacy-unbound": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: 3 shot(s) changed after QA approval (2026-10-01T00:00:00.000Z); a human has not reviewed what would be billed.\n  shot 001: approval predates per-shot binding (or shot was added after approval)\n  shot 002: approval predates per-shot binding (or shot was added after approval)\n  shot 003: approval predates per-shot binding (or shot was added after approval)\n  Review the panels, then re-approve:  qa-approve -p <WORKSPACE>/generate-videos--legacy-unbound -e 1\n  --skip-qa bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/panel-changed": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: 1 shot(s) changed after QA approval (2026-10-01T00:00:00.000Z); a human has not reviewed what would be billed.\n  shot 002: panel was regenerated or edited after approval\n  Review the panels, then re-approve:  qa-approve -p <WORKSPACE>/generate-videos--panel-changed -e 1\n  --skip-qa bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/panel-missing": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: 1 shot(s) changed after QA approval (2026-10-01T00:00:00.000Z); a human has not reviewed what would be billed.\n  shot 003: panel file is missing\n  Review the panels, then re-approve:  qa-approve -p <WORKSPACE>/generate-videos--panel-missing -e 1\n  --skip-qa bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/settings-changed": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: 1 shot(s) changed after QA approval (2026-10-01T00:00:00.000Z); a human has not reviewed what would be billed.\n  shot 001: prompt, references or image model changed after approval\n  Review the panels, then re-approve:  qa-approve -p <WORKSPACE>/generate-videos--settings-changed -e 1\n  --skip-qa bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/shot-added": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: 2 shot(s) changed after QA approval (2026-10-01T00:00:00.000Z); a human has not reviewed what would be billed.\n  shot 003: approval predates per-shot binding (or shot was added after approval)\n  shot 004: approval predates per-shot binding (or shot was added after approval)\n  Review the panels, then re-approve:  qa-approve -p <WORKSPACE>/generate-videos--shot-added -e 1\n  --skip-qa bypasses this check; it does not clear QA and is not the fix.\n"
+  },
+  "generate-videos/pass": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "error: Venice API key is required. Run `venice-video setup` or set VENICE_API_KEY.\n"
+  },
+  "generate-videos/skip-qa": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "error: Venice API key is required. Run `venice-video setup` or set VENICE_API_KEY.\n"
+  },
+  "assemble/no-clips": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "No video clips found. Run generate-videos first.\n"
+  },
+  "assemble/video-qa-fail": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: video QA found 2 critical issue(s) in the rendered units.\n  Assembling drifted or glitched units bakes the defects into the master.\n  Review: <WORKSPACE>/assemble--video-qa-fail/episodes/episode-001/video-qa-report.json\n  Fix the flagged units (or harvest-anchor + re-render), re-run qa-videos, then assemble.\n  If you have reviewed the footage yourself and accept it, re-run with --skip-video-qa.\n"
+  },
+  "assemble/video-qa-fail-no-count": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Blocked: video QA found ? critical issue(s) in the rendered units.\n  Assembling drifted or glitched units bakes the defects into the master.\n  Review: <WORKSPACE>/assemble--video-qa-fail-no-count/episodes/episode-001/video-qa-report.json\n  Fix the flagged units (or harvest-anchor + re-render), re-run qa-videos, then assemble.\n  If you have reviewed the footage yourself and accept it, re-run with --skip-video-qa.\n"
+  },
+  "assemble/video-qa-fail-skip": {
+    "code": 1,
+    "stdout": "Assembling Episode 1: Pilot\n  3 video clips\n  Dialogue replacement: OFF (default — using native model dialogue at 100% volume)\n  Ambient bed: OFF (no ambient bed found in audio/)\n  Normalizing 3 clips...\n",
+    "stderr": "error: ffprobe failed: <ffprobe output>\n"
+  },
+  "assemble/video-qa-missing": {
+    "code": 1,
+    "stdout": "Assembling Episode 1: Pilot\n  3 video clips\n  Dialogue replacement: OFF (default — using native model dialogue at 100% volume)\n  Ambient bed: OFF (no ambient bed found in audio/)\n  Normalizing 3 clips...\n",
+    "stderr": "⚠ No video-qa-report.json — the rendered units have not been checked for cross-unit\n  identity drift or head glitches. Recommended: qa-videos -p <WORKSPACE>/assemble--video-qa-missing -e 1\n  Assembling anyway (a missing report only warns; a failing one blocks).\nerror: ffprobe failed: <ffprobe output>\n"
+  },
+  "assemble/video-qa-unparseable": {
+    "code": 1,
+    "stdout": "Assembling Episode 1: Pilot\n  3 video clips\n  Dialogue replacement: OFF (default — using native model dialogue at 100% volume)\n  Ambient bed: OFF (no ambient bed found in audio/)\n  Normalizing 3 clips...\n",
+    "stderr": "⚠ video-qa-report.json could not be parsed — treating as missing.\nerror: ffprobe failed: <ffprobe output>\n"
+  },
+  "assemble/video-qa-no-summary": {
+    "code": 1,
+    "stdout": "Assembling Episode 1: Pilot\n  3 video clips\n  Dialogue replacement: OFF (default — using native model dialogue at 100% volume)\n  Ambient bed: OFF (no ambient bed found in audio/)\n  Normalizing 3 clips...\n",
+    "stderr": "error: ffprobe failed: <ffprobe output>\n"
+  },
+  "assemble/video-qa-pass": {
+    "code": 1,
+    "stdout": "Assembling Episode 1: Pilot\n  3 video clips\n  Dialogue replacement: OFF (default — using native model dialogue at 100% volume)\n  Ambient bed: OFF (no ambient bed found in audio/)\n  Normalizing 3 clips...\n",
+    "stderr": "error: ffprobe failed: <ffprobe output>\n"
+  }
+}
