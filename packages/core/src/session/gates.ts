@@ -16,7 +16,8 @@
 // ---------------------------------------------------------------------------
 
 import { PIPELINE_STAGES } from '../agent/pipeline.js';
-import type { ApprovalCheck } from '../mini-drama/panel-approval.js';
+import { approvalCounts, type ApprovalCheck } from '../mini-drama/panel-approval.js';
+import type { ApprovalBinding } from '../series/types.js';
 import { storyboardApprovalBlock } from '../mini-drama/storyboard-qa.js';
 import { videoQaBlocksAssembly } from '../mini-drama/video-qa.js';
 import { getLocation } from '../series/locations.js';
@@ -68,6 +69,14 @@ export interface EpisodeGateFacts {
   approval?: { approvedAt?: string; stale: ApprovalCheck[] } | ArtifactParseError;
   /** video-qa-report.json, when it exists: its summary, or why it would not parse. */
   videoQaReport?: { summary?: { passed?: boolean; criticals?: number } } | ArtifactParseError;
+  /**
+   * Render, per approved shot: whether storyboard QA cleared it, and its
+   * binding. A host that approves panel by panel supplies it, and a shot
+   * counts only when QA cleared it or its approval was forced
+   * (`approvalCounts`). The CLI leaves it out: its `qa-approve` gates the
+   * whole report before it writes any binding. Absent: not checked.
+   */
+  approvedShots?: ReadonlyArray<{ shotKey: string; qaCleared: boolean; binding: Pick<ApprovalBinding, 'force'> }>;
 }
 
 /**
@@ -183,6 +192,8 @@ export type GateBlockReason =
   | { kind: 'qa-not-approved' }
   | { kind: 'approval-unreadable'; error: string }
   | { kind: 'approval-stale'; approvedAt?: string; stale: ApprovalCheck[] }
+  /** Approved shots that QA did not clear and whose approval was not forced (shot keys). */
+  | { kind: 'approval-not-cleared'; shots: string[] }
   | { kind: 'video-qa-failed'; criticals?: number };
 
 export type GateBlockKind = GateBlockReason['kind'];
@@ -264,6 +275,10 @@ function blockReasons(stageId: EpisodeStageId, facts: GateFacts): GateBlockReaso
       else if (approval && approval.stale.length > 0) {
         reasons.push({ kind: 'approval-stale', approvedAt: approval.approvedAt, stale: approval.stale });
       }
+      const notCleared = (facts.approvedShots ?? [])
+        .filter(shot => !approvalCounts(shot.binding, shot.qaCleared))
+        .map(shot => shot.shotKey);
+      if (facts.qaApproved && notCleared.length > 0) reasons.push({ kind: 'approval-not-cleared', shots: notCleared });
       break;
     }
     case 'assemble': {
@@ -301,6 +316,7 @@ function blockSummary(reason: GateBlockReason): string {
     case 'qa-not-approved': return 'QA not approved';
     case 'approval-unreadable': return 'qa-approved.json unreadable';
     case 'approval-stale': return `${reason.stale.length} shot(s) changed after QA approval`;
+    case 'approval-not-cleared': return `${reason.shots.length} shot(s) approved without a QA pass or force`;
     case 'video-qa-failed': return `video QA found ${reason.criticals ?? '?'} critical issue(s)`;
   }
 }
@@ -332,6 +348,7 @@ function remedyFor(reason: GateBlockReason, episode: number): GateRemedy {
     case 'qa-not-approved':
     case 'approval-unreadable':
     case 'approval-stale':
+    case 'approval-not-cleared':
       return stageRemedy('qa-approve', episode);
     case 'video-qa-failed': return actionRemedy('harvest-anchor', episode);
   }
