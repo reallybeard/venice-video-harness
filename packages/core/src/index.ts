@@ -59,6 +59,8 @@ export * from './venice/capabilities-manifest.js';
 
 // The series schema: SeriesState, EpisodeScript, ShotScript, defaults, capability sets.
 export * from './series/types.js';
+// ReferenceSet: the images a shot may reference, as data (CLI: paths; browser: asset ids).
+export * from './series/references.js';
 export * from './series/duration.js';
 export * from './series/dialogue.js';
 export * from './series/project-language.js';
