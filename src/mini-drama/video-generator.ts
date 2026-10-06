@@ -109,10 +109,6 @@ interface QueueResponse {
   queue_id: string;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
-}
-
 /**
  * Extract a frame near the end of a clip. `secondsFromEnd` (default 0) moves
  * the target earlier — stream mode uses it to step back through the previous
@@ -2064,6 +2060,9 @@ async function renderMultiShotUnitUntilSuccess(
         nextShotNumber,
       );
     } catch (err) {
+      // A cancelled operation is not a failed attempt: retrying it fails the
+      // same way every 15s, forever.
+      if (isAbortError(err)) throw err;
       // A classified refusal is final: a face-screening refusal fails on the
       // same images every time, and a provider refusal has already had its one
       // refunded retry inside submitVideoQueue. Looping here would only bill
@@ -2082,7 +2081,8 @@ async function renderMultiShotUnitUntilSuccess(
       }
       console.warn(`  ${unit.unitId}: keeping multi-shot strategy, retrying in ${(MULTISHOT_RETRY_DELAY_MS / 1000).toFixed(0)}s`);
       attempt += 1;
-      await sleep(MULTISHOT_RETRY_DELAY_MS);
+      // Abortable, so a cancel during the wait ends it at once.
+      await abortableSleep(MULTISHOT_RETRY_DELAY_MS);
     }
   }
 }

@@ -155,6 +155,14 @@
   record is kept, so the next run re-attaches and fetches the clip again.
   Test: `tests/render-clip-write-failure.test.mjs` renders into a read-only
   directory and expects one download and an `EACCES`.
+- **A cancelled multi-shot unit stops instead of retrying forever.**
+  `renderMultiShotUnitUntilSuccess` treated a Ctrl-C (the operation's abort)
+  as a failed attempt and retried it after a plain 15 s `setTimeout`; every
+  retry failed the same way, so the unit spun until the process was killed.
+  Abort errors now propagate, and the retry wait is `abortableSleep`, so a
+  cancel during the wait ends it at once. Test:
+  `tests/multishot-cancel.test.mjs` cancels during an attempt and during a
+  failing attempt; without the fix both are rescheduled.
 
 ### Changed
 
