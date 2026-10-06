@@ -92,6 +92,9 @@ export function createCliVideoBackend(client: () => VeniceClient, logger: Logger
           request as unknown as Record<string, unknown>,
           outputPath,
         );
+        // Printed before the registry write: if that write fails, the
+        // console line is the only trace of a job Venice has already billed.
+        logger.info(`  Queue ID: ${queue_id}`);
         await recordPendingJob({
           kind: 'video',
           model,
@@ -101,7 +104,6 @@ export function createCliVideoBackend(client: () => VeniceClient, logger: Logger
           episode: target.episode,
           prompt: request.prompt,
         });
-        logger.info(`  Queue ID: ${queue_id}`);
         return { outputKey: outputPath, model, queueId: queue_id, queuedAt: new Date().toISOString(), resumed: false };
       });
     },
