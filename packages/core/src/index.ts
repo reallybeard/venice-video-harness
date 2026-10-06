@@ -131,3 +131,7 @@ export * from './mini-drama/qa-steps.js';
 // One video render over the ports (references, video backend, clock, logger)
 // plus injected media callbacks: faces-off, request plan, media, body, job, recipe.
 export * from './mini-drama/render-video.js';
+// Generation steps: each unit's shots and context, its start and end frame
+// targets, and what a failed render means for a retry. The walk over the
+// plan is each host's (the CLI's is generateEpisodeVideos).
+export * from './mini-drama/generation-steps.js';
