@@ -128,3 +128,6 @@ export * from './session/gates.js';
 // the model chain), the video probes and identity judges, and one unit's
 // verdict out of a report. The loops over shots and units are each host's.
 export * from './mini-drama/qa-steps.js';
+// One video render over the ports (references, video backend, clock, logger)
+// plus injected media callbacks: faces-off, request plan, media, body, job, recipe.
+export * from './mini-drama/render-video.js';
