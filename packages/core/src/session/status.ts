@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 
 import { PIPELINE_BRANCHES, PIPELINE_STAGES } from '../agent/pipeline.js';
-import { scriptApproved, type EpisodeGateFacts } from './gates.js';
+import { gateFor, scriptApproved, type EpisodeGateFacts, type GateBlock } from './gates.js';
 
 export { scriptApproved };
 
@@ -92,6 +92,11 @@ export interface EpisodeClassification {
   gate?: string;
   /** A shot script exists, so the gate-skipping loop branch is available. */
   loopAvailable: boolean;
+  /**
+   * Set when the stage that would advance the episode is refused by its gate
+   * (`gateFor`); `nextCommand` is then the remedy, not the blocked stage.
+   */
+  blocked?: GateBlock;
 }
 
 export interface ProjectClassification {
@@ -148,13 +153,29 @@ export function classifyEpisode(facts: EpisodeFacts): EpisodeClassification {
     // A shot script is loop mode's only precondition (gates are skipped).
     loopAvailable: facts.shotCount > 0,
   };
-  if (nextStageId) {
+  if (!nextStageId) return classification;
+
+  // Rule 45: never suggest a command its own gate would refuse. A blocked
+  // stage reports the remedy instead -- a stage to re-run, or an action
+  // outside the pipeline table (then nextStageId stays the blocked stage).
+  const gate = gateFor(nextStageId, facts);
+  if (gate.blocked) {
+    classification.stage = blockedStage(nextStageId === 'assemble' ? 'clips rendered' : stage, gate.summary);
+    classification.nextStageId = gate.remedy.stageId ?? nextStageId;
+    classification.nextCommand = gate.remedy.command;
+    classification.blocked = gate;
+  } else {
     classification.nextStageId = nextStageId;
     classification.nextCommand = stageCommand(nextStageId, facts.episode);
-    const gate = stageGate(nextStageId);
-    if (gate) classification.gate = gate;
   }
+  const gateText = stageGate(classification.nextStageId);
+  if (gateText) classification.gate = gateText;
   return classification;
+}
+
+/** 'ready to render' → 'ready to render (blocked: …)'; 'rendering (1/3 clips)' → 'rendering (1/3 clips; blocked: …)'. */
+function blockedStage(stage: string, summary: string): string {
+  return stage.endsWith(')') ? `${stage.slice(0, -1)}; blocked: ${summary})` : `${stage} (blocked: ${summary})`;
 }
 
 function episodeStage(facts: EpisodeFacts): { stage: string; nextStageId?: EpisodeStageId } {
@@ -194,18 +215,24 @@ export function classifyProject(facts: ProjectFacts): ProjectClassification {
   const episodes = facts.episodes.map(classifyEpisode);
   const classification: ProjectClassification = { episodes };
 
-  let next: { id: ProjectStageId | EpisodeStageId; episode?: number } | undefined;
+  let next: { id: ProjectStageId } | undefined;
   if (!facts.aestheticSet) next = { id: 'aesthetic' };
   else if (facts.characterCount === 0) next = { id: 'cast' };
   else if (episodes.length === 0) next = { id: 'episode' };
   else {
     const index = episodes.findIndex(e => e.nextStageId);
-    if (index >= 0) next = { id: episodes[index].nextStageId!, episode: facts.episodes[index].episode };
+    if (index >= 0) {
+      // The episode's own suggestion, which is the remedy when its stage is blocked.
+      const episode = episodes[index];
+      classification.nextStageId = episode.nextStageId;
+      classification.nextEpisode = facts.episodes[index].episode;
+      classification.nextCommand = episode.nextCommand;
+      if (episode.gate) classification.gate = episode.gate;
+    }
   }
   if (next) {
     classification.nextStageId = next.id;
-    if (next.episode !== undefined) classification.nextEpisode = next.episode;
-    classification.nextCommand = stageCommand(next.id, next.episode);
+    classification.nextCommand = stageCommand(next.id);
     const gate = stageGate(next.id);
     if (gate) classification.gate = gate;
   }

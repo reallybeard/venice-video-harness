@@ -268,6 +268,71 @@ test('rule 54 accepts the sheets and plates the command has always accepted', ()
   ]);
 });
 
+// ---- The classifier consults the gates (rule 45) --------------------------------
+
+function episodeFacts(overrides = {}) {
+  return {
+    episode: 1, title: 'Pilot', hasScript: true, shotCount: 3,
+    scriptApprovalArtifact: true, scriptStatusApproved: false,
+    qaReported: false, qaApproved: false, videoQaReported: false,
+    panelCount: 0, videoCount: 0, hasMusic: false, dialogueCount: 0, hasFinalCut: false,
+    ...overrides,
+  };
+}
+
+test('classifyEpisode reports the remedy, not a command its gate would refuse', () => {
+  const refs = coreStatus.classifyEpisode(episodeFacts({ panelCount: 1, missingReferences: { characters: [], locations: ['capsule'] } }));
+  assert.equal(refs.stage, 'storyboarding (1/3 panels; blocked: references missing for location capsule)');
+  assert.equal(refs.nextStageId, 'storyboard', 'an action remedy keeps the blocked stage');
+  assert.equal(refs.nextCommand, 'generate-location-references -l "capsule"');
+  assert.equal(refs.blocked.reason.kind, 'references-missing');
+
+  const stale = coreStatus.classifyEpisode(episodeFacts({
+    panelCount: 3, qaReported: true, qaApproved: true, approval: { stale: [stale_('002')] },
+  }));
+  assert.equal(stale.stage, 'ready to render (blocked: 1 shot(s) changed after QA approval)');
+  assert.equal(stale.nextStageId, 'qa-approve', 'a stage remedy becomes the next stage');
+  assert.equal(stale.nextCommand, 'qa-approve -e 1');
+  assert.equal(stale.gate, PIPELINE_STAGES.find(s => s.id === 'qa-approve').gate);
+
+  const videoQa = coreStatus.classifyEpisode(episodeFacts({
+    panelCount: 3, qaReported: true, qaApproved: true, videoCount: 3, videoQaReported: true,
+    videoQaReport: { summary: { passed: false, criticals: 1 } },
+  }));
+  assert.equal(videoQa.stage, 'clips rendered (blocked: video QA found 1 critical issue(s))');
+  assert.equal(videoQa.nextStageId, 'assemble');
+  assert.match(videoQa.nextCommand, /^harvest-anchor /);
+});
+
+function stale_(shotKey) {
+  return stale(shotKey, 'panel-changed');
+}
+
+test('classifyEpisode is unchanged when no gate fact blocks', () => {
+  const clean = coreStatus.classifyEpisode(episodeFacts({ missingReferences: { characters: [], locations: [] } }));
+  assert.deepEqual(clean, {
+    stage: 'ready to storyboard', loopAvailable: true, nextStageId: 'storyboard', nextCommand: 'storyboard-episode -e 1',
+  });
+  // The assemble advisory (no video-QA report) is not a block; that stage is qa-videos anyway.
+  const noVideoQa = coreStatus.classifyEpisode(episodeFacts({ panelCount: 3, qaReported: true, qaApproved: true, videoCount: 3 }));
+  assert.equal(noVideoQa.nextStageId, 'qa-videos');
+  assert.equal(noVideoQa.blocked, undefined);
+});
+
+test('classifyProject passes a blocked episode\'s remedy through', () => {
+  const project = coreStatus.classifyProject({
+    projectDir: '/p', name: 'P', slug: 'p', aestheticSet: true, characterCount: 1, lockedVoiceCount: 0, locationCount: 1,
+    episodes: [
+      episodeFacts({ episode: 1, panelCount: 3, qaReported: true, qaApproved: true, videoCount: 3, videoQaReported: true, hasFinalCut: true }),
+      episodeFacts({ episode: 2, panelCount: 3, qaReported: true, qaReport: { summary: { flagCritical: 1 }, criticalShots: [2] } }),
+    ],
+  });
+  assert.equal(project.nextEpisode, 2);
+  assert.equal(project.nextStageId, 'qa-approve');
+  assert.equal(project.nextCommand, 'fix-panel -e 2 -s 2');
+  assert.equal(project.gate, PIPELINE_STAGES.find(s => s.id === 'qa-approve').gate);
+});
+
 // ---- Exports -------------------------------------------------------------------
 
 test('the barrel, the status module and the CLI re-export the same gate functions', () => {

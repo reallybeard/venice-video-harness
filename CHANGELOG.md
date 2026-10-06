@@ -145,6 +145,28 @@
   model lists. Unknown models pass through unchanged. The mini-drama render
   path already ran its own duration preflight and resolution pinning, so its
   behaviour is unchanged. Test: `tests/validate-before-quote.test.mjs`.
+- **`status` no longer suggests a command its own gate would refuse (rule
+  45).** `classifyEpisode` asks `gateFor` about the stage it would suggest;
+  when that stage is blocked, the stage name says why and `next` is the
+  remedy. Before → after:
+  - refs missing: `ready to storyboard` / `storyboard-episode -e 1` →
+    `ready to storyboard (blocked: references missing for MARA, location
+    capsule)` / `add-character --name "MARA" --gender female --age "40s" …`
+    (then `generate-location-references -l "<slug>"` once every character
+    has a sheet).
+  - QA report with criticals: `at QA gate` / `qa-approve -e 1` →
+    `at QA gate (blocked: 2 critical, 0 unchecked)` /
+    `fix-panel -e 1 -s <first critical shot>` (`qa-storyboard` when only
+    unchecked shots remain).
+  - unreadable, legacy (unbound) or stale QA approval: `ready to render` /
+    `generate-videos -e 1` → `ready to render (blocked: …)` /
+    `qa-approve -e 1`.
+  - failing video QA: `clips verified` / `assemble-episode -e 1` →
+    `clips rendered (blocked: video QA found N critical issue(s))` /
+    `harvest-anchor -c <CHARACTER> --video <unit-master> --at <sec>`.
+  `EpisodeClassification.blocked` carries the full block; the `status --json`
+  shape gains no keys (`stage` and `nextCommand` change value). `pipeline`
+  output is unchanged.
 
 ### Added
 
