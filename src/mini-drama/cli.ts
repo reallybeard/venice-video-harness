@@ -130,7 +130,7 @@ import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
 import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
 import { generateLocationReferences } from './location-generator.js';
-import { runStoryboardQa, runVideoQa } from './qa-loops.js';
+import { runStoryboardQa, runVideoQa } from 'venice-video-harness/core/mini-drama/qa-loops.js';
 import { characterFrontSheet } from './video-qa.js';
 import { createCliPorts, createCliVisionJudge } from '../ports/index.js';
 import { tmpdir } from 'node:os';
