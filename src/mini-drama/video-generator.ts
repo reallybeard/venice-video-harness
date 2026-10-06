@@ -47,6 +47,7 @@ import {
 } from './voice-reference.js';
 import { mustRenderAsExactLipSync, parseShotDuration } from './generation-planner.js';
 import { dialogueFileForShot, shotKey } from './shot-paths.js';
+import { dialogueLines, isVoiceOverLine, onCameraDialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import { getVideoModel, modelSupportsDuration, resolveBitrateMode, validateCameraTrajectory, type BitrateMode } from 'venice-video-harness/core/venice/models.js';
 import type { CameraKeyframe } from 'venice-video-harness/core/venice/types.js';
 import { assertFacesOffCompatible, characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
@@ -195,20 +196,29 @@ async function ensureDialogueAudio(
   shot: ShotScript,
   audioDir: string,
 ): Promise<string | undefined> {
-  if (!shot.dialogue) return undefined;
+  // One MP3 per shot drives the lip-sync, so it carries the first on-camera
+  // speaker's line(s): a single-object dialogue is exactly that one line; a
+  // list contributes every on-camera line by that same speaker, in order.
+  const spoken = onCameraDialogueLines(shot);
+  const lead = spoken[0];
+  if (!lead) return undefined;
   const shotId = resolveDialogueShotId(shot);
   const target = dialogueFileForShot(audioDir, shotId);
   if (existsSync(target)) return target;
 
   const character = series.characters.find(
-    c => c.name.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+    c => c.name.toUpperCase() === lead.character.toUpperCase(),
   );
   if (!character?.voiceId) {
     console.warn(
-      `  No locked voice for ${shot.dialogue.character}; skipping inline TTS — the video model will synthesize from the prompt.`,
+      `  No locked voice for ${lead.character}; skipping inline TTS — the video model will synthesize from the prompt.`,
     );
     return undefined;
   }
+  const text = spoken
+    .filter(line => line.character.toUpperCase() === lead.character.toUpperCase())
+    .map(line => line.line)
+    .join(' ');
 
   await mkdir(audioDir, { recursive: true });
   console.log(
@@ -219,7 +229,7 @@ async function ensureDialogueAudio(
       client,
       {
         voiceId: character.voiceId,
-        text: shot.dialogue.line,
+        text,
         prompt: character.voiceDescription,
       },
       target,
@@ -435,26 +445,28 @@ export async function ensureVoiceReferenceForShot(
   previousShot: ShotScript | undefined,
 ): Promise<void> {
   if (series.videoDefaults.voiceReferenceForDialogue === false) return;
-  if (!shot.dialogue) return;
-  const speaker = shot.dialogue.character.toUpperCase();
-  if (speaker === 'NARRATOR' || speaker === 'V.O.' || speaker === 'VO') return;
+  const speakers = Array.from(new Set(onCameraDialogueLines(shot).map(line => line.character.toUpperCase())));
+  if (speakers.length === 0) return;
 
   const resolution = resolveVideoModel(shot, series, previousShot);
   if (!MODELS_SUPPORTING_REFERENCE_AUDIO.has(resolution.modelId)) return;
 
-  const character = series.characters.find(c => c.name.toUpperCase() === speaker);
-  if (!character) return;
+  // One clip per distinct on-camera speaker (a single-object dialogue has one).
+  for (const speaker of speakers) {
+    const character = series.characters.find(c => c.name.toUpperCase() === speaker);
+    if (!character) continue;
 
-  const abs = resolveVoiceReferenceAbsPath(series, character);
-  if (character.voiceReferencePath && abs && existsSync(abs)) return; // already present
+    const abs = resolveVoiceReferenceAbsPath(series, character);
+    if (character.voiceReferencePath && abs && existsSync(abs)) continue; // already present
 
-  try {
-    const { relPath, model } = await generateVoiceReference(client, series, character);
-    character.voiceReferencePath = relPath;
-    character.voiceReferenceModel = model;
-    await persistCharacterJson(series, character);
-  } catch (err) {
-    console.warn(`  ⚠ Voice reference generation failed for ${character.name} (${(err as Error).message}); shot will fall back to the [Char, voiceDesc] text.`);
+    try {
+      const { relPath, model } = await generateVoiceReference(client, series, character);
+      character.voiceReferencePath = relPath;
+      character.voiceReferenceModel = model;
+      await persistCharacterJson(series, character);
+    } catch (err) {
+      console.warn(`  ⚠ Voice reference generation failed for ${character.name} (${(err as Error).message}); shot will fall back to the [Char, voiceDesc] text.`);
+    }
   }
 }
 
@@ -1593,12 +1605,12 @@ async function renderSingleShotUnit(
   await ensureVoiceReferenceForShot(client, series, shot, previousShot);
 
   const videoPrompt = buildVideoPrompt(shot, series, previousShot, episodeAudioMix);
-  if (!videoPrompt.audio && shot.dialogue) {
+  if (!videoPrompt.audio && dialogueLines(shot).length > 0) {
     const reason = shot.nativeAudio === 'mute'
       ? 'shot.nativeAudio=mute'
       : episodeAudioMix?.suppressModelNarration
         ? 'episode.audioMix.suppressModelNarration'
-        : shot.dialogue.character?.toUpperCase() === 'NARRATOR'
+        : dialogueLines(shot).every(isVoiceOverLine)
           ? 'NARRATOR shot (auto)'
           : 'unknown';
     console.log(`  Audio: model-native disabled (${reason})`);

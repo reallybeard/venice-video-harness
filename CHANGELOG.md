@@ -225,6 +225,30 @@
   the source of truth for the live-listed 2.5 spellings; the manifest states
   when `schemaVersion` bumps (removed / renamed / retyped fields) and when it
   does not (new optional fields, new ids). Test: `tests/shot-duration.test.mjs`.
+- **`DialogueLine { id?, character, line, delivery?, voiceOver? }`;
+  `ShotScript.dialogue` may be a list.** The schema addition from
+  `plan-schema-additions.md` §5. `dialogue` is now
+  `DialogueLine | DialogueLine[] | null`; a single object — every existing
+  `script.json` — parses unchanged and produces byte-identical prompts
+  (`tests/dialogue-improv.test.mjs` and `tests/audio-routing.test.mjs` pass
+  untouched). `id` is a stable handle a beat map or lip-sync cue can point at;
+  `voiceOver` makes the NARRATOR-by-name convention explicit without removing
+  it. Two helpers in core (`series/dialogue.ts`, on the barrel) replace every
+  direct `shot.dialogue.character` / `.line` read in the CLI: `dialogueLines(shot)`
+  (object → one-element list, `null` → `[]`) and `isVoiceOverLine(line)`
+  (`line.voiceOver ?? speaker is NARRATOR / V.O. / VO`), plus
+  `onCameraDialogueLines` / `firstDialogueLine` conveniences. The three inline
+  NARRATOR checks in `prompt-builder.ts` and their twins in
+  `generation-planner.ts` and `video-generator.ts` now go through
+  `isVoiceOverLine`, so `voiceOver: true` on a named character withholds the
+  line from the video prompt and skips lip-sync / voice-donor routing exactly as
+  a NARRATOR line does. With a list, every builder (`buildVideoPrompt`,
+  montage, Seedance multi-shot, Kling multi-shot) emits one dialogue block per
+  non-VO line in script order and binds a voice-donor `@AudioN` per distinct
+  speaker (Venice budget of 3 still applies); subtitles carry the shot's lines
+  as one cue; the inline-TTS lip-sync MP3 carries the first on-camera
+  speaker's line(s); `loadEpisodeScript` drops malformed entries from a list
+  the same way it nulls a malformed object. Test: `tests/dialogue-line.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

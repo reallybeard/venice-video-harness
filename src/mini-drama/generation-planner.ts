@@ -19,6 +19,7 @@ import {
   resolveMultiShotModel,
 } from 'venice-video-harness/core/series/types.js';
 import { formatShotDuration, parseShotDuration } from 'venice-video-harness/core/series/duration.js';
+import { onCameraDialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import { planMontageUnits } from './montage.js';
 
 // Moved to core so browser hosts can read `"5s"` strings; kept on this module
@@ -81,9 +82,7 @@ export function mustRenderAsExactLipSync(
   videoDefaults?: VideoModelDefaults,
 ): boolean {
   if (videoDefaults?.audioStrategy !== 'lip-sync') return false;
-  if (!shot.dialogue) return false;
-  const speaker = shot.dialogue.character.toUpperCase();
-  if (speaker === 'NARRATOR' || speaker === 'V.O.' || speaker === 'VO') return false;
+  if (onCameraDialogueLines(shot).length === 0) return false;
   if (shot.motion === 'high') return false;
   // If the script explicitly says the face isn't visible, lip-sync would be
   // wasted. Default-true semantics: when faceVisible is undefined we assume

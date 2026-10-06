@@ -23,6 +23,7 @@ import {
   getMaxReferenceImages,
   resolveMultiShotModel,
 } from 'venice-video-harness/core/series/types.js';
+import { dialogueLines, onCameraDialogueLines } from 'venice-video-harness/core/series/dialogue.js';
 import type { AestheticProfile } from '../storyboard/prompt-builder.js';
 import { parseShotDuration } from './generation-planner.js';
 import { faceCapableTwinId, getMaxPositivePromptChars, modelWantsSimplePrompt } from 'venice-video-harness/core/venice/models.js';
@@ -313,9 +314,7 @@ export function resolveVideoModel(
  * with motion not classified as 'high'.
  */
 function shotWantsLipSync(shot: ShotScript): boolean {
-  if (!shot.dialogue) return false;
-  const speaker = shot.dialogue.character.toUpperCase();
-  if (speaker === 'NARRATOR' || speaker === 'V.O.' || speaker === 'VO') return false;
+  if (onCameraDialogueLines(shot).length === 0) return false;
   if (shot.motion === 'high') return false;
   if (shot.faceVisible === false) return false;
   return true;
@@ -600,8 +599,8 @@ export function buildVideoPrompt(
   // the line must never reach the video prompt. Including it is what makes
   // Seedance synthesize its own competing English narrator. The line still
   // lives in script.json for the assembler's TTS pass.
-  const dialogueSpeaker = shot.dialogue?.character?.toUpperCase();
-  const isVoiceOverLine = dialogueSpeaker === 'NARRATOR' || dialogueSpeaker === 'V.O.' || dialogueSpeaker === 'VO';
+  const spokenLines = onCameraDialogueLines(shot);
+  const speakersUpper = spokenLines.map(line => line.character.toUpperCase());
 
   // Voice-reference slots: when the model can take reference audio, voice-refs
   // aren't disabled, and the speaking character has a voice-donor clip, bind
@@ -610,20 +609,22 @@ export function buildVideoPrompt(
   const voiceRefEnabled = series.videoDefaults.voiceReferenceForDialogue !== false
     && MODELS_SUPPORTING_REFERENCE_AUDIO.has(modelId);
   let voiceReferenceSlots: VoiceReferenceSlot[] | undefined;
-  if (voiceRefEnabled && shot.dialogue && !isVoiceOverLine) {
+  if (voiceRefEnabled && spokenLines.length > 0) {
     // Multi-speaker: the dialogue speaker gets @Audio1; every OTHER on-screen
     // character with a voice-donor clip gets the next slot (Venice budget:
     // ≤3 clips, ≤15s aggregate — enforced downstream in renderVideoFile).
     // This keeps each character's voice right even when the model improvises
     // reactions/off-lines for non-speaking characters.
     const slots: VoiceReferenceSlot[] = [];
-    const speakerUpper = shot.dialogue.character.toUpperCase();
-    const speakingChar = series.characters.find(c => c.name.toUpperCase() === speakerUpper);
-    if (speakingChar?.voiceReferencePath) {
-      slots.push({ characterName: speakingChar.name, audioIndex: slots.length + 1 });
+    for (const speakerUpper of new Set(speakersUpper)) {
+      if (slots.length >= 3) break;
+      const speakingChar = series.characters.find(c => c.name.toUpperCase() === speakerUpper);
+      if (speakingChar?.voiceReferencePath) {
+        slots.push({ characterName: speakingChar.name, audioIndex: slots.length + 1 });
+      }
     }
     for (const charName of shot.characters) {
-      if (charName.toUpperCase() === speakerUpper) continue;
+      if (speakersUpper.includes(charName.toUpperCase())) continue;
       if (slots.length >= 3) break;
       const char = series.characters.find(c => c.name.toUpperCase() === charName.toUpperCase());
       if (char?.voiceReferencePath) {
@@ -633,22 +634,26 @@ export function buildVideoPrompt(
     if (slots.length > 0) voiceReferenceSlots = slots;
   }
 
-  if (shot.dialogue && !isVoiceOverLine) {
-    const speakingChar = series.characters.find(
-      c => c.name.toUpperCase() === shot.dialogue!.character.toUpperCase(),
-    );
-    const voiceDesc = speakingChar?.voiceDescription ?? '';
-    const delivery = shot.dialogue.delivery || '';
-    const charRef = (useElements || useImageTags) && characterElements
-      ? (characterElements.find(s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase())
-        ? `${tagPrefix}${characterElements.find(s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase())!.elementIndex}`
-        : shot.dialogue.character)
-      : shot.dialogue.character;
-
-    const voiceParts = [voiceDesc, delivery].filter(Boolean).join(', ');
-    const who = `[${charRef}${voiceParts ? `, ${voiceParts}` : ''}]`;
+  if (spokenLines.length > 0) {
+    // One dialogue block per on-camera line, in script order. A single-object
+    // `dialogue` is a one-element list here, so its output is unchanged.
     const improviseDialogue = shouldImproviseDialogue(modelId, series);
-    parts.push(formatDialogueLine(who, shot.dialogue.line, improviseDialogue));
+    for (const line of spokenLines) {
+      const speakingChar = series.characters.find(
+        c => c.name.toUpperCase() === line.character.toUpperCase(),
+      );
+      const voiceDesc = speakingChar?.voiceDescription ?? '';
+      const delivery = line.delivery || '';
+      const charRef = (useElements || useImageTags) && characterElements
+        ? (characterElements.find(s => s.characterName.toUpperCase() === line.character.toUpperCase())
+          ? `${tagPrefix}${characterElements.find(s => s.characterName.toUpperCase() === line.character.toUpperCase())!.elementIndex}`
+          : line.character)
+        : line.character;
+
+      const voiceParts = [voiceDesc, delivery].filter(Boolean).join(', ');
+      const who = `[${charRef}${voiceParts ? `, ${voiceParts}` : ''}]`;
+      parts.push(formatDialogueLine(who, line.line, improviseDialogue));
+    }
     if (improviseDialogue) parts.push(IMPROV_DIALOGUE_NOTE);
     if (MODELS_LIP_SYNC_VIA_REFERENCE_AUDIO.has(modelId)
       && series.videoDefaults.audioStrategy === 'lip-sync') {
@@ -658,14 +663,19 @@ export function buildVideoPrompt(
       );
     }
 
-    // Bind the voice-donor clip. @AudioN carries voice identity ONLY; the
-    // model should still render clean studio dialogue for the line above.
-    const slot = voiceReferenceSlots?.find(
-      s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+    // Bind the voice-donor clip(s). @AudioN carries voice identity ONLY; the
+    // model should still render clean studio dialogue for the line(s) above.
+    // With one speaker the sentence is unchanged; with two it names the ref.
+    const speakerSlots = (voiceReferenceSlots ?? []).filter(
+      s => speakersUpper.includes(s.characterName.toUpperCase()),
     );
-    if (slot) {
+    for (const slot of speakerSlots) {
+      const speakerCharSlot = characterElements?.find(
+        s => s.characterName.toUpperCase() === slot.characterName.toUpperCase(),
+      );
+      const speakerRef = speakerCharSlot ? `${tagPrefix}${speakerCharSlot.elementIndex}` : slot.characterName;
       parts.push(
-        `Use @Audio${slot.audioIndex} only for voice identity — timbre, accent, pacing; ` +
+        `Use @Audio${slot.audioIndex} only for ${speakerSlots.length > 1 ? `${speakerRef}'s ` : ''}voice identity — timbre, accent, pacing; ` +
         `regenerate clean studio dialogue, do not copy any noise from the reference.`,
       );
     }
@@ -674,7 +684,7 @@ export function buildVideoPrompt(
     // improvised lines/reactions from non-speaking characters use the
     // right voice too.
     for (const other of voiceReferenceSlots ?? []) {
-      if (slot && other.audioIndex === slot.audioIndex) continue;
+      if (speakerSlots.includes(other)) continue;
       const otherCharSlot = characterElements?.find(
         s => s.characterName.toUpperCase() === other.characterName.toUpperCase(),
       );
@@ -764,7 +774,7 @@ export function buildVideoPrompt(
   }
   parts.push(aestheticStr + '.');
   parts.push(VIDEO_NO_MUSIC_SUFFIX);
-  if (isVoiceOverLine) {
+  if (dialogueLines(shot).length > 0 && spokenLines.length === 0) {
     // The VO line was withheld from the prompt above; also tell the model
     // explicitly that this shot carries no speech, so its audio track is
     // ambient + SFX only (the Venice TTS narrator is mixed in by the
@@ -782,7 +792,7 @@ export function buildVideoPrompt(
   //     every dialogue-bearing shot, or
   //   - the shot has nativeAudio === 'mute' (per-shot override).
   // Callers that need the native track regardless can flip nativeAudio: 'keep'.
-  const suppressGlobal = episodeAudioMix?.suppressModelNarration === true && Boolean(shot.dialogue);
+  const suppressGlobal = episodeAudioMix?.suppressModelNarration === true && dialogueLines(shot).length > 0;
   const muteByOverride = shot.nativeAudio === 'mute';
   const keepByOverride = shot.nativeAudio === 'keep';
   const audio = keepByOverride
@@ -950,10 +960,8 @@ export function buildMontagePrompt(
   if (voiceRefEnabled) {
     const slots: VoiceReferenceSlot[] = [];
     const seen = new Set<string>();
-    for (const shot of shots) {
-      if (!shot.dialogue) continue;
-      const speakerUpper = shot.dialogue.character.toUpperCase();
-      if (speakerUpper === 'NARRATOR' || speakerUpper === 'V.O.' || speakerUpper === 'VO') continue;
+    for (const line of shots.flatMap(shot => onCameraDialogueLines(shot))) {
+      const speakerUpper = line.character.toUpperCase();
       if (seen.has(speakerUpper) || slots.length >= 3) continue;
       const speakingChar = series.characters.find(c => c.name.toUpperCase() === speakerUpper);
       if (speakingChar?.voiceReferencePath) {
@@ -997,19 +1005,19 @@ export function buildMontagePrompt(
     const beat = beats[i];
     const beatParts: string[] = [substituteTags(shot.description)];
     if (shot.blocking && !simplePrompt) beatParts.push(`Blocking: ${substituteTags(shot.blocking)}`);
-    if (shot.dialogue) {
+    for (const line of dialogueLines(shot)) {
       anyDialogue = true;
       const speakingChar = series.characters.find(
-        c => c.name.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+        c => c.name.toUpperCase() === line.character.toUpperCase(),
       );
-      const voiceParts = [speakingChar?.voiceDescription ?? '', shot.dialogue.delivery || '']
+      const voiceParts = [speakingChar?.voiceDescription ?? '', line.delivery || '']
         .filter(Boolean).join(', ');
       const slot = characterElements.find(
-        s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+        s => s.characterName.toUpperCase() === line.character.toUpperCase(),
       );
-      const charRef = slot ? `@Image${slot.elementIndex}` : shot.dialogue.character;
+      const charRef = slot ? `@Image${slot.elementIndex}` : line.character;
       const who = `[${charRef}${voiceParts ? `, ${voiceParts}` : ''}]`;
-      beatParts.push(formatDialogueLine(who, shot.dialogue.line, improviseDialogue));
+      beatParts.push(formatDialogueLine(who, line.line, improviseDialogue));
     }
     // Vault rule 1: diegetic sound only, described per beat.
     if (shot.sfx) beatParts.push(`Sound: ${shot.sfx}.`);
@@ -1187,10 +1195,8 @@ function buildSeedanceMultiShotPrompt(
   if (voiceRefEnabled) {
     const slots: VoiceReferenceSlot[] = [];
     const seen = new Set<string>();
-    for (const shot of shots) {
-      if (!shot.dialogue) continue;
-      const speakerUpper = shot.dialogue.character.toUpperCase();
-      if (speakerUpper === 'NARRATOR' || speakerUpper === 'V.O.' || speakerUpper === 'VO') continue;
+    for (const line of shots.flatMap(shot => onCameraDialogueLines(shot))) {
+      const speakerUpper = line.character.toUpperCase();
       if (seen.has(speakerUpper) || slots.length >= 3) continue;
       const speakingChar = series.characters.find(c => c.name.toUpperCase() === speakerUpper);
       if (speakingChar?.voiceReferencePath) {
@@ -1228,18 +1234,18 @@ function buildSeedanceMultiShotPrompt(
       shotParts.push(`Blocking: ${substituteTags(shot.blocking)}`);
     }
 
-    if (shot.dialogue) {
+    for (const line of dialogueLines(shot)) {
       const speakingChar = series.characters.find(
-        c => c.name.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+        c => c.name.toUpperCase() === line.character.toUpperCase(),
       );
       const voiceDesc = speakingChar?.voiceDescription ?? '';
-      const delivery = shot.dialogue.delivery || '';
+      const delivery = line.delivery || '';
       const slot = characterElements.find(
-        s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+        s => s.characterName.toUpperCase() === line.character.toUpperCase(),
       );
-      const charRef = slot ? `@Image${slot.elementIndex}` : shot.dialogue.character;
+      const charRef = slot ? `@Image${slot.elementIndex}` : line.character;
       const voiceParts = [voiceDesc, delivery].filter(Boolean).join(', ');
-      shotParts.push(`[${charRef}, ${voiceParts}]: "${shot.dialogue.line}"`);
+      shotParts.push(`[${charRef}, ${voiceParts}]: "${line.line}"`);
     }
 
     if (shot.sfx) {
@@ -1412,20 +1418,20 @@ export function buildKlingMultiShotPrompt(
     }
 
     // Kling 3.0 dialogue format: [Character, voice description]: "line"
-    if (shot.dialogue) {
+    for (const line of dialogueLines(shot)) {
       const speakingChar = series.characters.find(
-        c => c.name.toUpperCase() === shot.dialogue!.character.toUpperCase(),
+        c => c.name.toUpperCase() === line.character.toUpperCase(),
       );
       const voiceDesc = speakingChar?.voiceDescription ?? '';
-      const delivery = shot.dialogue.delivery || '';
+      const delivery = line.delivery || '';
       const charRef = useElements && characterElements
-        ? (characterElements.find(s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase())
-          ? `@Element${characterElements.find(s => s.characterName.toUpperCase() === shot.dialogue!.character.toUpperCase())!.elementIndex}`
-          : shot.dialogue.character)
-        : shot.dialogue.character;
+        ? (characterElements.find(s => s.characterName.toUpperCase() === line.character.toUpperCase())
+          ? `@Element${characterElements.find(s => s.characterName.toUpperCase() === line.character.toUpperCase())!.elementIndex}`
+          : line.character)
+        : line.character;
 
       const voiceParts = [voiceDesc, delivery].filter(Boolean).join(', ');
-      shotParts.push(`[${charRef}, ${voiceParts}]: "${shot.dialogue.line}"`);
+      shotParts.push(`[${charRef}, ${voiceParts}]: "${line.line}"`);
     }
 
     if (shot.sfx) {

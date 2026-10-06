@@ -46,6 +46,7 @@ import {
   resolveAutoEdit,
   resolveUseStoryboardPlates,
 } from 'venice-video-harness/core/series/types.js';
+import { dialogueLines, firstDialogueLine } from 'venice-video-harness/core/series/dialogue.js';
 import type { AestheticProfile } from '../storyboard/prompt-builder.js';
 import { VeniceClient } from '../venice/client.js';
 import { upscaleVideo, estimateUpscaleCostUsd } from '../venice/upscale.js';
@@ -1633,12 +1634,12 @@ program
     for (const ep of series.episodes) {
       const script = await loadEpisodeScript(series, ep.number);
       if (script && script.shots.length > 0) {
-        const dialogueLines = script.shots
-          .filter(s => s.dialogue)
-          .map(s => `  ${s.dialogue!.character}: "${s.dialogue!.line}"`)
+        const keyDialogue = script.shots
+          .flatMap(s => dialogueLines(s))
+          .map(d => `  ${d.character}: "${d.line}"`)
           .join('\n');
         priorEpisodes += `\n${language.segmentNoun} ${ep.number} ("${ep.title}"): ${script.shots.length} shots, ${script.totalDuration}\n`;
-        if (dialogueLines) priorEpisodes += `Key dialogue:\n${dialogueLines}\n`;
+        if (keyDialogue) priorEpisodes += `Key dialogue:\n${keyDialogue}\n`;
       }
     }
 
@@ -1937,11 +1938,13 @@ Respond with ONLY valid JSON matching this exact schema (no markdown, no code fe
         );
       }
 
-      const dialogueShots = script.shots.filter(s => s.dialogue);
+      const dialogueShots = script.shots.filter(s => dialogueLines(s).length > 0);
       if (dialogueShots.length > 0) {
         console.log(`\nDialogue preview:`);
         for (const s of dialogueShots) {
-          console.log(`  Shot ${s.shotNumber}: ${s.dialogue!.character}: "${s.dialogue!.line}"`);
+          for (const d of dialogueLines(s)) {
+            console.log(`  Shot ${s.shotNumber}: ${d.character}: "${d.line}"`);
+          }
         }
       }
 
@@ -3666,15 +3669,19 @@ program
 
     if (opts.dialogue) {
       console.log('Generating dialogue with locked character voices...');
+      // One TTS file per shot (dialogue-shot-NNN.mp3), so a shot's lines are
+      // rendered as one clip in the first speaker's voice. A single-object
+      // dialogue is unchanged.
       const lines: DialogueLine[] = script.shots
-        .filter(s => s.dialogue)
+        .filter(s => dialogueLines(s).length > 0)
         .map(s => {
-          const char = getCharacter(series, s.dialogue!.character);
+          const lead = firstDialogueLine(s)!;
+          const char = getCharacter(series, lead.character);
           return {
             shotNumber: s.shotNumber,
-            character: s.dialogue!.character,
+            character: lead.character,
             voiceId: char?.voiceId || '',
-            text: s.dialogue!.line,
+            text: dialogueLines(s).map(d => d.line).join(' '),
             voicePrompt: char?.voiceDescription,
           };
         })
@@ -4400,7 +4407,7 @@ async function runTimelineExport(opts: {
       if (!existsSync(path)) continue;
       audio.push({
         path,
-        label: `${key} ${shot.dialogue?.character ?? 'NARRATOR'}`,
+        label: `${key} ${firstDialogueLine(shot)?.character ?? 'NARRATOR'}`,
         startSec: place.startSec + 0.2,
         audioDur: probeDur(path),
         lane: -1,
