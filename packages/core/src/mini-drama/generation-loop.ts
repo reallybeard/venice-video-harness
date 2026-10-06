@@ -17,6 +17,8 @@
 import type { Clock, Logger, MediaRef, PortCallOptions } from '../ports.js';
 import type { GenerationPlan, GenerationUnit, ShotScript } from '../series/types.js';
 import { assertShotDurationsValid } from './duration-preflight.js';
+import { FacesOffModelError } from '../venice/faces-off.js';
+import { VideoGenerationFailedError } from '../venice/video-errors.js';
 
 /** Wait between multi-shot attempts. */
 export const MULTISHOT_RETRY_DELAY_MS = 15_000;
@@ -39,7 +41,8 @@ export interface GenerationUnitRenderer {
   /**
    * Errors the multi-shot retry rethrows instead of retrying: a cancelled
    * operation, and a classified refusal (the same request fails the same way,
-   * and a refunded one has already had its retry).
+   * and a refunded one has already had its retry). Core rethrows the errors
+   * `isFinalMultiShotError` names whatever this returns.
    */
   isFinalError(err: unknown): boolean;
   /** Status and body of an HTTP error, for the retry warning. `undefined` for anything else. */
@@ -80,12 +83,23 @@ export function resolveUnitShots(shots: ShotScript[], plan: GenerationPlan): Sho
 }
 
 /**
+ * Errors no multi-shot retry can fix, whatever the host's `isFinalError`
+ * says. A FAILED render (`VideoGenerationFailedError`) has already cleared its
+ * pending-job record, so a retry re-queues and re-bills the same body. A
+ * faces-off refusal (`FacesOffModelError`) is thrown before the queue call, on
+ * the same images every time.
+ */
+export function isFinalMultiShotError(err: unknown): boolean {
+  return err instanceof VideoGenerationFailedError || err instanceof FacesOffModelError;
+}
+
+/**
  * Render a multi-shot unit, retrying until it lands. A failed attempt keeps
  * the multi-shot strategy (splitting the unit would trade the identity a
  * single generation holds for separate renders that drift). Only
- * `isFinalError` errors end it. The queue call itself is never retried
- * inside an attempt, and a recorded job is re-attached, so a retry does not
- * pay twice for a render that was queued.
+ * `isFinalMultiShotError` and `isFinalError` errors end it. The queue call
+ * itself is never retried inside an attempt, and a recorded job is
+ * re-attached, so a retry does not pay twice for a render that was queued.
  */
 export async function renderMultiShotUntilSuccess(
   ports: { logger: Logger; clock: Clock },
@@ -104,7 +118,7 @@ export async function renderMultiShotUntilSuccess(
       if (attempt > 1) logger.info(`  ${unit.unitId}: retrying multi-shot render (attempt ${attempt})`);
       return await renderer.multishot(shots, unit, context);
     } catch (err) {
-      if (renderer.isFinalError(err)) throw err;
+      if (isFinalMultiShotError(err) || renderer.isFinalError(err)) throw err;
       const http = renderer.describeHttpError?.(err);
       if (http) {
         logger.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed (HTTP ${http.status}): ${http.message}`);

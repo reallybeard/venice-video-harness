@@ -146,6 +146,18 @@
   the process was killed. Abort errors now propagate, and the retry wait is
   abortable. Test: `tests/generation-loop-golden.test.mjs`
   (`multishot-cancel-during-retry`).
+- **Core's multi-shot retry treats a FAILED render and a faces-off refusal
+  as final for every host.** The multi-shot retry moved into core's
+  `runGenerationUnits`, where the host's `GenerationUnitRenderer.isFinalError`
+  decides what ends it. A host that only named its own errors (cancel,
+  refusal) would bring back the endless re-queue that the
+  `VideoGenerationFailedError` / `FacesOffModelError` fix above removed.
+  Both classes live in core, so the loop now rethrows them itself
+  (`isFinalMultiShotError`, on the core barrel) before asking the host; the
+  CLI's `isFinalError` keeps cancel and refusal. Tests:
+  `tests/core-generation-loop.test.mjs` (a renderer whose `isFinalError`
+  returns false still stops after one attempt, with no retry wait) and
+  `tests/multishot-final-errors.test.mjs` (unchanged, through the CLI).
 
 ### Changed
 
@@ -620,9 +632,10 @@
   shots (`resolveUnitShots`, cursor first), reports progress, and dispatches
   each unit to the host's `GenerationUnitRenderer` (`single`, `multishot`,
   `montage`). It carries the chaining context between units and retries a
-  multi-shot unit with `Clock.sleep` (`renderMultiShotUntilSuccess`). The
-  host decides which errors are final. `generateEpisodeVideos` is now a
-  thin caller. The new `tests/generation-loop-golden.test.mjs` pins it: 20
+  multi-shot unit with `Clock.sleep` (`renderMultiShotUntilSuccess`). Core
+  ends the retry on a FAILED render or a faces-off refusal; the host decides
+  which other errors are final. `generateEpisodeVideos` is now a thin caller.
+  The new `tests/generation-loop-golden.test.mjs` pins it: 20
   cases across the lanes, with every request, console line, timer wait,
   pending job and file
   captured before the change. Test: `tests/core-generation-loop.test.mjs`.

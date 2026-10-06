@@ -8,6 +8,9 @@ import {
   runGenerationUnits,
   resolveUnitShots,
   MULTISHOT_RETRY_DELAY_MS,
+  FacesOffModelError,
+  VideoGenerationFailedError,
+  isFinalMultiShotError,
 } from 'venice-video-harness/core';
 
 const MODEL = 'seedance-2-5-reference-to-video';
@@ -112,4 +115,19 @@ test('a final error ends the multi-shot unit and the loop; single and montage er
     boom,
   );
   assert.deepEqual(m.sleeps, []);
+});
+
+test('a FAILED render and a faces-off refusal end a multi-shot unit even when the host does not call them final', async () => {
+  const failed = new VideoGenerationFailedError(MODEL, 'q-1', 'FAILED', { status: 'FAILED' });
+  const facesOff = new FacesOffModelError({ model: 'seedance-2-0-reference-to-video-basic', faceCapableModel: 'seedance-2-0-reference-to-video', faceImages: ['front.png'], characters: ['MARA'], message: 'faces-off' });
+  for (const err of [failed, facesOff]) {
+    assert.equal(isFinalMultiShotError(err), true);
+    let attempts = 0;
+    const h = harness({ async multishot() { attempts += 1; throw err; } });
+    const plan = { units: [unit('u1', 'multishot', [1, 2], { duration: '10s' })] };
+    await assert.rejects(runGenerationUnits(h.ports, h.renderer, [shot(1), shot(2)], plan), err);
+    assert.equal(attempts, 1);
+    assert.deepEqual(h.sleeps, []);
+  }
+  assert.equal(isFinalMultiShotError(new Error('timeout')), false);
 });

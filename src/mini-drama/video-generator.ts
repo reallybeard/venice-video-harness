@@ -50,7 +50,7 @@ import {
   startVideoQueueAttempts,
   type VideoQueueLogLine,
 } from 'venice-video-harness/core/venice/queue-handshake.js';
-import { characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
+import { characterKindsFor } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { VideoGenerationFailedError } from '../venice/video.js';
 import { currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
@@ -1539,13 +1539,9 @@ export async function generateEpisodeVideos(
     // A classified refusal is final: a face-screening refusal fails on the
     // same images every time, and a provider refusal has already had its one
     // refunded retry inside submitVideoQueue (anti-pattern 27b). A FAILED
-    // render is final too: its pending-job record is already cleared, so a
-    // retry re-queues and re-bills the same body. A faces-off refusal is
-    // thrown before the queue call on the same images every time.
-    isFinalError: err => isAbortError(err)
-      || err instanceof VideoRefusalError
-      || err instanceof VideoGenerationFailedError
-      || err instanceof FacesOffModelError,
+    // render and a faces-off refusal are final in core itself
+    // (isFinalMultiShotError).
+    isFinalError: err => isAbortError(err) || err instanceof VideoRefusalError,
     describeHttpError: err => (err instanceof VeniceRequestError
       ? { status: err.status, message: err.message, body: err.body }
       : undefined),
