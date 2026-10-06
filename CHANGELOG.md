@@ -165,6 +165,35 @@
   a check that `capabilities.json` matches `npm run manifest`, and a web UI
   typecheck + build. No API key in CI; `VENICE_VIDEO_CONFIG_DIR` points at
   an empty dir so no test can reach a paid endpoint.
+- **The prompt builders and the @ImageN slot planner move into core
+  (phase 3).** `src/mini-drama/prompt-builder.ts` moves verbatim to
+  `packages/core/src/mini-drama/prompt-builder.ts`,
+  `src/mini-drama/reference-slots.ts` to
+  `packages/core/src/mini-drama/reference-slots.ts`, and `getLocation` (a
+  pure lookup over `series.locations`) to `packages/core/src/series/locations.ts`;
+  all three are on the barrel and at their per-module entries. In core the
+  builders that cite references take the shot's references as data:
+  `buildVideoPrompt(shot, series, refs, previousShot?, episodeAudioMix?)`,
+  `buildMultiShotPrompt(shots, unit, series, refs)`,
+  `buildMontagePrompt(shots, unit, series, refs)`, where `refs` is a
+  `ReferenceSetSource` — a `ReferenceSet`, or `(shot, { characterNames }) =>
+  ReferenceSet`, called only when the resolved model takes @Image tags (for
+  multi-shot and montage units, with the synthetic shot that unions the
+  unit's characters). Core's `buildReferenceSlotPlan(series, shot, modelId,
+  refs, options?)` requires the set. `buildImagePrompt`, `resolveVideoModel`,
+  `buildKlingMultiShotPrompt` and the character-reference prompt builders
+  read no references and keep their signatures. `shouldImproviseDialogue`,
+  `formatDialogueLine` and `IMPROV_DIALOGUE_NOTE` (rule 59) are now exported
+  from core. The src modules keep every export and signature:
+  `prompt-builder.ts` re-exports the reference-free builders and wraps the
+  three that cite references with `referenceSetFromDisk`; `reference-slots.ts`
+  keeps both overloads and builds the set from disk when none is passed;
+  `manager.ts` re-exports `getLocation`. The montage prompt uses core
+  montage's `formatBeatTimestamp` instead of a private copy (same output).
+  Prompt output is byte-identical and every existing test passes unchanged.
+  Test: `tests/core-prompt-builder.test.mjs` (core with an in-memory set
+  equals the CLI wrapper on a materialised project; a browser-shaped set of
+  asset ids plans without a project directory).
 - **`Character.kind: 'person' | 'object'` (plan-schema-additions.md §4).**
   Recurring hero props and vehicles already ride the character system for
   identity anchoring (a locked reference, angle views, an `@ImageN` slot —

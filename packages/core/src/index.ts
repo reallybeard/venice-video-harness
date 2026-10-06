@@ -87,3 +87,9 @@ export * from './mini-drama/music-cues.js';
 export * from './mini-drama/storyboard-qa.js';
 export * from './mini-drama/video-qa.js';
 export * from './mini-drama/panel-approval.js';
+// Prompt building: the @ImageN reference slot planner and the image / video /
+// multi-shot / montage prompt builders. The ones that cite references take the
+// shot's ReferenceSet (or a function building one); the CLI builds it from disk.
+export * from './series/locations.js';
+export * from './mini-drama/reference-slots.js';
+export * from './mini-drama/prompt-builder.js';

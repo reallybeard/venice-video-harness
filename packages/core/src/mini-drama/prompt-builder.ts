@@ -1,3 +1,15 @@
+// ---------------------------------------------------------------------------
+// Mini-drama prompt builders: panel image prompts, single-shot video prompts,
+// Seedance native / Kling multi-shot prompts, montage prompts, character
+// reference-sheet prompts, and the model resolution they all share.
+//
+// Pure: the builders that cite reference images as @ImageN take the shot's
+// `ReferenceSet` (see `ReferenceSetSource`) and plan slots with the core
+// planner, so the prompt's @ImageN indices and the request's
+// reference_image_urls order come from one list. The CLI wrapper
+// (`src/mini-drama/prompt-builder.ts`) builds the set from disk.
+// ---------------------------------------------------------------------------
+
 import type {
   GenerationUnit,
   SeriesState,
@@ -30,6 +42,7 @@ import { faceCapableTwinId, getMaxPositivePromptChars, modelWantsSimplePrompt } 
 import { getLocation } from '../series/locations.js';
 import { buildReferenceSlotPlan, type ReferenceSlot } from './reference-slots.js';
 import { isReferenceSet, type ReferenceSet } from '../series/references.js';
+import { formatBeatTimestamp } from './montage.js';
 
 /**
  * The images a video prompt may cite as @ImageN: the shot's `ReferenceSet`,
@@ -485,13 +498,13 @@ function summarizeCharacterForMultiShot(
 // Directorial models (Seedance, Wan, Kling, ...) still get the exact line in
 // quotes; exact-lip-sync ALWAYS keeps the exact line because the audio_url
 // drives the spoken words. See AGENTS.md.
-const IMPROV_DIALOGUE_NOTE =
+export const IMPROV_DIALOGUE_NOTE =
   'Improvise the spoken dialogue naturally and in character — the quoted lines are the '
   + 'intent and tone to convey, not a script to read word for word. Keep the speech '
   + 'continuous and let the characters react to each other across the whole shot.';
 
 /** True when this model+strategy should let the model improvise dialogue. */
-function shouldImproviseDialogue(modelId: string, series: SeriesState): boolean {
+export function shouldImproviseDialogue(modelId: string, series: SeriesState): boolean {
   return modelWantsSimplePrompt(modelId) && series.videoDefaults.audioStrategy !== 'lip-sync';
 }
 
@@ -499,7 +512,7 @@ function shouldImproviseDialogue(modelId: string, series: SeriesState): boolean 
  * Render one speaker's line. Simple-prompt models get it as intent (`conveys:`)
  * so they improvise the phrasing; every other model gets the exact quote.
  */
-function formatDialogueLine(who: string, line: string, improvise: boolean): string {
+export function formatDialogueLine(who: string, line: string, improvise: boolean): string {
   return improvise ? `${who} conveys: "${line}"` : `${who}: "${line}"`;
 }
 
@@ -1118,14 +1131,6 @@ export function buildMontagePrompt(
     },
   };
 }
-
-/** Format seconds as the vault pack's M:SS beat timestamp. */
-function formatBeatTimestamp(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
 /**
  * Seedance native multi-shot: one R2V generation covering 2+ beats, with
  * literal `Lens switch.` lines between the per-beat blocks (rule 21). The

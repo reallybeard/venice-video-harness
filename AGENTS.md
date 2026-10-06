@@ -55,7 +55,7 @@ Three patterns are sanctioned, in order of preference:
 When you transform code, preserve these semantics:
 
 - The model registry capability flags in `packages/core/src/venice/models.ts`.
-- The reference-slot ordering contract in `src/mini-drama/reference-slots.ts`.
+- The reference-slot ordering contract in `packages/core/src/mini-drama/reference-slots.ts` (prompt builders: `packages/core/src/mini-drama/prompt-builder.ts`; both take the shot's `ReferenceSet`, the CLI builds it from disk).
 - The provenance and recipe sidecars (`src/venice/provenance.ts`, `src/venice/recipe.ts`).
 - The routing tables and the numbered rules in this file.
 
