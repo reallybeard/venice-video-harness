@@ -42,7 +42,7 @@ const DEFAULT_MAX_POLL_ATTEMPTS = 180;
  * reaped, or it never existed. A resumed job that hits this is unrecoverable, so
  * the caller drops the stale record and queues fresh.
  */
-function isQueueGoneError(error: unknown): boolean {
+export function isQueueGoneError(error: unknown): boolean {
   return error instanceof VeniceRequestError
     && (error.status === 400 || error.status === 404 || error.status === 410);
 }

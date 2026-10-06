@@ -21,3 +21,5 @@ export {
   CAPABILITIES_SCHEMA_VERSION,
 } from 'venice-video-harness/core/venice/capabilities-manifest.js';
 export type { CapabilitiesManifest } from 'venice-video-harness/core/venice/capabilities-manifest.js';
+export { createCliPorts, type CliPortsOptions } from './ports/index.js';
+export type { HarnessPorts } from 'venice-video-harness/core/ports.js';

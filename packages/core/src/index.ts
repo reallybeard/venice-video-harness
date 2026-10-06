@@ -103,3 +103,5 @@ export * from './mini-drama/panel-approval.js';
 export * from './series/locations.js';
 export * from './mini-drama/reference-slots.js';
 export * from './mini-drama/prompt-builder.js';
+// Ports: the host interfaces core's loop runs over (CLI: src/ports/createCliPorts).
+export * from './ports.js';

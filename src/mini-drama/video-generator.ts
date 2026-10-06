@@ -672,7 +672,7 @@ export class VideoRefusalError extends VeniceRequestError {
  *
  * The queue call itself is never auto-retried for 5xx (see `PostOptions.retry`).
  */
-async function submitVideoQueue(
+export async function submitVideoQueue(
   client: VeniceClient,
   model: string,
   body: Record<string, unknown>,

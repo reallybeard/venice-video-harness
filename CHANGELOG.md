@@ -220,6 +220,29 @@
   Test: `tests/core-prompt-builder.test.mjs` (core with an in-memory set
   equals the CLI wrapper on a materialised project; a browser-shaped set of
   asset ids plans without a project directory).
+- **Ports: the host interfaces core's loop runs over (`venice-video-harness/core/ports.js`, also on the core barrel).**
+  Interfaces only: `ReferenceStore` (a shot's `ReferenceSet`; a ref's bytes
+  or a request-ready URL), `ImageProbe` (image dimensions, clip duration,
+  frame extraction at a time or from the end, per-frame mean luma matching
+  ffmpeg `signalstats` YAVG), `VisionJudge` (`judge<T>()`, the shape of the
+  three QA vision calls), `VideoBackend` (quote, queue, findPending, resume,
+  retrieve, download, complete, clearPending, with the rule-43 re-attach
+  contract spelled out: `queue` records the job before it resolves, a
+  pending output is resumed, never re-queued), `Clock` (`now`, abortable
+  `sleep`), `Logger`, and the `HarnessPorts` aggregate. No Node types: bytes
+  are `Uint8Array`, media is an opaque `MediaRef`, cancellation is
+  `AbortSignal`. The CLI implementation is `createCliPorts()` (`src/ports/`,
+  also exported from the package root), wrapping what the CLI already runs:
+  `referenceSetFromDisk`, the ffmpeg helpers in `video-qa.ts` /
+  `extractLastFrame`, `getImageDimensions`, `VeniceClient.chatJson`, and the
+  render path's queue (`submitVideoQueue`, now exported, with its consent
+  and refusal handshakes) over `job-store.ts`. Output keys are normalised
+  to the registry's absolute paths, so a port-driven render and
+  `renderVideoFile` re-attach to each other's jobs. No call site moves yet.
+  Tests: `tests/core-ports.test.mjs` (fake client, temp config dir; the
+  ffmpeg probe test skips without ffmpeg), `tests/core-ports-conformance.test.mjs`
+  (the adapters satisfy the interfaces; a web-APIs-only host compiles).
+
 - **`Character.kind: 'person' | 'object'` (plan-schema-additions.md §4).**
   Recurring hero props and vehicles already ride the character system for
   identity anchoring (a locked reference, angle views, an `@ImageN` slot —
