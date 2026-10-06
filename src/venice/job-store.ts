@@ -18,13 +18,12 @@ import { getConfigDir } from '../user-config.js';
 
 export type PendingJobKind = 'video' | 'audio';
 
-export interface PendingJob {
+/** What every host records for a queued job; the key it is stored under is the host's. */
+export interface PendingJobRecord {
   kind: PendingJobKind;
   /** Venice model that owns the queue entry -- /retrieve needs it alongside the id. */
   model: string;
   queueId: string;
-  /** Absolute path the media will be written to. Doubles as the registry key. */
-  outputPath: string;
   /** Project directory, when the job belongs to a series. */
   project?: string;
   episode?: number;
@@ -33,8 +32,30 @@ export interface PendingJob {
   createdAt: string;
   /** Bumped on each successful poll so stale entries are identifiable. */
   updatedAt: string;
+}
+
+/** The CLI's record in `pending-jobs.json`. */
+export interface PendingJob extends PendingJobRecord {
+  /** Absolute path the media will be written to. Doubles as the registry key. */
+  outputPath: string;
   /** PID that queued the job; a different live PID means someone else owns it. */
   pid: number;
+}
+
+/** Jobs older than this are assumed dead -- Venice's own queue TTL is shorter. */
+export const PENDING_JOB_STALE_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/** How much of the prompt a record keeps. */
+export const PENDING_JOB_PROMPT_MAX_CHARS = 240;
+
+/** The prompt as a record keeps it: its first 240 characters, or nothing for an empty one. */
+export function pendingJobPrompt(prompt: string | undefined): string | undefined {
+  return prompt ? prompt.slice(0, PENDING_JOB_PROMPT_MAX_CHARS) : undefined;
+}
+
+/** True when the record's heartbeat is older than the queue TTL at `now` (epoch ms). */
+export function isStalePendingJob(job: Pick<PendingJobRecord, 'updatedAt'>, now: number): boolean {
+  return now - Date.parse(job.updatedAt) > PENDING_JOB_STALE_AFTER_MS;
 }
 
 interface JobRegistry {
@@ -43,9 +64,6 @@ interface JobRegistry {
 }
 
 const EMPTY: JobRegistry = { version: 1, jobs: [] };
-
-/** Jobs older than this are assumed dead -- Venice's own queue TTL is shorter. */
-const STALE_AFTER_MS = 6 * 60 * 60 * 1000;
 
 export function getJobStorePath(): string {
   return join(getConfigDir(), 'pending-jobs.json');
@@ -107,7 +125,7 @@ export async function recordPendingJob(
   const now = new Date().toISOString();
   const entry: PendingJob = {
     ...job,
-    prompt: job.prompt ? job.prompt.slice(0, 240) : undefined,
+    prompt: pendingJobPrompt(job.prompt),
     createdAt: now,
     updatedAt: now,
     pid: process.pid,
@@ -146,7 +164,7 @@ export async function findPendingJob(outputPath: string): Promise<PendingJob | u
 }
 
 export function isStale(job: PendingJob, now = Date.now()): boolean {
-  return now - Date.parse(job.updatedAt) > STALE_AFTER_MS;
+  return isStalePendingJob(job, now);
 }
 
 /** Remove entries too old for Venice to still be holding. Returns the count. */
