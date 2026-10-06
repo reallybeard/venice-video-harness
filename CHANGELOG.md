@@ -128,6 +128,24 @@
   bindings are refused as `not-recorded`. `--skip-qa` still bypasses it.
   New `src/mini-drama/panel-approval.ts` (pure `settingsDigest` /
   `compareApproval`). Test: `tests/panel-approval.test.mjs`.
+- **A failed clip write on the render path is no longer a poll error.**
+  `renderVideoFile`'s retrieve loop wrapped the file write in the same
+  try/catch as the poll, so an unwritable output directory (or a full disk)
+  counted as one more failed poll. After the clip was downloaded and paid
+  for, the loop then re-retrieved it about 360 times before timing out. The
+  write now happens after the loop, and its error surfaces at once.
+  `Video saved` now prints after `/video/complete`, as the other render path
+  already did. Test: `tests/generation-loop-golden.test.mjs`.
+- **The queue id prints before the pending-job record is written**
+  (`src/ports/video-backend.ts`), so a record write that throws still leaves
+  the id on screen for `venice-video queue` to re-attach to.
+- **A cancelled multi-shot unit stops instead of retrying every 15s.**
+  `generateEpisodeVideos` retried every multi-shot error except a classified
+  refusal. A Ctrl-C (the operation's abort signal) counted as a failed
+  attempt, and each retry failed on the same abort, so the unit spun until
+  the process was killed. Abort errors now propagate, and the retry wait is
+  abortable. Test: `tests/generation-loop-golden.test.mjs`
+  (`multishot-cancel-during-retry`).
 
 ### Changed
 
@@ -562,6 +580,69 @@
   output and request bodies are unchanged (the chatJson and queue
   refactors were checked against the previous implementations).
   Tests: `tests/core-port-helpers.test.mjs`, `tests/core-render-job.test.mjs`.
+- **Core exports the steps the QA and generation loops are built from; the
+  loops stay in the CLI.** Core holds the decisions, each host its own
+  control flow, so a host walking shots or units its own way (the web app)
+  composes the same steps the CLI's loops do.
+  - QA (`venice-video-harness/core/mini-drama/qa-steps.js`):
+    `storyboardQaInput(shot, shots, series)` (pure: the panel, up to two
+    sheets and the nearest earlier same-location panel to attach, the
+    prompts, `maxTokens` 4000, temperature 0.3), `checkStoryboardPanel`
+    (one panel: the chosen reader, then the paired vision companion, then
+    UNCHECKED, rule 55), `probeHeadGlitch`, `probeBoundary`,
+    `probeUnitFrames`, `unitCharacterNames`, `judgeUnitIdentity`,
+    `judgeCrossUnitIdentity` (rule 52), and `videoQaUnitVerdict(report,
+    unitId)`: one unit's verdict out of a report, weighted like
+    `summarizeVideoQa`, or UNCHECKED when a vision call it depends on
+    failed. `qa-storyboard` and `qa-videos` keep their loops
+    (`src/mini-drama/qa-loops.ts`) and call these. Console output, both
+    reports and every vision request are byte-identical, pinned by
+    `tests/qa-loops-golden.test.mjs` (the real CLI against a stubbed
+    `VeniceClient`). One adapter change: the CLI `ImageProbe` answers a
+    one-frame `frameLumas` window with a single seek at any start, so the
+    boundary check runs the ffmpeg command it always did.
+    Test: `tests/qa-steps.test.mjs`.
+  - One render (`mini-drama/render-video.js`): `renderVideo(ports, media,
+    request, options)` runs the faces-off check, `planVideoQueueRequest`,
+    the reference URLs (through `ReferenceStore.url`), the audio pads,
+    `buildVideoQueueRequest`, `runVideoJob` with
+    `RENDER_FILE_VIDEO_JOB_POLICY`, the gone-job requeue and the recipe
+    pass. IO with no port (file existence, `hasFace` sidecars, audio
+    durations and pads, the recipe write) comes in as `RenderVideoMedia`
+    callbacks. `prepareVideoRequest` builds the body without queueing.
+    `renderVideoFile` is now a thin caller over the CLI ports plus
+    `createCliRenderMedia` (`src/ports/render-media.ts`).
+    `createCliVideoBackend` gains `{ validateRequests }` (default `true`);
+    the render path passes `false`, as before.
+    Test: `tests/core-render-video.test.mjs`.
+  - Generation (`mini-drama/generation-steps.js`, pure):
+    `resolveUnitShots` (cursor first), `generationUnitContext(plan,
+    unitShots, index, renderedSoFar)`, `unitFrameTargets(unit, context,
+    facts)` (start `chain` | `panel`, end `next-panel` | `natural`; the rule
+    the CLI's start and end frame choice applies), `isFinalMultiShotError`,
+    `MULTISHOT_RETRY_DELAY_MS`, and `renderFailureDisposition(err)`: whether
+    a failed render is final, whether its pending record is kept, whether it
+    is a provider refusal, and whether a retry re-bills. The CLI's
+    multi-shot retry stops exactly when `final` is true.
+    `generateEpisodeVideos` keeps its loop and calls these.
+    Test: `tests/generation-steps.test.mjs`.
+
+  `tests/generation-loop-golden.test.mjs` pins the episode render: 20 cases
+  across the lanes, with every request, console line, timer wait, pending
+  job and file, captured before the change. Only the two fixes above change
+  it. Request bodies are byte-identical (the 18k-case dump described in
+  PR C).
+- **A forced storyboard approval is recorded and counts at the render
+  gate.** `ApprovalBinding` gains optional `force` and `reason`.
+  `qa-approve --force` sets `force` on every binding when it actually waived
+  QA issues, with the reason from the new `--reason` flag (`--reason`
+  needs `--force`); a clean report's approval is written as before. Core
+  `approvalCounts(binding, qaCleared)` counts an approval when QA cleared
+  the shot or the approval was forced, and `gateFor('render')` takes an
+  optional per-shot `approvedShots` fact from a host that approves panel by
+  panel, blocking with `approval-not-cleared` when an approved shot neither
+  passed QA nor was forced. The CLI's own gate output is unchanged.
+  Test: `tests/approval-force.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 
