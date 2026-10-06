@@ -72,3 +72,8 @@ export * from './agent/guide.js';
 // Wizard / stream choice tables.
 export * from './mini-drama/choices.js';
 export * from './mini-drama/stream-choices.js';
+
+// Generation planning: units, multi-shot grouping, montage scenes and beats.
+export * from './mini-drama/generation-planner.js';
+export * from './mini-drama/montage.js';
+export * from './mini-drama/shot-paths.js';

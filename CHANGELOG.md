@@ -319,6 +319,19 @@
   `ShotApproval ≡ ApprovalBinding`; a script with and without `takes`
   round-trips through `saveEpisodeScript` / `loadEpisodeScript` and
   `saveSeries` / `loadSeries` with no key invented).
+- **The generation planner and montage planning move into core (phase 3).**
+  `buildGenerationPlan` (with its multi-shot grouping, pairwise character
+  overlap, frame-strategy and keyframe helpers), `mustRenderAsExactLipSync`,
+  `mustStayAsWanLipSync`, `shouldUseSeedanceKeyframe`, `groupShotsIntoScenes`,
+  `planMontageUnits`, `layoutMontageBeats`, `formatBeatTimestamp`,
+  `SceneGroup`, and `shotKey` / `ShotId` / `PlacementMap` now live in
+  `packages/core/src/mini-drama/{generation-planner,montage,shot-paths}.ts`,
+  moved verbatim, and are on the core barrel. A browser host can plan an
+  episode from a `ShotScript[]` with the same code the CLI runs. The IO
+  stays in `src/`: `saveGenerationPlan` / `loadGenerationPlan`,
+  `cutMontageIntoShots` (ffmpeg), the shot path builders and narration
+  placement (`existsSync`). Those modules re-export the moved names, so
+  every import site is unchanged. Test: `tests/core-planner.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 
