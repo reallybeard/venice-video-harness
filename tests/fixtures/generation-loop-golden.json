@@ -1864,6 +1864,32 @@
       }
     }
   },
+  "multishot-cancel-during-retry": {
+    "events": [
+      "log:   Model: seedance-2-5-reference-to-video (multi-shot unit — Seedance native multi-shot with Lens switch separators (rule 21))",
+      "log:   Multi-shot slot plan: 4 reference(s) (pure reference mode)",
+      "log:   Start frame: none (pure reference mode — refs carry consistency)",
+      "log:   Reference images (@Image1..@Image4): 4",
+      "log:   Queueing video: model=seedance-2-5-reference-to-video, duration=10s, aspect=16:9, prompt=974 chars",
+      "POST /api/v1/video/queue {\"model\":\"seedance-2-5-reference-to-video\",\"prompt\":\"@Image1 is MARA — wearing orange pressure suit. @Image2 is the location environment reference (Capsule) — match its setting, architecture, and lighting; it is not a character. @Image3 is the south wall of the same location (Capsule) — same place, different angle; keep the environment consistent with it. @Image4 is a second angle of MARA — same person as MARA's primary reference. 2-shot continuous sequence in one take family. Lock face, wardrobe, environment, and geography across all shots. Shot 1 (5s): locked-off static shot. Shot 1: @Image1 checks the console. Lens switch. Shot 2 (5s): locked-off static shot. Shot 2: @Image1 flips a switch. Keep the geography of @Image2 fixed across every shot: landmarks stay where they are, and each subject holds their stated position and screen side. Bright daytime scene, natural light, no rain. Visual style: documentary realism, cold blue, hard. No background music. Only generate dialogue, ambient sound, and sound effects.\",\"duration\":\"10s\",\"audio\":true,\"resolution\":\"720p\",\"bitrate_mode\":\"high\",\"aspect_ratio\":\"16:9\",\"reference_image_urls\":[\"data:image/png;base64,<characters/mara/front.png>\",\"data:image/png;base64,<locations/capsule/north.png>\",\"data:image/png;base64,<locations/capsule/south.png>\",\"data:image/png;base64,<characters/mara/three-quarter.png>\"]}",
+      "error:   Venice queue error (HTTP 500): Venice API error 500 on /api/v1/video/queue: upstream",
+      "error:   Error body: {\n  \"error\": \"upstream\"\n}",
+      "warn:   Failed request logged to: <P>/episodes/episode-001/scene-001/failed-requests.log",
+      "warn:   unit-001-002: multi-shot attempt 1 failed (HTTP 500): Venice API error 500 on /api/v1/video/queue: upstream",
+      "warn:   Error body: {\n  \"error\": \"upstream\"\n}",
+      "warn:   unit-001-002: keeping multi-shot strategy, retrying in 15s"
+    ],
+    "outcome": {
+      "error": "OperationAbortedError: Operation cancelled."
+    },
+    "pendingJobs": {
+      "version": 1,
+      "jobs": []
+    },
+    "files": {
+      "episodes/episode-001/scene-001/failed-requests.log": "{\n  \"timestamp\": \"<T>\",\n  \"targetOutput\": \"<P>/episodes/episode-001/scene-001/unit-001-002.mp4\",\n  \"promptLength\": 974,\n  \"request\": {\n    \"model\": \"seedance-2-5-reference-to-video\",\n    \"prompt\": \"@Image1 is MARA — wearing orange pressure suit. @Image2 is the location environment reference (Capsule) — match its setting, architecture, and lighting; it is not a character. @Image3 is the south wall of the same location (Capsule) — same place, different angle; keep the environment consistent with it. @Image4 is a second angle of MARA — same person as MARA's primary reference. 2-shot continuous sequence in one take family. Lock face, wardrobe, environment, and geography across all shots. Shot 1 (5s): locked-off static shot. Shot 1: @Image1 checks the console. Lens switch. Shot 2 (5s): locked-off static shot. Shot 2: @Image1 flips a switch. Keep the geography of @Image2 fixed across every shot: landmarks stay where they are, and each subject holds their stated position and screen side. Bright daytime scene, natural light, no rain. Visual style: documentary realism, cold blue, hard. No background music. Only generate dialogue, ambient sound, and sound effects.\",\n    \"duration\": \"10s\",\n    \"audio\": true,\n    \"resolution\": \"720p\",\n    \"bitrate_mode\": \"high\",\n    \"aspect_ratio\": \"16:9\",\n    \"reference_image_urls\": [\n      \"data:image/png;base64,iVBORw0KGgptYXJhLWZyb250\",\n      \"data:image/png;base64,iVBORw0KGgpjYXBzdWxlLW5vcnRo\",\n      \"data:image/png;base64,iVBORw0KGgpjYXBzdWxlLXNvdXRo\",\n      \"data:image/png;base64,iVBORw0KGgptYXJhLTNx\"\n    ]\n  },\n  \"error\": {\n    \"status\": 500,\n    \"message\": \"Venice API error 500 on /api/v1/video/queue: upstream\",\n    \"body\": {\n      \"error\": \"upstream\"\n    }\n  }\n}\n---\n"
+    }
+  },
   "consent-409": {
     "events": [
       "log:   Model: seedance-2-5-reference-to-video",
