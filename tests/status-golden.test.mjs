@@ -5,6 +5,10 @@
 // `formatProjectStatus` and the CLI's `status` / `pipeline` commands, and
 // compared byte for byte against tests/fixtures/status-golden.json.
 //
+// Each project also carries what a real run leaves beside the markers (cast
+// references, videoDefaults, a qa-approved.json bound to its panels), so a
+// case reads the gates (rules 54, 55, 63, 52) the way the commands do.
+//
 // The golden file was captured from the classifier before it moved into core.
 // Regenerate it ONLY for an intended output change:
 //   UPDATE_STATUS_GOLDEN=1 node --test tests/status-golden.test.mjs
@@ -17,6 +21,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectProjectStatus, formatProjectStatus } from '../dist/session/status.js';
+import { loadEpisodeScript, loadSeries } from '../dist/series/manager.js';
+import { approvalForShot } from '../dist/mini-drama/panel-approval.js';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const cli = join(repoRoot, 'dist', 'mini-drama', 'cli.js');
@@ -27,6 +33,15 @@ const AESTHETIC = { style: 'documentary', palette: 'cold blue', lighting: 'hard'
 const MARA = { name: 'MARA', gender: 'female', age: '40s', description: 'pilot', fullDescription: 'A pilot.', wardrobe: 'suit', locked: true, voiceId: 'af_sky', seed: 1 };
 const JUNO = { name: 'JUNO', gender: 'female', age: '20s', description: 'engineer', fullDescription: 'An engineer.', wardrobe: 'overalls', locked: false, seed: 2 };
 const CAPSULE = { name: 'Capsule', slug: 'capsule', description: 'cockpit', lightingNotes: 'amber', seed: 3 };
+const R2V = 'seedance-2-5-reference-to-video';
+const VIDEO_DEFAULTS = {
+  actionModel: R2V, atmosphereModel: R2V, characterConsistencyModel: R2V,
+  imageDefaults: { generationModel: 'nano-banana-2', editModel: 'nano-banana-2-edit' },
+};
+/** The reference images a real run has on disk before storyboarding (rule 54). */
+const REFS = { 'characters/mara/front.png': '', 'characters/juno/front.png': '', 'locations/capsule/north.png': '' };
+/** Stands in for qa-approved.json until the project is on disk: replaced by a real per-shot binding (rule 63). */
+const BIND = Symbol('bind approval');
 
 function shot(shotNumber, characters = ['MARA']) {
   return {
@@ -56,14 +71,14 @@ const VQA_PASS = { summary: { passed: true, criticals: 0, warnings: 1 } };
  * stages before it, the way a real run leaves them.
  */
 const STAGES = ['none', 'script', 'approved', 'panels', 'qa-report', 'qa-approved', 'clips', 'video-qa', 'final'];
-function episodeFiles(n, upTo, { status = 'draft', approvedBy = 'file', panels = 3, clips = 3, qa = QA_CLEAN, videoQa = VQA_PASS, shots = 3 } = {}) {
+function episodeFiles(n, upTo, { status = 'draft', approvedBy = 'file', panels = 3, clips = 3, qa = QA_CLEAN, videoQa = VQA_PASS, shots = 3, approval = BIND } = {}) {
   const at = s => STAGES.indexOf(upTo) >= STAGES.indexOf(s);
   const files = {};
   if (at('script')) files['script.json'] = script(n, approvedBy === 'status' && at('approved') ? 'approved' : status, shots);
   if (at('approved') && approvedBy === 'file') files['script-approved.json'] = { episode: n, approvedAt: '2026-10-01T00:00:00.000Z' };
   if (at('panels')) for (const f of shotFiles(panels, 'png')) files[f] = '';
   if (at('qa-report')) files['qa-report.json'] = qa;
-  if (at('qa-approved')) files['qa-approved.json'] = { episode: n, approvedAt: '2026-10-01T00:00:00.000Z', notes: '' };
+  if (at('qa-approved')) files['qa-approved.json'] = approval;
   if (at('clips')) for (const f of shotFiles(clips, 'mp4')) files[f] = '';
   if (at('video-qa') && videoQa) files['video-qa-report.json'] = videoQa;
   if (at('final')) files[`episode-${padded(n)}-final.mp4`] = '';
@@ -82,7 +97,7 @@ const CASES = [
   { id: 'approved-via-file', episodes: { 1: episodeFiles(1, 'approved') } },
   { id: 'approved-via-status', episodes: { 1: episodeFiles(1, 'approved', { approvedBy: 'status' }) } },
   { id: 'approved-via-both', episodes: { 1: { ...episodeFiles(1, 'approved'), 'script.json': script(1, 'approved') } } },
-  { id: 'refs-missing', episodes: { 1: episodeFiles(1, 'approved') }, note: 'no characters/<slug>/front.png: storyboard-episode blocks (rule 54)' },
+  { id: 'refs-missing', episodes: { 1: episodeFiles(1, 'approved') }, refs: false, note: 'no characters/<slug>/front.png: storyboard-episode blocks (rule 54)' },
   { id: 'refs-present', episodes: { 1: episodeFiles(1, 'approved') }, root: { 'characters/mara/front.png': '', 'characters/juno/front.png': '', 'locations/capsule/north.png': '' } },
   { id: 'panels-partial', episodes: { 1: episodeFiles(1, 'panels', { panels: 1 }) } },
   { id: 'panels-complete', episodes: { 1: episodeFiles(1, 'panels') } },
@@ -91,6 +106,14 @@ const CASES = [
   { id: 'qa-reported-clean', episodes: { 1: episodeFiles(1, 'qa-report') } },
   { id: 'qa-approved', episodes: { 1: episodeFiles(1, 'qa-approved') } },
   { id: 'qa-approved-unbound', episodes: { 1: { ...episodeFiles(1, 'qa-approved'), 'qa-approved.json': '{not json' } }, note: 'generate-videos refuses an unparseable / stale approval (rule 63)' },
+  {
+    id: 'qa-approved-legacy', note: 'an approval written before per-shot binding: generate-videos refuses every shot (rule 63)',
+    episodes: { 1: episodeFiles(1, 'qa-approved', { approval: { episode: 1, approvedAt: '2026-10-01T00:00:00.000Z', notes: '' } }) },
+  },
+  {
+    id: 'qa-approved-stale', note: 'a panel regenerated after qa-approve: generate-videos refuses that shot (rule 63)',
+    episodes: { 1: episodeFiles(1, 'qa-approved') }, after: { 1: { 'scene-001/shot-002.png': 'retouched' } },
+  },
   { id: 'clips-partial', episodes: { 1: episodeFiles(1, 'clips', { clips: 2 }) } },
   { id: 'clips-complete-unverified', episodes: { 1: episodeFiles(1, 'clips') } },
   { id: 'video-qa-fail', episodes: { 1: episodeFiles(1, 'video-qa', { videoQa: VQA_FAIL }) } },
@@ -121,19 +144,46 @@ async function writeJsonOrText(path, value) {
   await writeFile(path, typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`);
 }
 
+/**
+ * Every case gets what a real run leaves on disk alongside its markers:
+ * `videoDefaults`, the cast's reference images (unless `refs: false`), and a
+ * qa-approved.json bound to the panels it approved (unless the case supplies
+ * its own). `after` files are written once the approvals are bound.
+ */
 async function buildProject(workspace, c) {
   const dir = join(workspace, c.id);
   const series = {
     name: 'Rocketship', slug: 'rocketship', concept: 'A signal', genre: 'sci-fi', setting: 'orbit',
     outputDir: dir, aesthetic: AESTHETIC, characters: [MARA, JUNO], locations: [CAPSULE],
-    episodes: [{ number: 1, title: 'Pilot' }],
+    episodes: [{ number: 1, title: 'Pilot' }], videoDefaults: VIDEO_DEFAULTS,
     ...c.series,
   };
   await writeJsonOrText(join(dir, 'series.json'), series);
-  for (const [path, value] of Object.entries(c.root ?? {})) await writeJsonOrText(join(dir, path), value);
+  const root = { ...(c.refs === false ? {} : REFS), ...c.root };
+  for (const [path, value] of Object.entries(root)) await writeJsonOrText(join(dir, path), value);
+  const toBind = [];
   for (const [n, files] of Object.entries(c.episodes ?? {})) {
     const episodeDir = join(dir, 'episodes', `episode-${padded(Number(n))}`);
     await mkdir(episodeDir, { recursive: true });
+    for (const [path, value] of Object.entries(files)) {
+      if (value === BIND) toBind.push(Number(n));
+      else await writeJsonOrText(join(episodeDir, path), value);
+    }
+  }
+  if (toBind.length > 0) {
+    const loaded = await loadSeries(dir);
+    for (const n of toBind) {
+      const episodeDir = join(dir, 'episodes', `episode-${padded(n)}`);
+      const shots = {};
+      for (const s of (await loadEpisodeScript(loaded, n)).shots) {
+        const binding = approvalForShot(loaded, s, join(episodeDir, 'scene-001'));
+        if (binding) shots[padded(s.shotNumber)] = binding;
+      }
+      await writeJsonOrText(join(episodeDir, 'qa-approved.json'), { episode: n, approvedAt: '2026-10-01T00:00:00.000Z', notes: '', shots });
+    }
+  }
+  for (const [n, files] of Object.entries(c.after ?? {})) {
+    const episodeDir = join(dir, 'episodes', `episode-${padded(Number(n))}`);
     for (const [path, value] of Object.entries(files)) await writeJsonOrText(join(episodeDir, path), value);
   }
   return dir;

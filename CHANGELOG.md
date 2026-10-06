@@ -210,7 +210,7 @@
   core half. `status` / `pipeline` text and `--json` output are byte-identical.
   Tests: `tests/core-stages.test.mjs` (classification from facts; every stage
   the classifier can return is a pipeline stage and every pipeline stage is
-  reachable), `tests/status-golden.test.mjs` (30 synthetic projects through
+  reachable), `tests/status-golden.test.mjs` (32 synthetic projects through
   the collector, the formatter and the CLI, compared byte for byte against a
   capture taken before the move).
 - **The prompt builders and the @ImageN slot planner move into core
