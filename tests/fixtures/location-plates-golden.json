@@ -380,6 +380,81 @@
       "  west: saved -> west.png (derived from north via nano-banana-2-edit)"
     ]
   },
+  "a kind: object prop without baseTraits is kept out of the plate": {
+    "result": {
+      "generated": [
+        "north.png",
+        "south.png"
+      ],
+      "skipped": []
+    },
+    "calls": [
+      {
+        "path": "/api/v1/image/generate",
+        "body": {
+          "model": "nano-banana-2",
+          "resolution": "1K",
+          "aspect_ratio": "16:9",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics. wide establishing shot facing the north wall of the location, the full north wall and environment visible, cinematic widescreen framing. a narrow wet alley behind a noodle bar. Empty environment, no people present, no human figures, uninhabited scene. Clean plate: the hero props (lantern) are NOT present — surfaces are clear of them; they are photographed separately. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics.",
+          "negative_prompt": "people, person, human, figure, silhouette, crowd, deformed, blurry, low quality, watermark, text, signature, comic panels, panel borders, multiple frames, lantern",
+          "steps": 30,
+          "cfg_scale": 10,
+          "seed": 41,
+          "safe_mode": false,
+          "hide_watermark": true
+        }
+      },
+      {
+        "path": "/api/v1/image/multi-edit",
+        "body": {
+          "modelId": "nano-banana-2-edit",
+          "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics. Reverse angle of the SAME room: place the camera on the opposite side and look back toward where the establishing shot was taken, so the south wall now fills the background. Wide shot, the full south wall visible.. This is the SAME room shown in the reference image — keep every surface, material, colour, architectural feature, and the exact lighting identical; only the camera position changes. Do not add, remove, or rearrange furniture; do not redecorate; do not change the architecture. Clean plate: the hero props (lantern) are NOT present — surfaces are clear of them; they are photographed separately. Empty environment, no people, no human figures. Render as a single continuous cinematic frame — no panels, no split screen, no inset views, no text, no labels. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics.",
+          "images": [
+            "<image north.png>"
+          ]
+        }
+      }
+    ],
+    "sidecars": {
+      "north.prompt.json": {
+        "location": "Back Alley",
+        "slug": "back-alley",
+        "angle": "north",
+        "kind": "generate",
+        "model": "nano-banana-2",
+        "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics. wide establishing shot facing the north wall of the location, the full north wall and environment visible, cinematic widescreen framing. a narrow wet alley behind a noodle bar. Empty environment, no people present, no human figures, uninhabited scene. Clean plate: the hero props (lantern) are NOT present — surfaces are clear of them; they are photographed separately. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics.",
+        "negative_prompt": "people, person, human, figure, silhouette, crowd, deformed, blurry, low quality, watermark, text, signature, comic panels, panel borders, multiple frames, lantern",
+        "cfg_scale": 10,
+        "aspect_ratio": "16:9",
+        "resolution": "1K",
+        "seed": 41
+      },
+      "south.prompt.json": {
+        "location": "Back Alley",
+        "slug": "back-alley",
+        "angle": "south",
+        "kind": "multi-edit",
+        "model": "nano-banana-2-edit",
+        "base": "north.png",
+        "prompt": "STYLE: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics. Reverse angle of the SAME room: place the camera on the opposite side and look back toward where the establishing shot was taken, so the south wall now fills the background. Wide shot, the full south wall visible.. This is the SAME room shown in the reference image — keep every surface, material, colour, architectural feature, and the exact lighting identical; only the camera position changes. Do not add, remove, or rearrange furniture; do not redecorate; do not change the architecture. Clean plate: the hero props (lantern) are NOT present — surfaces are clear of them; they are photographed separately. Empty environment, no people, no human figures. Render as a single continuous cinematic frame — no panels, no split screen, no inset views, no text, no labels. STYLE REMINDER: Cinematic photography, warm amber palette, low-key practical lighting, anamorphic lens characteristics.",
+        "aspect_ratio": "16:9"
+      }
+    },
+    "files": [
+      "north.png",
+      "north.prompt.json",
+      "north.provenance.json",
+      "north.recipe.json",
+      "south.png",
+      "south.prompt.json",
+      "south.provenance.json",
+      "south.recipe.json"
+    ],
+    "log": [
+      "  north: saved -> north.png (hero plate)",
+      "  south: saved -> south.png (derived from north via nano-banana-2-edit)"
+    ]
+  },
   "derived only, hero missing: north generated first": {
     "result": {
       "generated": [

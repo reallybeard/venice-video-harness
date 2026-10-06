@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Location plates keep `kind: 'object'` props out of the room.** The plate
+  prompts left a recurring prop out of the plate (a clean-plate clause and a
+  negative) only when its `baseTraits` began "inanimate object", the
+  convention from before `Character.kind`. A prop marked only
+  `kind: 'object'` was painted into every plate, then composited again per
+  shot from its own reference. Both now count. The `objectCast` path sets
+  both fields, so its projects' plates are unchanged. Test: a new case in
+  `tests/location-plates-golden.test.mjs`.
 - **A stream that stops itself is settled before it reports stopped.** After
   three consecutive failures (or on reaching its budget) the `StreamEngine`
   worker set `running = false`, awaited `persist()`, and only then set

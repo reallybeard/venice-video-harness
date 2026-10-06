@@ -51,6 +51,10 @@ const CASES = [
   { name: 'default compass set, plain location', location: 'plain' },
   { name: 'default compass set, lighting + anchors + film stock', location: 'full', aesthetic: { ...AESTHETIC, filmStock: 'Kodak Vision3 500T' } },
   { name: 'object cast gets a clean-plate clause and negatives', location: 'full', characters: OBJECT_CAST },
+  {
+    name: 'a kind: object prop without baseTraits is kept out of the plate', location: 'plain', options: { angles: ['north', 'south'] },
+    characters: [{ name: 'THE LANTERN', kind: 'object', gender: 'other', age: 'n/a', description: 'a brass lantern', fullDescription: '', wardrobe: '', locked: true, seed: 5 }],
+  },
   { name: 'derived only, hero missing: north generated first', location: 'plain', options: { angles: ['east', 'south'] } },
   { name: 'derived only, hero on disk', location: 'plain', existing: ['north'], options: { angles: ['west'] } },
   { name: 'legacy wide hero on disk satisfies a derive', location: 'plain', existing: ['wide'], options: { angles: ['south'] } },

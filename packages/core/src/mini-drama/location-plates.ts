@@ -169,11 +169,13 @@ export function planLocationAngles(
  * Object cast members (recurring hero props) must NOT be baked into location
  * plates — a plate that paints its own THE LEDGER becomes a duplicate
  * look-alike when the real reference is composited per shot. Locations are
- * empty stages; hero props enter per shot via their own references.
+ * empty stages; hero props enter per shot via their own references. A prop is
+ * `kind: 'object'`, or (projects from before `kind`) `baseTraits` opening
+ * with "inanimate object".
  */
 export function locationObjectCastNouns(characters: readonly Character[] | undefined): string[] {
   return (characters ?? [])
-    .filter(c => /^\s*inanimate object/i.test(c.baseTraits ?? ''))
+    .filter(c => c.kind === 'object' || /^\s*inanimate object/i.test(c.baseTraits ?? ''))
     .map(c => c.name.replace(/^THE\s+/i, '').toLowerCase().trim())
     .filter(Boolean);
 }
