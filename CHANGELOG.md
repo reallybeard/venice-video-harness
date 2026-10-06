@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Location plates keep `kind: 'object'` props out of the room.** The plate
+  prompts left a recurring prop out of the plate (a clean-plate clause and a
+  negative) only when its `baseTraits` began "inanimate object", the
+  convention from before `Character.kind`. A prop marked only
+  `kind: 'object'` was painted into every plate, then composited again per
+  shot from its own reference. Both now count. The `objectCast` path sets
+  both fields, so its projects' plates are unchanged. Test: a new case in
+  `tests/location-plates-golden.test.mjs`.
 - **A stream that stops itself is settled before it reports stopped.** After
   three consecutive failures (or on reaching its budget) the `StreamEngine`
   worker set `running = false`, awaited `persist()`, and only then set
@@ -160,6 +168,18 @@
   `tests/multishot-final-errors.test.mjs` (unchanged, through the CLI).
 
 ### Changed
+
+- **Location reference plate prompts are in core.** The compass plate list
+  (north hero, derived south / east / west, the legacy names), the angle
+  planner (custom names need a prompt, a missing hero is generated first),
+  and the hero and derived-plate prompts moved from
+  `src/mini-drama/location-generator.ts` to
+  `venice-video-harness/core/mini-drama/location-plates.js`
+  (`planLocationAngles`, `buildHeroPlatePrompt`, `buildDerivedPlatePrompt`,
+  `HERO_PLATE_DEFAULTS`). The generator keeps the Venice calls, the files and
+  the sidecars, and re-exports the old names. Output is unchanged:
+  `tests/location-plates-golden.test.mjs` pins every request body and
+  `.prompt.json` sidecar across 14 cases, captured before the move.
 
 - **Duration and resolution are validated before the paid call instead of
   silently corrected.** `queueVideo` used to snap an unsupported duration to
