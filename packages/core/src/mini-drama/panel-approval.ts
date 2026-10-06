@@ -9,7 +9,8 @@
 // supplies sha256 and the disk reads.
 // ---------------------------------------------------------------------------
 
-import type { ApprovalBinding, ShotScript } from '../series/types.js';
+import type { ApprovalBinding, Location, SeriesState, ShotScript } from '../series/types.js';
+import { DEFAULT_IMAGE_EDIT_MODEL, DEFAULT_IMAGE_GENERATION_MODEL } from '../series/types.js';
 
 // ---- Shapes ----------------------------------------------------------------
 
@@ -73,6 +74,15 @@ export function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/**
+ * The settings digest: `hash` over the canonical JSON. The CLI passes
+ * sha256-hex; any host that records approvals must pass the same function or
+ * its digests will not match the CLI's.
+ */
+export function settingsDigestWith(settings: PanelSettings, hash: (canonical: string) => string): string {
+  return hash(canonicalJson(settings));
+}
+
 /** Compare a recorded approval against the current panel hash + settings. Pure. */
 export function compareApproval(
   recorded: ShotApproval | undefined,
@@ -100,4 +110,61 @@ export function describeMismatch(m: ApprovalMismatch): string {
     case 'settings-changed': return 'prompt, references or image model changed after approval';
     case 'not-recorded': return 'approval predates per-shot binding (or shot was added after approval)';
   }
+}
+
+/** The location sentence folded into the panel prompt, as `storyboard-episode` writes it. */
+export function panelLocationNote(location: Location): string {
+  return ` Location: ${location.description}`
+    + (location.lightingNotes ? ` Lighting: ${location.lightingNotes}.` : '')
+    + (location.spatialAnchors ? ` Fixed layout (never rearrange): ${location.spatialAnchors}.` : '');
+}
+
+/**
+ * Shape a shot's `PanelSettings` from what the host has already resolved: the
+ * image prompt (`buildImagePrompt`), the shot's location when it has one, and
+ * the project-relative reference images that exist in its storage, in
+ * `CHARACTER_REF_ORDER` / `LOCATION_REF_ORDER` precedence.
+ */
+export function panelSettingsFrom(input: {
+  series: SeriesState;
+  shot: ShotScript;
+  imagePrompt: { prompt: string; negativePrompt?: string; seed?: number };
+  location?: Location;
+  referenceImages: string[];
+}): PanelSettings {
+  const { series, shot, imagePrompt, location, referenceImages } = input;
+  const locationNote = location ? panelLocationNote(location) : '';
+  return {
+    prompt: imagePrompt.prompt + locationNote,
+    negativePrompt: imagePrompt.negativePrompt,
+    seed: imagePrompt.seed,
+    generationModel: series.videoDefaults.imageDefaults?.generationModel ?? DEFAULT_IMAGE_GENERATION_MODEL,
+    editModel: series.videoDefaults.imageDefaults?.editModel ?? DEFAULT_IMAGE_EDIT_MODEL,
+    aspectRatio: series.storyboardAspectRatio ?? '16:9',
+    referenceImages,
+    sceneImagePaths: shot.sceneImagePaths,
+    sceneRefDescription: shot.sceneRefDescription,
+    skipRefine: shot.skipRefine,
+  };
+}
+
+/**
+ * Check every shot against the recorded approval, given each shot's current
+ * panel hash and settings digest. Returns only the shots that do not match.
+ * An artifact with no `shots` map (written before this binding existed)
+ * reports every shot as `not-recorded`.
+ */
+export function checkApproval(
+  artifact: ApprovalArtifact,
+  current: ReadonlyArray<{ shotKey: string; shotNumber: number; panelSha256?: string; settingsDigest: string }>,
+): ApprovalCheck[] {
+  const out: ApprovalCheck[] = [];
+  for (const shot of current) {
+    const mismatches = compareApproval(artifact.shots?.[shot.shotKey], {
+      panelSha256: shot.panelSha256,
+      settingsDigest: shot.settingsDigest,
+    });
+    if (mismatches.length > 0) out.push({ shotKey: shot.shotKey, shotNumber: shot.shotNumber, mismatches });
+  }
+  return out;
 }

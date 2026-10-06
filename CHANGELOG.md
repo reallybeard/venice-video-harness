@@ -343,6 +343,27 @@
   (which checks the cue audio exists on disk) stay in
   `src/mini-drama/music-cues.ts`, which re-exports the moved names; no import
   site or behaviour changes. Test: `tests/core-music-cues.test.mjs`.
+- **QA rubrics, verdict handling and the approval binding move into core
+  (phase 3).** Three new core modules, on the barrel and as per-module
+  entries: `mini-drama/storyboard-qa` (the `qa-storyboard` rubric, the
+  per-panel user prompt, the prior-same-location lookup, the
+  vision-companion model chain, per-shot results, the report summary with
+  unchecked shots counted apart from FLAG-LOW, and the `qa-approve` block
+  decision), `mini-drama/video-qa` (report shapes, the identity and
+  cross-unit rubrics and user prompts, reply-to-result mapping, head-glitch
+  classification over measured lumas, boundary-jump classification,
+  protagonist / hero-frame selection, the summary and the
+  `assemble-episode` block decision) and `mini-drama/panel-approval`
+  (approval shapes, `canonicalJson`, `compareApproval`, `checkApproval`,
+  `panelSettingsFrom`). Core takes no `node:crypto`: `settingsDigestWith`
+  takes the hash function, and `compareApproval` / `checkApproval` take
+  digests the host computed; `src/mini-drama/panel-approval.ts` keeps
+  `sha256Hex`, `settingsDigest`, `approvalForShot` and `verifyApproval` with
+  their signatures unchanged. `extractJsonBlock` (the fence-stripping half of
+  `chatJson`) moves to `venice/json-block`. ffmpeg probing, frame
+  extraction, file IO and the vision call stay in `src/`; the src modules
+  re-export what moved, so existing imports are unchanged. No behaviour
+  change. Test: `tests/core-qa.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 

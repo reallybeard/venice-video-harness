@@ -54,6 +54,9 @@ export * from './venice/text-models.js';
 // Silent-reject detection (byte-size thresholds by resolution).
 export * from './venice/rejection.js';
 
+// JSON extraction from chat replies (the pure half of chatJson).
+export * from './venice/json-block.js';
+
 // Capabilities manifest for downstream apps (version passed in by the host).
 export * from './venice/capabilities-manifest.js';
 
@@ -79,3 +82,8 @@ export * from './mini-drama/montage.js';
 export * from './mini-drama/shot-paths.js';
 // Music-cue placement and volume-automation expressions (rendering stays in the CLI).
 export * from './mini-drama/music-cues.js';
+// QA: storyboard panel rubric + report, post-render video QA rubrics +
+// report, and the panel approval binding (hash supplied by the host).
+export * from './mini-drama/storyboard-qa.js';
+export * from './mini-drama/video-qa.js';
+export * from './mini-drama/panel-approval.js';

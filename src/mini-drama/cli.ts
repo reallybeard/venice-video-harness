@@ -105,9 +105,22 @@ import {
 import { shotKey } from './shot-paths.js';
 import {
   STORYBOARD_QA_SYSTEM_PROMPT,
-  type QaVerdict,
+  buildStoryboardQaUserPrompt,
+  missingPanelResult,
+  parseShotSelection,
+  priorPanelNote,
+  priorShotInLocation,
+  shotQaFailure,
+  shotQaFromReply,
+  storyboardApprovalBlock,
+  storyboardQaClean,
+  storyboardQaModelChain,
+  summarizeStoryboardQa,
   type ShotQaResult,
+  type StoryboardQaReply,
+  type StoryboardQaReport,
 } from 'venice-video-harness/core/mini-drama/storyboard-qa.js';
+import { videoQaBlocksAssembly } from 'venice-video-harness/core/mini-drama/video-qa.js';
 import { generateEpisodeVideos } from './video-generator.js';
 import { generateVoiceReference, harvestVoiceReferenceFromClip } from './voice-reference.js';
 import { checkCharacterReference, formatReferenceCheck, resolveReferenceCheckTarget } from './reference-check.js';
@@ -3017,15 +3030,7 @@ program
 
     let shotsToCheck = script.shots;
     if (opts.shots) {
-      const nums = new Set<number>();
-      for (const part of opts.shots.split(',')) {
-        if (part.includes('-')) {
-          const [a, b] = part.split('-').map(Number);
-          for (let i = a; i <= b; i++) nums.add(i);
-        } else {
-          nums.add(Number(part));
-        }
-      }
+      const nums = parseShotSelection(opts.shots);
       shotsToCheck = script.shots.filter(s => nums.has(s.shotNumber));
     }
 
@@ -3047,10 +3052,7 @@ program
       const panelPath = join(sceneDir, `shot-${shotNum}.png`);
 
       if (!existsSync(panelPath)) {
-        results.push({
-          shotNumber: shot.shotNumber, type: shot.type, characters: shot.characters,
-          verdict: 'FLAG-CRITICAL', issues: ['Panel file missing'], notes: 'No panel generated',
-        });
+        results.push(missingPanelResult(shot));
         console.log(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: MISSING`);
         continue;
       }
@@ -3070,39 +3072,20 @@ program
       // sides, eyelines, and landmark geography against actual coverage
       // instead of prose alone.
       let prevPanelNote = '';
-      if (shot.location) {
-        const prior = [...script.shots]
-          .filter(s => s.location === shot.location && s.shotNumber < shot.shotNumber)
-          .sort((a, b) => b.shotNumber - a.shotNumber)[0];
-        if (prior) {
-          const priorPath = join(sceneDir, `shot-${String(prior.shotNumber).padStart(3, '0')}.png`);
-          if (existsSync(priorPath)) {
-            images.push(toDataUri(priorPath));
-            prevPanelNote = `The FINAL image is the previous panel in the same location (shot ${prior.shotNumber}`
-              + (prior.blocking ? `, blocking: ${prior.blocking}` : '')
-              + '). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks.';
-          }
+      const prior = priorShotInLocation(script.shots, shot);
+      if (prior) {
+        const priorPath = join(sceneDir, `shot-${String(prior.shotNumber).padStart(3, '0')}.png`);
+        if (existsSync(priorPath)) {
+          images.push(toDataUri(priorPath));
+          prevPanelNote = priorPanelNote(prior);
         }
       }
 
-      const charDescs = shot.characters.map(name => {
-        const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
-        return char ? `${char.name}: ${char.description}, wearing ${shot.episodeWardrobe?.[name.toUpperCase()] ?? char.wardrobe}` : name;
-      });
-
       const shotLocation = shot.location ? getLocation(series, shot.location) : undefined;
 
-      const userPrompt = [
-        `Analyze this storyboard panel (image 1) for shot ${shot.shotNumber}.`,
-        `Shot type: ${shot.type}. Camera: ${shot.cameraMovement}.`,
-        `Description: ${shot.panelDescription ?? shot.description}`,
-        shot.blocking ? `Stated blocking: ${shot.blocking}` : '',
-        shotLocation?.spatialAnchors ? `Location landmarks (fixed layout): ${shotLocation.spatialAnchors}` : '',
-        shot.characters.length > 0
-          ? `Characters in shot: ${charDescs.join('; ')}. Reference images follow the panel.`
-          : 'No characters expected in this shot. Verify the scene is empty of people.',
-        prevPanelNote,
-      ].filter(Boolean).join('\n');
+      const userPrompt = buildStoryboardQaUserPrompt({
+        shot, characters: series.characters, location: shotLocation, priorPanelNote: prevPanelNote,
+      });
 
       // Fallback chain: the chosen model, then the project's paired vision
       // companion (same privacy tier by construction). kimi-k3 dropped 5 of
@@ -3111,12 +3094,12 @@ program
       // itself. An explicit --model is still tried FIRST; the companion is a
       // rescue for intermittent empties, not a substitution.
       const fallbackModel = intelligenceFor(series).visionModel;
-      const modelChain = [qaModel, ...(fallbackModel !== qaModel ? [fallbackModel] : [])];
+      const modelChain = storyboardQaModelChain(qaModel, fallbackModel);
       let checked = false;
       let lastReason = '';
       for (const [chainIndex, model] of modelChain.entries()) {
         try {
-          const parsed = await client.chatJson<{ verdict: QaVerdict; issues: string[]; notes: string }>({
+          const parsed = await client.chatJson<StoryboardQaReply>({
             model,
             systemPrompt,
             userPrompt,
@@ -3126,10 +3109,7 @@ program
             label: `shot ${shotNum} QA`,
           });
 
-          results.push({
-            shotNumber: shot.shotNumber, type: shot.type, characters: shot.characters,
-            ...parsed,
-          });
+          results.push(shotQaFromReply(shot, parsed));
 
           const icon = parsed.verdict === 'PASS' ? '✓' : parsed.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
           const via = chainIndex > 0 ? ` (via fallback ${model})` : '';
@@ -3144,11 +3124,7 @@ program
         }
       }
       if (!checked) {
-        results.push({
-          shotNumber: shot.shotNumber, type: shot.type, characters: shot.characters,
-          verdict: 'FLAG-LOW', issues: [`QA analysis failed: ${lastReason}`], notes: 'Vision API error',
-          errored: true,
-        });
+        results.push(shotQaFailure(shot, lastReason));
         console.warn(`  [${i + 1}/${shotsToCheck.length}] Shot ${shotNum}: QA failed - ${lastReason}`);
       }
     }
@@ -3156,23 +3132,15 @@ program
     // A shot the model never managed to look at is not a low-severity finding,
     // it is an unchecked shot. Counting it as FLAG-LOW alone once let a whole
     // storyboard read as "no critical issues" when every call had failed.
-    const erroredCount = results.filter(r => r.errored).length;
-
     // Persist QA report
-    const report = {
+    const report: StoryboardQaReport = {
       episode: opts.episode,
       model: qaModel,
       analyzedAt: new Date().toISOString(),
-      summary: {
-        total: results.length,
-        pass: results.filter(r => r.verdict === 'PASS').length,
-        flagCritical: results.filter(r => r.verdict === 'FLAG-CRITICAL').length,
-        flagModerate: results.filter(r => r.verdict === 'FLAG-MODERATE').length,
-        flagLow: results.filter(r => r.verdict === 'FLAG-LOW').length,
-        errored: erroredCount,
-      },
+      summary: summarizeStoryboardQa(results),
       results,
     };
+    const erroredCount = report.summary.errored;
 
     const reportPath = join(episodeDir, 'qa-report.json');
     await writeFile(reportPath, JSON.stringify(report, null, 2), 'utf-8');
@@ -3196,7 +3164,7 @@ program
       for (const r of criticalShots) {
         console.log(`  Shot ${String(r.shotNumber).padStart(3, '0')}: ${r.issues.join(', ')}`);
       }
-    } else if (erroredCount === 0) {
+    } else if (storyboardQaClean(report.summary)) {
       console.log(`\nNo critical issues. Run: qa-approve -p ${series.outputDir} -e ${opts.episode}`);
     }
     await updateTreatment(series, opts.episode);
@@ -3231,9 +3199,8 @@ program
       const qaReport = JSON.parse(readFileSync(reportPath, 'utf-8')) as {
         summary?: { flagCritical?: number; errored?: number };
       };
-      const criticalCount = qaReport.summary?.flagCritical ?? 0;
-      const uncheckedCount = qaReport.summary?.errored ?? 0;
-      if ((criticalCount > 0 || uncheckedCount > 0) && !opts.force) {
+      const { blocked, criticalCount, uncheckedCount } = storyboardApprovalBlock(qaReport.summary);
+      if (blocked && !opts.force) {
         console.error(`Blocked: the latest QA report has ${criticalCount} critical issue(s) and ${uncheckedCount} unchecked shot(s).`);
         console.error('  Approving unread or failing panels renders money into known defects.');
         console.error(`  Fix panels (fix-panel) or re-run QA (qa-storyboard), then approve.`);
@@ -3312,6 +3279,7 @@ program
     const {
       detectHeadGlitch, frameLuma, ffprobeDurationSec, sampleUnitFrames,
       checkUnitIdentity, checkCrossUnitIdentity, saveVideoQaReport,
+      classifyBoundary, emptyCrossUnitResult, pickHeroFrames, pickProtagonist, summarizeVideoQa,
     } = await import('./video-qa.js');
 
     const units = plan.units.filter(u => existsSync(join(sceneDir, u.outputFile)));
@@ -3336,20 +3304,18 @@ program
       const prevLuma = frameLuma(prevPath, Math.max(ffprobeDurationSec(prevPath) - 0.2, 0));
       const nextLuma = frameLuma(nextPath, 0.2);
       if (prevLuma === undefined || nextLuma === undefined) continue;
-      const delta = Math.abs(nextLuma - prevLuma);
-      if (delta > 60) {
-        boundaries.push({ fromUnit: units[i - 1].unitId, toUnit: units[i].unitId, lumaDelta: Number(delta.toFixed(1)), severity: 'fail' });
-        console.log(`  ✗ boundary ${units[i - 1].unitId} → ${units[i].unitId}: luma jump Δ${delta.toFixed(1)}`);
-      } else if (delta > 35) {
-        boundaries.push({ fromUnit: units[i - 1].unitId, toUnit: units[i].unitId, lumaDelta: Number(delta.toFixed(1)), severity: 'warn' });
-        console.log(`  ⚠ boundary ${units[i - 1].unitId} → ${units[i].unitId}: luma jump Δ${delta.toFixed(1)}`);
+      const finding = classifyBoundary(units[i - 1].unitId, units[i].unitId, prevLuma, nextLuma);
+      if (finding) {
+        boundaries.push(finding);
+        const delta = Math.abs(nextLuma - prevLuma);
+        console.log(`  ${finding.severity === 'fail' ? '✗' : '⚠'} boundary ${units[i - 1].unitId} → ${units[i].unitId}: luma jump Δ${delta.toFixed(1)}`);
       }
     }
     if (boundaries.length === 0) console.log('  ✓ no boundary lighting jumps');
 
     // ---- Layer 2: vision ----
     let unitIdentity: import('./video-qa.js').UnitIdentityResult[] = [];
-    let crossUnit: import('./video-qa.js').CrossUnitResult = { verdict: 'PASS', issues: [], driftingUnits: [] };
+    let crossUnit: import('./video-qa.js').CrossUnitResult = emptyCrossUnitResult();
     if (!opts.skipVision) {
       const apiKey = await getVeniceApiKey();
       const client = new VeniceClient(apiKey);
@@ -3372,17 +3338,9 @@ program
 
       // Cross-unit identity: one hero frame per unit, one call.
       // The protagonist is the character appearing in the most shots.
-      const charCounts = new Map<string, number>();
-      for (const shot of script.shots) for (const c of shot.characters) {
-        charCounts.set(c, (charCounts.get(c) ?? 0) + 1);
-      }
-      const protagonist = [...charCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      const protagonist = pickProtagonist(script.shots);
       if (protagonist) {
-        const heroFrames = units
-          .map(u => samples.find(s => s.unitId === u.unitId
-            && (script.shots.find(sh => sh.shotNumber === s.shotNumber)?.characters ?? [])
-              .some(c => c.toUpperCase() === protagonist.toUpperCase())))
-          .filter((s): s is NonNullable<typeof s> => Boolean(s));
+        const heroFrames = pickHeroFrames(units.map(u => u.unitId), samples, script.shots, protagonist);
         crossUnit = await checkCrossUnitIdentity(client, qaModel, heroFrames, protagonist);
         const icon = crossUnit.errored ? '?' : crossUnit.verdict === 'PASS' ? '✓' : crossUnit.verdict === 'FLAG-CRITICAL' ? '✗' : '⚠';
         console.log(`  ${icon} cross-unit (${protagonist}, ${heroFrames.length} units): ${crossUnit.errored ? 'UNCHECKED' : crossUnit.verdict}`);
@@ -3393,18 +3351,15 @@ program
       }
     }
 
-    const erroredCount = unitIdentity.filter(r => r.errored).length + (crossUnit.errored ? 1 : 0);
-    const criticals = headGlitches.length
-      + boundaries.filter(b => b.severity === 'fail').length
-      + unitIdentity.filter(r => !r.errored && r.verdict === 'FLAG-CRITICAL').length
-      + (!crossUnit.errored && crossUnit.verdict === 'FLAG-CRITICAL' ? 1 : 0);
+    const summary = summarizeVideoQa({ units: units.length, headGlitches, boundaries, unitIdentity, crossUnit });
+    const { criticals, errored: erroredCount } = summary;
 
     const report: import('./video-qa.js').VideoQaReport = {
       episode: opts.episode,
       model: opts.skipVision ? 'programmatic-only' : (opts.model ?? intelligenceFor(series).visionModel),
       analyzedAt: new Date().toISOString(),
       headGlitches, boundaries, unitIdentity, crossUnit,
-      summary: { units: units.length, criticals, errored: erroredCount, passed: criticals === 0 && erroredCount === 0 },
+      summary,
     };
     const reportPath = await saveVideoQaReport(episodeDir, report);
 
@@ -4158,8 +4113,8 @@ program
       } else {
         try {
           const videoQa = JSON.parse(readFileSync(videoQaPath, 'utf-8')) as { summary?: { passed?: boolean; criticals?: number } };
-          if (videoQa.summary && videoQa.summary.passed === false) {
-            console.error(`Blocked: video QA found ${videoQa.summary.criticals ?? '?'} critical issue(s) in the rendered units.`);
+          if (videoQaBlocksAssembly(videoQa)) {
+            console.error(`Blocked: video QA found ${videoQa.summary?.criticals ?? '?'} critical issue(s) in the rendered units.`);
             console.error('  Assembling drifted or glitched units bakes the defects into the master.');
             console.error(`  Review: ${videoQaPath}`);
             console.error(`  Fix the flagged units (or harvest-anchor + re-render), re-run qa-videos, then assemble.`);

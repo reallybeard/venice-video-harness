@@ -14,9 +14,11 @@
 // models. `generate-videos` recomputes both and refuses any shot that no
 // longer matches, naming what changed and the command to re-approve.
 //
-// Pure helpers (`settingsDigest`, `compareApproval`) take plain data; the disk
-// reads live in `approvalForShot` / `verifyApproval` so a browser host can
-// reuse the digest logic with its own storage.
+// The pure half (shapes, canonical JSON, `compareApproval`, `checkApproval`,
+// `panelSettingsFrom`) lives in core (`venice-video-harness/core/mini-drama/
+// panel-approval.js`) so a browser host can reuse it with its own storage and
+// hash. This module supplies sha256 and the disk reads, behind the same
+// exports as before (`settingsDigest`, `approvalForShot`, `verifyApproval`).
 // ---------------------------------------------------------------------------
 
 import { createHash } from 'node:crypto';
@@ -24,14 +26,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ApprovalBinding, SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
 import { getCharacterDir, getLocation, getLocationDir } from '../series/manager.js';
-import { DEFAULT_IMAGE_EDIT_MODEL, DEFAULT_IMAGE_GENERATION_MODEL } from 'venice-video-harness/core/series/types.js';
 import { buildImagePrompt } from './prompt-builder.js';
 import { panelFileForShot, shotKey } from './shot-paths.js';
 import {
   CHARACTER_REF_ORDER,
   LOCATION_REF_ORDER,
-  canonicalJson,
-  compareApproval,
+  checkApproval,
+  panelSettingsFrom,
+  settingsDigestWith,
   shotIdOf,
   type ApprovalArtifact,
   type ApprovalCheck,
@@ -51,8 +53,12 @@ export {
   CHARACTER_REF_ORDER,
   LOCATION_REF_ORDER,
   canonicalJson,
+  checkApproval,
   compareApproval,
   describeMismatch,
+  panelLocationNote,
+  panelSettingsFrom,
+  settingsDigestWith,
   shotIdOf,
 } from 'venice-video-harness/core/mini-drama/panel-approval.js';
 
@@ -63,7 +69,7 @@ export function sha256Hex(data: Uint8Array | string): string {
 }
 
 export function settingsDigest(settings: PanelSettings): string {
-  return sha256Hex(canonicalJson(settings));
+  return settingsDigestWith(settings, sha256Hex);
 }
 
 // ---- Disk-backed -------------------------------------------------------------
@@ -80,9 +86,6 @@ function relativeTo(root: string, path: string): string {
  * the image models.
  */
 export function panelSettingsForShot(series: SeriesState, shot: ShotScript): PanelSettings {
-  const imagePrompt = buildImagePrompt(shot, series);
-
-  let locationNote = '';
   const referenceImages: string[] = [];
   for (const name of shot.characters) {
     const char = series.characters.find(c => c.name.toUpperCase() === name.toUpperCase());
@@ -91,30 +94,14 @@ export function panelSettingsForShot(series: SeriesState, shot: ShotScript): Pan
     const ref = CHARACTER_REF_ORDER.map(f => join(dir, f)).find(p => existsSync(p));
     if (ref) referenceImages.push(relativeTo(series.outputDir, ref));
   }
-  if (shot.location) {
-    const location = getLocation(series, shot.location);
-    if (location) {
-      const dir = getLocationDir(series, location.slug);
-      const ref = LOCATION_REF_ORDER.map(f => join(dir, f)).find(p => existsSync(p));
-      if (ref) referenceImages.push(relativeTo(series.outputDir, ref));
-      locationNote = ` Location: ${location.description}`
-        + (location.lightingNotes ? ` Lighting: ${location.lightingNotes}.` : '')
-        + (location.spatialAnchors ? ` Fixed layout (never rearrange): ${location.spatialAnchors}.` : '');
-    }
+  const location = shot.location ? getLocation(series, shot.location) : undefined;
+  if (location) {
+    const dir = getLocationDir(series, location.slug);
+    const ref = LOCATION_REF_ORDER.map(f => join(dir, f)).find(p => existsSync(p));
+    if (ref) referenceImages.push(relativeTo(series.outputDir, ref));
   }
 
-  return {
-    prompt: imagePrompt.prompt + locationNote,
-    negativePrompt: imagePrompt.negativePrompt,
-    seed: imagePrompt.seed,
-    generationModel: series.videoDefaults.imageDefaults?.generationModel ?? DEFAULT_IMAGE_GENERATION_MODEL,
-    editModel: series.videoDefaults.imageDefaults?.editModel ?? DEFAULT_IMAGE_EDIT_MODEL,
-    aspectRatio: series.storyboardAspectRatio ?? '16:9',
-    referenceImages,
-    sceneImagePaths: shot.sceneImagePaths,
-    sceneRefDescription: shot.sceneRefDescription,
-    skipRefine: shot.skipRefine,
-  };
+  return panelSettingsFrom({ series, shot, imagePrompt: buildImagePrompt(shot, series), location, referenceImages });
 }
 
 export function panelSha256(panelPath: string): string | undefined {
@@ -140,14 +127,10 @@ export function verifyApproval(
   shots: ShotScript[],
   panelDir: string,
 ): ApprovalCheck[] {
-  const out: ApprovalCheck[] = [];
-  for (const shot of shots) {
-    const key = shotKey(shotIdOf(shot));
-    const mismatches = compareApproval(artifact.shots?.[key], {
-      panelSha256: panelSha256(panelFileForShot(panelDir, shotIdOf(shot))),
-      settingsDigest: settingsDigest(panelSettingsForShot(series, shot)),
-    });
-    if (mismatches.length > 0) out.push({ shotKey: key, shotNumber: shot.shotNumber, mismatches });
-  }
-  return out;
+  return checkApproval(artifact, shots.map(shot => ({
+    shotKey: shotKey(shotIdOf(shot)),
+    shotNumber: shot.shotNumber,
+    panelSha256: panelSha256(panelFileForShot(panelDir, shotIdOf(shot))),
+    settingsDigest: settingsDigest(panelSettingsForShot(series, shot)),
+  })));
 }

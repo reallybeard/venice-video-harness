@@ -39,25 +39,63 @@ import type { SeriesState, EpisodeScript } from 'venice-video-harness/core/serie
 import { getCharacterDir } from '../series/manager.js';
 import {
   CROSS_UNIT_SYSTEM_PROMPT,
+  HEAD_GLITCH_WINDOW_FRAMES,
+  IDENTITY_MAX_FRAMES,
+  IDENTITY_MAX_REFERENCES,
   IDENTITY_SYSTEM_PROMPT,
+  buildCrossUnitUserPrompt,
+  buildUnitIdentityUserPrompt,
+  crossUnitFailure,
+  crossUnitFromReply,
+  emptyCrossUnitResult,
+  findHeadGlitch,
+  midBeatSampleSec,
+  unitIdentityFailure,
+  unitIdentityFromReply,
+  type CrossUnitReply,
   type CrossUnitResult,
   type HeadGlitchFinding,
   type UnitFrameSample,
+  type UnitIdentityReply,
   type UnitIdentityResult,
   type VideoQaReport,
-  type VideoQaVerdict,
 } from 'venice-video-harness/core/mini-drama/video-qa.js';
 
 export type {
   BoundaryFinding,
+  CrossUnitReply,
   CrossUnitResult,
   HeadGlitchFinding,
   UnitFrameSample,
+  UnitIdentityReply,
   UnitIdentityResult,
   VideoQaReport,
   VideoQaVerdict,
 } from 'venice-video-harness/core/mini-drama/video-qa.js';
-export { CROSS_UNIT_SYSTEM_PROMPT, IDENTITY_SYSTEM_PROMPT } from 'venice-video-harness/core/mini-drama/video-qa.js';
+export {
+  BOUNDARY_LUMA_FAIL,
+  BOUNDARY_LUMA_WARN,
+  CROSS_UNIT_SYSTEM_PROMPT,
+  HEAD_GLITCH_LUMA_THRESHOLD,
+  HEAD_GLITCH_WINDOW_FRAMES,
+  IDENTITY_MAX_FRAMES,
+  IDENTITY_MAX_REFERENCES,
+  IDENTITY_SYSTEM_PROMPT,
+  buildCrossUnitUserPrompt,
+  buildUnitIdentityUserPrompt,
+  classifyBoundary,
+  crossUnitFailure,
+  crossUnitFromReply,
+  emptyCrossUnitResult,
+  findHeadGlitch,
+  midBeatSampleSec,
+  pickHeroFrames,
+  pickProtagonist,
+  summarizeVideoQa,
+  unitIdentityFailure,
+  unitIdentityFromReply,
+  videoQaBlocksAssembly,
+} from 'venice-video-harness/core/mini-drama/video-qa.js';
 
 // ---------------------------------------------------------------------------
 // ffmpeg/ffprobe primitives
@@ -99,31 +137,16 @@ export function headFrameLumas(videoPath: string, count = 24): number[] {
 }
 
 /**
- * Detect the Seedance head-flash: within the first `windowFrames` frames, a
- * frame whose luma jumps by more than `threshold` from its neighbour and
- * reverts within 3 frames. A hard scene change holds its new level; a glitch
- * flash does not.
+ * Detect the Seedance head-flash in a unit master: probe the head-frame lumas
+ * and classify them (`findHeadGlitch` in core).
  */
 export function detectHeadGlitch(
   videoPath: string,
   unitId: string,
   options: { windowFrames?: number; threshold?: number } = {},
 ): HeadGlitchFinding | undefined {
-  const windowFrames = options.windowFrames ?? 12;
-  const threshold = options.threshold ?? 28;
-  const lumas = headFrameLumas(videoPath, windowFrames + 4);
-  for (let i = 1; i < Math.min(lumas.length, windowFrames); i++) {
-    const jump = Math.abs(lumas[i] - lumas[i - 1]);
-    if (jump < threshold) continue;
-    // Does it revert toward the pre-jump level within 3 frames?
-    const base = lumas[i - 1];
-    for (let j = i + 1; j <= Math.min(i + 3, lumas.length - 1); j++) {
-      if (Math.abs(lumas[j] - base) < threshold / 2) {
-        return { unitId, frameIndex: i, lumaDelta: Number(jump.toFixed(1)) };
-      }
-    }
-  }
-  return undefined;
+  const windowFrames = options.windowFrames ?? HEAD_GLITCH_WINDOW_FRAMES;
+  return findHeadGlitch(headFrameLumas(videoPath, windowFrames + 4), unitId, options);
 }
 
 /** Mean luma of a single frame image (used for boundary comparison). */
@@ -175,7 +198,7 @@ export function sampleUnitFrames(
     for (const seg of segments) {
       const shot = script.shots.find(s => s.shotNumber === seg.shotNumber);
       if (!shot || shot.characters.length === 0) continue;
-      const atSec = Math.min(seg.startOffsetSec + seg.durationSec / 2, Math.max(duration - 0.1, 0));
+      const atSec = midBeatSampleSec(seg, duration);
       const framePath = join(framesDir, `${unit.unitId}-shot-${String(seg.shotNumber).padStart(3, '0')}.png`);
       if (extractFrame(masterPath, atSec, framePath)) {
         samples.push({ unitId: unit.unitId, shotNumber: seg.shotNumber, atSec, framePath });
@@ -196,9 +219,9 @@ export async function checkUnitIdentity(
   frames: UnitFrameSample[],
   characterNames: string[],
 ): Promise<UnitIdentityResult> {
-  const images = frames.slice(0, 3).map(f => toDataUri(f.framePath));
+  const images = frames.slice(0, IDENTITY_MAX_FRAMES).map(f => toDataUri(f.framePath));
   const refNames: string[] = [];
-  for (const name of characterNames.slice(0, 2)) {
+  for (const name of characterNames.slice(0, IDENTITY_MAX_REFERENCES)) {
     const front = join(getCharacterDir(series, name), 'front.png');
     if (existsSync(front)) {
       images.push(toDataUri(front));
@@ -209,23 +232,18 @@ export async function checkUnitIdentity(
     return { unitId, verdict: 'PASS', issues: [], errored: false };
   }
   try {
-    const parsed = await client.chatJson<{ verdict: VideoQaVerdict; issues: string[]; notes: string }>({
+    const parsed = await client.chatJson<UnitIdentityReply>({
       model,
       systemPrompt: IDENTITY_SYSTEM_PROMPT,
-      userPrompt: `The first ${Math.min(frames.length, 3)} image(s) are rendered frames from unit ${unitId}. The remaining image(s) are the official reference sheet(s) for: ${refNames.join(', ')}. Do the rendered characters match their references?`,
+      userPrompt: buildUnitIdentityUserPrompt(unitId, frames.length, refNames),
       images,
       maxTokens: 2000,
       temperature: 0.2,
       label: `unit ${unitId} identity QA`,
     });
-    return { unitId, verdict: parsed.verdict, issues: parsed.issues ?? [] };
+    return unitIdentityFromReply(unitId, parsed);
   } catch (err) {
-    return {
-      unitId,
-      verdict: 'FLAG-LOW',
-      issues: [`identity QA failed: ${err instanceof Error ? err.message : String(err)}`],
-      errored: true,
-    };
+    return unitIdentityFailure(unitId, err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -240,38 +258,21 @@ export async function checkCrossUnitIdentity(
   protagonistName: string,
 ): Promise<CrossUnitResult> {
   if (heroFrames.length < 2) {
-    return { verdict: 'PASS', issues: [], driftingUnits: [] };
+    return emptyCrossUnitResult();
   }
   try {
-    const parsed = await client.chatJson<{
-      verdict: VideoQaVerdict; issues: string[]; driftingFrames?: number[]; unclearFrames?: number[]; notes: string;
-    }>({
+    const parsed = await client.chatJson<CrossUnitReply>({
       model,
       systemPrompt: CROSS_UNIT_SYSTEM_PROMPT,
-      userPrompt: `${heroFrames.length} frames, one per generation unit, in film order. The protagonist is ${protagonistName}. Across the frames where ${protagonistName} is clearly visible, is this the same person?`,
+      userPrompt: buildCrossUnitUserPrompt(heroFrames.length, protagonistName),
       images: heroFrames.map(f => toDataUri(f.framePath)),
       maxTokens: 2000,
       temperature: 0.2,
       label: 'cross-unit identity QA',
     });
-    const drifting = (parsed.driftingFrames ?? [])
-      .map(index => heroFrames[index - 1]?.unitId)
-      .filter((id): id is string => Boolean(id));
-    const issues = [...(parsed.issues ?? [])];
-    const unclear = (parsed.unclearFrames ?? [])
-      .map(index => heroFrames[index - 1]?.unitId)
-      .filter((id): id is string => Boolean(id));
-    if (unclear.length > 0) {
-      issues.push(`protagonist not clearly visible in: ${unclear.join(', ')} (not counted as drift)`);
-    }
-    return { verdict: parsed.verdict, issues, driftingUnits: drifting };
+    return crossUnitFromReply(parsed, heroFrames.map(f => f.unitId));
   } catch (err) {
-    return {
-      verdict: 'FLAG-LOW',
-      issues: [`cross-unit QA failed: ${err instanceof Error ? err.message : String(err)}`],
-      driftingUnits: [],
-      errored: true,
-    };
+    return crossUnitFailure(err instanceof Error ? err.message : String(err));
   }
 }
 
