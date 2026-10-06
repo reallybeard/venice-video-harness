@@ -26,7 +26,8 @@
 // Generated FACELESS with provenance hasFace:false, so they pass the Seedance
 // pre-flight gate without laundering. Shared by the `add-location` CLI command
 // and workshop-episode's auto-extraction so both paths produce identical
-// assets.
+// assets. The plate list and every prompt come from core
+// (`packages/core/src/mini-drama/location-plates.ts`); this file runs them.
 // ---------------------------------------------------------------------------
 
 import { join, basename } from 'node:path';
@@ -50,88 +51,24 @@ import {
   DEFAULT_IMAGE_EDIT_MODEL,
 } from 'venice-video-harness/core/series/types.js';
 import type { MultiEditModel } from 'venice-video-harness/core/venice/types.js';
-import type { AestheticProfile } from '../storyboard/prompt-builder.js';
+import {
+  HERO_PLATE_DEFAULTS,
+  HERO_PLATE_FILES,
+  buildDerivedPlatePrompt,
+  buildHeroPlatePrompt,
+  isHeroAngle,
+  planLocationAngles,
+} from 'venice-video-harness/core/mini-drama/location-plates.js';
 
-/**
- * The one from-scratch plate: a wide shot facing the north wall.
- * Every other plate is derived from it.
- */
-export const HERO_ANGLE = 'north';
-
-/** Derived walls of the SAME location: south (reverse), east (right), west (left). */
-export const DERIVED_ANGLES = ['south', 'east', 'west'] as const;
-
-/**
- * The default plate set generated per location: north, south, east, west —
- * one wide plate per wall/direction for 360 degrees of visual information.
- * All four plates are wide shots; there is no medium or close-up plate.
- */
-export const DEFAULT_LOCATION_ANGLES = [HERO_ANGLE, ...DERIVED_ANGLES] as const;
-
-/**
- * Pre-compass plate names. Still recognized so an old project can regenerate
- * them, and still read by the reference-slot allocator when present on disk —
- * but no longer part of the default set. `wide` was the hero plate (now
- * `north`); `angle-2/3/4` were the derived angles (now `south`/`east`/`west`);
- * `medium`/`detail` were the retired distance ladder.
- */
-export const LEGACY_LOCATION_ANGLES = ['wide', 'angle-2', 'angle-3', 'angle-4', 'medium', 'detail'] as const;
-
-/** @deprecated Back-compat alias — the default compass plate set. */
-export const LOCATION_ANGLES = DEFAULT_LOCATION_ANGLES;
-export type LocationAngle = (typeof DEFAULT_LOCATION_ANGLES)[number];
-
-const HERO_VIEW =
-  'wide establishing shot facing the north wall of the location, the full north wall and environment visible, cinematic widescreen framing';
-
-/**
- * Default re-framings for the derived compass plates. Room-agnostic and
- * grounded in the north base image the editor sees. Each LEADS with the new
- * foreground: a ">90° turn away from X" instruction phrased as a negative
- * ("window behind camera") tends to revert the edit to the master framing —
- * describing the wall that should FILL the new frame holds far better.
- * Every plate is a wide shot — no medium or close-up framings.
- */
-const KNOWN_ANGLE_VIEWS: Record<string, string> = {
-  south:
-    'Reverse angle of the SAME room: place the camera on the opposite side and look back toward where the establishing shot was taken, so the south wall now fills the background. Wide shot, the full south wall visible.',
-  west:
-    'Turn the camera to face the LEFT-hand wall of the SAME room — the wall running along the left edge of the reference image (the west wall) now fills the frame, seen close to straight on. Wide shot, the full west wall visible.',
-  east:
-    'Turn the camera to face the RIGHT-hand wall of the SAME room — the wall running along the right edge of the reference image (the east wall) now fills the frame, seen close to straight on. Wide shot, the full east wall visible.',
-  // Legacy names, kept so `--angles wide,angle-2,...` still works on old projects.
-  'wide':
-    'wide establishing shot facing the north wall of the location, the full north wall and environment visible, cinematic widescreen framing',
-  'angle-2':
-    'Reverse angle of the SAME room: place the camera on the opposite side and look back toward where the establishing shot was taken, so the far wall of the establishing view now fills the background. Wide shot, full wall visible.',
-  'angle-3':
-    'Turn the camera to face the LEFT-hand wall of the SAME room — the wall running along the left edge of the reference image now fills the frame, seen close to straight on. Wide shot, full wall visible.',
-  'angle-4':
-    'Turn the camera to face the RIGHT-hand wall of the SAME room — the wall running along the right edge of the reference image now fills the frame, seen close to straight on. Wide shot, full wall visible.',
-  'medium':
-    'a tighter medium view of the SAME room from roughly the establishing position, mid-distance framing of its key features',
-  'detail':
-    'a close detail view within the SAME room of one distinctive feature — texture and material detail, identical lighting',
-};
-
-/** Names that carry their own default view clause (no `--prompt` required). */
-const KNOWN_ANGLE_NAMES = new Set<string>([
+export {
   HERO_ANGLE,
-  ...DERIVED_ANGLES,
-  ...LEGACY_LOCATION_ANGLES,
-]);
-
-function buildAestheticString(aesthetic: AestheticProfile): string {
-  return [
-    aesthetic.style,
-    aesthetic.palette,
-    aesthetic.lighting,
-    aesthetic.lensCharacteristics,
-    aesthetic.filmStock ? `shot on ${aesthetic.filmStock}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
+  DERIVED_ANGLES,
+  DEFAULT_LOCATION_ANGLES,
+  LEGACY_LOCATION_ANGLES,
+  LOCATION_ANGLES,
+  sanitizeAngleName,
+} from 'venice-video-harness/core/mini-drama/location-plates.js';
+export type { LocationAngle } from 'venice-video-harness/core/mini-drama/location-plates.js';
 
 export interface GenerateLocationReferencesOptions {
   /** Override the wide-plate (t2i) generation model (default nano-banana-2). */
@@ -163,17 +100,12 @@ export interface GenerateLocationReferencesOptions {
   promptOverride?: string;
 }
 
-/** Filesystem-safe custom-angle name: kebab-case, no path tricks. */
-export function sanitizeAngleName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
 /**
  * Absolute path to the location's hero plate. Prefers the compass `north`;
  * falls back to the legacy `wide` so pre-2026-10 projects still resolve.
  */
 function resolveHeroPath(dir: string): string | undefined {
-  return ['north.png', 'north.webp', 'wide.png', 'wide.webp']
+  return HERO_PLATE_FILES
     .map(f => join(dir, f))
     .find(p => existsSync(p));
 }
@@ -195,6 +127,7 @@ export async function generateLocationReferences(
   if (!series.aesthetic) {
     throw new Error('Series aesthetic must be set before generating location references.');
   }
+  const aesthetic = series.aesthetic;
 
   const dir = getLocationDir(series, location.slug);
   await mkdir(dir, { recursive: true });
@@ -203,60 +136,22 @@ export async function generateLocationReferences(
   const editModel = (options.editModel
     ?? series.videoDefaults?.imageDefaults?.editModel
     ?? DEFAULT_IMAGE_EDIT_MODEL) as MultiEditModel;
-  const cfgScale = options.cfgScale ?? 10;
+  const cfgScale = options.cfgScale ?? HERO_PLATE_DEFAULTS.cfgScale;
   const aspect = series.storyboardAspectRatio ?? '16:9';
-  const aestheticStr = buildAestheticString(series.aesthetic);
   const seed = location.seed;
 
   const generated: string[] = [];
   const skipped: string[] = [];
 
-  // Resolve the requested angle list: canonical names pass through; anything
-  // else becomes a sanitized custom angle (needs a --prompt to describe it).
-  let anglesToRun: string[] = options.angles?.length
-    ? options.angles.map(angle =>
-        KNOWN_ANGLE_NAMES.has(angle) ? angle : sanitizeAngleName(angle),
-      ).filter(Boolean)
-    : [...DEFAULT_LOCATION_ANGLES];
-
-  const customWithoutPrompt = anglesToRun.filter(
-    angle => !KNOWN_ANGLE_NAMES.has(angle) && !options.promptOverride,
-  );
-  if (customWithoutPrompt.length > 0) {
-    throw new Error(
-      `Custom angle(s) ${customWithoutPrompt.join(', ')} need --prompt to describe the new view — ` +
-      'the default build only knows north/south/east/west.',
-    );
-  }
-
-  // Deriving any non-hero plate needs the hero plate on disk. Ensure it is
-  // generated first (prepended, deduped, and always processed before the
-  // derived plates below). The legacy `wide` name also counts as a hero.
-  const isHero = (a: string) => a === HERO_ANGLE || a === 'wide';
-  const needsHero = anglesToRun.some(a => !isHero(a));
-  const heroExists = Boolean(resolveHeroPath(dir));
-  if (needsHero && !heroExists && !anglesToRun.some(isHero)) {
+  const plan = planLocationAngles(options.angles, {
+    heroExists: Boolean(resolveHeroPath(dir)),
+    promptOverride: options.promptOverride,
+  });
+  if (plan.heroAdded) {
     console.log('  north plate missing — generating it first so the other plates can derive from it.');
-    anglesToRun = [HERO_ANGLE, ...anglesToRun];
   }
-  // Always process the hero plate before its derivations.
-  anglesToRun = Array.from(new Set(anglesToRun)).sort((a, b) =>
-    isHero(a) ? -1 : isHero(b) ? 1 : 0,
-  );
 
-  // Object cast members (recurring hero props) must NOT be baked into location
-  // plates — a plate that paints its own THE LEDGER becomes a duplicate
-  // look-alike when the real reference is composited per shot. Locations are
-  // empty stages; hero props enter per shot via their own references.
-  const objectCastNouns = (series.characters ?? [])
-    .filter(c => /^\s*inanimate object/i.test(c.baseTraits ?? ''))
-    .map(c => c.name.replace(/^THE\s+/i, '').toLowerCase().trim())
-    .filter(Boolean);
-  const cleanPlateClause = objectCastNouns.length > 0
-    ? `Clean plate: the hero props (${objectCastNouns.join(', ')}) are NOT present — surfaces are clear of them; they are photographed separately.`
-    : '';
-
-  for (const angle of anglesToRun) {
+  for (const angle of plan.angles) {
     const imgPath = join(dir, `${angle}.png`);
     if (existsSync(imgPath) && !options.force) {
       skipped.push(imgPath);
@@ -268,13 +163,15 @@ export async function generateLocationReferences(
       await rename(imgPath, archive);
     }
 
+    const plateInput = {
+      aesthetic, location, characters: series.characters, angle,
+      promptOverride: options.promptOverride,
+    };
     try {
-      if (isHero(angle)) {
+      if (isHeroAngle(angle)) {
         await generateHeroPlate(client, {
-          dir, imgPath, location, genModel, cfgScale, aspect, seed,
-          aestheticStr, objectCastNouns, cleanPlateClause,
-          angle,
-          promptOverride: options.promptOverride,
+          dir, imgPath, location, genModel, cfgScale, aspect, seed, angle,
+          ...buildHeroPlatePrompt(plateInput),
         });
       } else {
         const heroPath = resolveHeroPath(dir);
@@ -283,11 +180,8 @@ export async function generateLocationReferences(
           continue;
         }
         await derivePlateFromHero(client, {
-          dir, imgPath, angle, heroPath, editModel, aspect,
-          location, aestheticStr, cleanPlateClause,
-          viewClause: KNOWN_ANGLE_NAMES.has(angle)
-            ? (KNOWN_ANGLE_VIEWS[angle] ?? options.promptOverride!)
-            : options.promptOverride!,
+          dir, imgPath, angle, heroPath, editModel, aspect, location,
+          prompt: buildDerivedPlatePrompt(plateInput),
         });
       }
       generated.push(imgPath);
@@ -307,46 +201,23 @@ async function generateHeroPlate(
   client: VeniceClient,
   args: {
     dir: string; imgPath: string; location: Location; genModel: string;
-    cfgScale: number; aspect: string; seed: number; aestheticStr: string;
-    objectCastNouns: string[]; cleanPlateClause: string; angle: string;
-    promptOverride?: string;
+    cfgScale: number; aspect: string; seed: number; angle: string;
+    prompt: string; negativePrompt: string;
   },
 ): Promise<void> {
   const {
-    dir, imgPath, location, genModel, cfgScale, aspect, seed,
-    aestheticStr, objectCastNouns, cleanPlateClause, angle, promptOverride,
+    dir, imgPath, location, genModel, cfgScale, aspect, seed, angle,
+    prompt, negativePrompt,
   } = args;
-
-  // Front-load STYLE (rule 11) so the environment holds the series look.
-  const promptParts = [
-    `STYLE: ${aestheticStr}.`,
-    `${KNOWN_ANGLE_VIEWS[angle] ?? HERO_VIEW}.`,
-    `${location.description}.`,
-    location.lightingNotes ? `Lighting: ${location.lightingNotes}.` : '',
-    // Locked geography (rule 49): bake the named landmarks and their fixed
-    // relative positions into the wide plate so the derived angles inherit
-    // one coherent space.
-    location.spatialAnchors ? `Layout: ${location.spatialAnchors}.` : '',
-    'Empty environment, no people present, no human figures, uninhabited scene.',
-    cleanPlateClause,
-    `STYLE REMINDER: ${aestheticStr}.`,
-  ].filter(Boolean);
-  const prompt = promptOverride ? promptOverride : promptParts.join(' ');
-
-  const negativePrompt = [
-    'people', 'person', 'human', 'figure', 'silhouette', 'crowd',
-    'deformed', 'blurry', 'low quality', 'watermark', 'text', 'signature',
-    'comic panels', 'panel borders', 'multiple frames',
-    ...objectCastNouns,
-  ].join(', ');
+  const { steps, resolution } = HERO_PLATE_DEFAULTS;
 
   const response = await generateImage(client, {
     model: genModel,
     prompt,
     negative_prompt: negativePrompt,
-    resolution: '1K',
+    resolution,
     aspect_ratio: aspect,
-    steps: 30,
+    steps,
     cfg_scale: cfgScale,
     seed,
     safe_mode: false,
@@ -370,7 +241,7 @@ async function generateHeroPlate(
     negative_prompt: negativePrompt,
     cfg_scale: cfgScale,
     aspect_ratio: aspect,
-    resolution: '1K',
+    resolution,
     seed,
     returnedSeed,
     generatedAt: new Date().toISOString(),
@@ -386,7 +257,7 @@ async function generateHeroPlate(
     seed,
     cfgScale,
     aspectRatio: aspect,
-    resolution: '1K',
+    resolution,
   }, { provenance: 'generate', hasFace: false });
 }
 
@@ -399,30 +270,12 @@ async function derivePlateFromHero(
   args: {
     dir: string; imgPath: string; angle: string; heroPath: string;
     editModel: MultiEditModel; aspect: string; location: Location;
-    aestheticStr: string; cleanPlateClause: string; viewClause: string;
+    prompt: string;
   },
 ): Promise<void> {
   const {
-    dir, imgPath, angle, heroPath, editModel, aspect, location,
-    aestheticStr, cleanPlateClause, viewClause,
+    dir, imgPath, angle, heroPath, editModel, aspect, location, prompt,
   } = args;
-
-  const prompt = [
-    `STYLE: ${aestheticStr}.`,
-    `${viewClause}.`,
-    // Same-room contract: keep everything but the camera fixed. This is what
-    // makes the angle set ONE coherent space instead of a fresh imagining.
-    'This is the SAME room shown in the reference image — keep every surface, ' +
-    'material, colour, architectural feature, and the exact lighting identical; ' +
-    'only the camera position changes. Do not add, remove, or rearrange ' +
-    'furniture; do not redecorate; do not change the architecture.',
-    location.spatialAnchors ? `Known layout (do not rearrange): ${location.spatialAnchors}.` : '',
-    cleanPlateClause,
-    'Empty environment, no people, no human figures.',
-    'Render as a single continuous cinematic frame — no panels, no split ' +
-    'screen, no inset views, no text, no labels.',
-    `STYLE REMINDER: ${aestheticStr}.`,
-  ].filter(Boolean).join(' ');
 
   const baseUri = await loadImageAsDataUri(heroPath);
   const resultBuffer = await multiEditImage(client, {

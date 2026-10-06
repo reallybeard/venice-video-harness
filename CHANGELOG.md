@@ -161,6 +161,18 @@
 
 ### Changed
 
+- **Location reference plate prompts are in core.** The compass plate list
+  (north hero, derived south / east / west, the legacy names), the angle
+  planner (custom names need a prompt, a missing hero is generated first),
+  and the hero and derived-plate prompts moved from
+  `src/mini-drama/location-generator.ts` to
+  `venice-video-harness/core/mini-drama/location-plates.js`
+  (`planLocationAngles`, `buildHeroPlatePrompt`, `buildDerivedPlatePrompt`,
+  `HERO_PLATE_DEFAULTS`). The generator keeps the Venice calls, the files and
+  the sidecars, and re-exports the old names. Output is unchanged:
+  `tests/location-plates-golden.test.mjs` pins every request body and
+  `.prompt.json` sidecar across 14 cases, captured before the move.
+
 - **Duration and resolution are validated before the paid call instead of
   silently corrected.** `queueVideo` used to snap an unsupported duration to
   the nearest valid one, and `buildModelParams` swapped an unsupported

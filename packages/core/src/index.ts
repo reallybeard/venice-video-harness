@@ -114,6 +114,9 @@ export * from './mini-drama/panel-approval.js';
 export * from './series/locations.js';
 export * from './mini-drama/reference-slots.js';
 export * from './mini-drama/prompt-builder.js';
+// Location reference plates: the compass plate list (north hero, derived
+// south / east / west) and the hero + derived-plate prompts (rules 56, 61).
+export * from './mini-drama/location-plates.js';
 // Ports: the host interfaces core's loop runs over (CLI: src/ports/createCliPorts).
 export * from './ports.js';
 // Pipeline status: the report shapes, the pasteable-command helper, the text rendering.
