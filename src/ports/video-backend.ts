@@ -50,8 +50,23 @@ function archiveExistingFile(path: string): string | undefined {
   return archived;
 }
 
-export function createCliVideoBackend(client: () => VeniceClient, logger: Logger): VideoBackend {
+export interface CliVideoBackendOptions {
+  /**
+   * Check duration / resolution against the registry before queueing
+   * (default `true`). `renderVideoFile` passes `false`: its path has never
+   * validated, and its callers (the episode loop after its duration
+   * preflight, loop, stream) send what they planned.
+   */
+  validateRequests?: boolean;
+}
+
+export function createCliVideoBackend(
+  client: () => VeniceClient,
+  logger: Logger,
+  options: CliVideoBackendOptions = {},
+): VideoBackend {
   const key = (outputKey: string) => resolvePath(outputKey);
+  const validateRequests = options.validateRequests ?? true;
 
   return {
     async quote(request, options = {}) {
@@ -83,7 +98,9 @@ export function createCliVideoBackend(client: () => VeniceClient, logger: Logger
 
     async queue(request, target, options = {}) {
       return withSignal(options.signal, async () => {
-        assertValidVideoRequest(request.model, { duration: request.duration, resolution: request.resolution });
+        if (validateRequests) {
+          assertValidVideoRequest(request.model, { duration: request.duration, resolution: request.resolution });
+        }
         const outputPath = key(target.outputKey);
         await mkdir(dirname(outputPath), { recursive: true });
         const { queue_id, model } = await submitVideoQueue(

@@ -51,6 +51,7 @@ export { createCliClock } from './clock.js';
 export { createCliImageProbe, type CliImageProbeOptions } from './image-probe.js';
 export { createCliLogger, type CliLoggerOptions } from './logger.js';
 export { createCliReferenceStore, CLI_IMAGE_DATA_URI_MIME } from './reference-store.js';
-export { createCliVideoBackend } from './video-backend.js';
+export { createCliVideoBackend, type CliVideoBackendOptions } from './video-backend.js';
+export { createCliRenderMedia } from './render-media.js';
 export { createCliVisionJudge } from './vision-judge.js';
 export { withSignal } from './signal.js';
