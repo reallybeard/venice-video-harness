@@ -37,6 +37,13 @@ import {
 import { cutMontageIntoShots } from './montage.js';
 import { assertShotDurationsValid } from 'venice-video-harness/core/mini-drama/duration-preflight.js';
 import {
+  MULTISHOT_RETRY_DELAY_MS,
+  generationUnitContext,
+  renderFailureDisposition,
+  resolveUnitShots,
+  unitFrameTargets,
+} from 'venice-video-harness/core/mini-drama/generation-steps.js';
+import {
   generateVoiceReference,
   resolveVoiceReferenceAbsPath,
 } from './voice-reference.js';
@@ -50,10 +57,10 @@ import {
   startVideoQueueAttempts,
   type VideoQueueLogLine,
 } from 'venice-video-harness/core/venice/queue-handshake.js';
-import { characterKindsFor, FacesOffModelError } from '../venice/seedance-preflight.js';
+import { characterKindsFor } from '../venice/seedance-preflight.js';
 import { appendRecipePass } from '../venice/recipe.js';
 import { VideoGenerationFailedError } from '../venice/video.js';
-import { abortableSleep, currentSignal, isAbortError, reportProgress } from '../venice/operation-context.js';
+import { abortableSleep, currentSignal, reportProgress } from '../venice/operation-context.js';
 import { renderVideo } from 'venice-video-harness/core/mini-drama/render-video.js';
 import { createCliClock } from '../ports/clock.js';
 import { createCliLogger } from '../ports/logger.js';
@@ -71,7 +78,6 @@ export type {
 } from 'venice-video-harness/core/venice/queue-handshake.js';
 
 const VIDEO_QUEUE_PATH = '/api/v1/video/queue';
-const MULTISHOT_RETRY_DELAY_MS = 15_000;
 
 function runCommand(command: string, args: string[]): string {
   const result = spawnSync(command, args, {
@@ -886,9 +892,11 @@ function chooseAnchorImagePath(
   const firstShotNumber = unit.shotNumbers[0];
   const panelPath = explicitPanelPath ?? getShotPanelPath(sceneDir, firstShotNumber);
 
-  if (unit.startFrameStrategy === 'previous-last-frame'
-    && previousRenderedShotPath
-    && existsSync(previousRenderedShotPath)) {
+  const { start } = unitFrameTargets(unit, { previousRenderedShot: previousRenderedShotPath }, {
+    hasNextPanel: false,
+    hasPreviousClip: previousRenderedShotPath !== undefined && existsSync(previousRenderedShotPath),
+  });
+  if (start === 'chain' && previousRenderedShotPath) {
     const lastFramePath = unitOutputPath.replace(/\.mp4$/, '-lastframe.png');
     extractLastFrame(previousRenderedShotPath, lastFramePath);
     console.log('  Start frame: chained from previous rendered shot');
@@ -904,18 +912,16 @@ function chooseEndFrameImagePath(
   sceneDir: string,
   nextShotNumber?: number,
 ): string | undefined {
-  if (unit.endFrameStrategy !== 'next-panel-target' || nextShotNumber === undefined) {
-    console.log('  End frame: natural');
+  const nextPanelPath = nextShotNumber === undefined ? undefined : getShotPanelPath(sceneDir, nextShotNumber);
+  const targets = unitFrameTargets(unit, { nextShotNumber }, {
+    hasNextPanel: nextPanelPath !== undefined && existsSync(nextPanelPath),
+  });
+  if (targets.end === 'natural') {
+    console.log(targets.endFallback === 'next-panel-missing' ? '  End frame: natural (next panel missing)' : '  End frame: natural');
     return undefined;
   }
 
-  const nextPanelPath = getShotPanelPath(sceneDir, nextShotNumber);
-  if (!existsSync(nextPanelPath)) {
-    console.log('  End frame: natural (next panel missing)');
-    return undefined;
-  }
-
-  console.log(`  End frame: targeting shot-${String(nextShotNumber).padStart(3, '0')}`);
+  console.log(`  End frame: targeting shot-${String(targets.nextShotNumber).padStart(3, '0')}`);
   return nextPanelPath;
 }
 
@@ -1526,19 +1532,14 @@ async function renderMultiShotUnitUntilSuccess(
         nextShotNumber,
       );
     } catch (err) {
-      // A cancelled operation is not a failed attempt: retrying it fails the
-      // same way every 15s, forever.
-      if (isAbortError(err)) throw err;
-      // A classified refusal is final: a face-screening refusal fails on the
-      // same images every time, and a provider refusal has already had its one
-      // refunded retry inside submitVideoQueue. Looping here would only bill
-      // (or spam the queue endpoint, anti-pattern 27b).
-      if (err instanceof VideoRefusalError) throw err;
-      // A FAILED render is final too: its pending-job record is already
-      // cleared, so a retry re-queues and re-bills the same body. A faces-off
-      // refusal is thrown before the queue call on the same images every time.
-      if (err instanceof VideoGenerationFailedError) throw err;
-      if (err instanceof FacesOffModelError) throw err;
+      // Core decides which failures no retry can fix: a cancelled operation
+      // (it fails the same way every 15s, forever), a classified refusal (a
+      // face-screening refusal fails on the same images every time, and a
+      // provider refusal has already had its one refunded retry inside
+      // submitVideoQueue; anti-pattern 27b), a FAILED render (its record is
+      // cleared, so a retry re-queues and re-bills the same body) and a
+      // faces-off refusal (thrown before the queue call, every time).
+      if (renderFailureDisposition(err).final) throw err;
       if (err instanceof VeniceRequestError) {
         console.warn(`  ${unit.unitId}: multi-shot attempt ${attempt} failed (HTTP ${err.status}): ${err.message}`);
         console.warn(`  Error body: ${JSON.stringify(err.body, null, 2)}`);
@@ -1571,33 +1572,20 @@ export async function generateEpisodeVideos(
   assertShotDurationsValid(shots, plan);
 
   const videoPaths: string[] = [];
-  // Suffixed inserts ("13b") share their base shotNumber, so a Map keyed by
-  // shotNumber collapses "13" and "13b" onto one entry and the base shot is
-  // silently skipped as "video exists" (the insert's video). The plan is
-  // built from `shots` in order with each shot in exactly one unit, so we
-  // resolve unit shots with a sequential cursor instead; the Map remains
-  // only as a fallback for hand-edited plans.
-  const shotsByNumber = new Map(shots.map(shot => [shot.shotNumber, shot]));
-  let shotCursor = 0;
-  let previousRenderedShotPath: string | undefined;
-  let previousShot: ShotScript | undefined;
+  // Each unit's shots (cursor first, so an insert "13b" is not handed its
+  // base shot) and its context come from core; the walk is this host's.
+  const unitShotLists = resolveUnitShots(shots, plan);
 
   for (let unitIndex = 0; unitIndex < plan.units.length; unitIndex++) {
     const unit = plan.units[unitIndex];
-    const unitShots = unit.shotNumbers
-      .map(shotNumber => {
-        const candidate = shots[shotCursor];
-        if (candidate && candidate.shotNumber === shotNumber) {
-          shotCursor += 1;
-          return candidate;
-        }
-        return shotsByNumber.get(shotNumber);
-      })
-      .filter((shot): shot is ShotScript => Boolean(shot));
-    const nextUnit = plan.units[unitIndex + 1];
-    const nextShotNumber = nextUnit?.shotNumbers[0];
+    const unitShots = unitShotLists[unitIndex];
 
     if (unitShots.length === 0) continue;
+    const {
+      previousRenderedShot: previousRenderedShotPath,
+      previousShot,
+      nextShotNumber,
+    } = generationUnitContext(plan, unitShotLists, unitIndex, videoPaths);
 
     // Feeds the shell's `/jobs` view, so a backgrounded episode render reports
     // "unit 3/12 shot 5" instead of only whatever the current poll is doing.
@@ -1639,11 +1627,7 @@ export async function generateEpisodeVideos(
             nextShotNumber,
           );
 
-      if (savedPaths.length > 0) {
-        videoPaths.push(...savedPaths);
-        previousRenderedShotPath = savedPaths[savedPaths.length - 1];
-      }
-      previousShot = unitShots[unitShots.length - 1];
+      videoPaths.push(...savedPaths);
       console.log('');
     } catch (err) {
       throw err;
