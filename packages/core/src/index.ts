@@ -63,8 +63,19 @@ export * from './venice/text-models.js';
 // Silent-reject detection (byte-size thresholds by resolution).
 export * from './venice/rejection.js';
 
-// JSON extraction from chat replies (the pure half of chatJson).
+// JSON extraction from chat replies, and the rest of chatJson's reply policy:
+// each attempt's body, then ok / retry with these messages / error (rule 47).
 export * from './venice/json-block.js';
+export * from './venice/chat-json.js';
+
+// The /video/queue handshakes: consent resubmit, refunded-refusal retry, or give up.
+export * from './venice/queue-handshake.js';
+
+// The pending-job record (rule 43): its shape, the staleness rule, the prompt cap.
+export * from './venice/pending-job.js';
+
+// Image-format sniffing from magic bytes.
+export * from './venice/image-format.js';
 
 // Capabilities manifest for downstream apps (version passed in by the host).
 export * from './venice/capabilities-manifest.js';

@@ -114,6 +114,10 @@ test('the compiled core bundle loads in Node with no Node-specific globals neede
   assert.ok(Array.isArray(core.VIDEO_MODELS) && core.VIDEO_MODELS.length > 50);
   assert.ok(core.MODELS_SUPPORTING_REFERENCE_IMAGES instanceof Set);
   assert.equal(typeof core.DEFAULT_CHARACTER_CONSISTENCY_MODEL, 'string');
+  // The port helpers a browser host implements its ports with.
+  for (const name of ['chatJsonStep', 'nextVideoQueueAttempt', 'isStalePendingJob', 'sniffImageFormat', 'resumeVideoJob']) {
+    assert.equal(typeof core[name], 'function', name);
+  }
 });
 
 test('core package.json declares no runtime dependencies', () => {

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
-// JSON extraction from chat replies: the pure half of `VeniceClient.chatJson`.
-// The request, the corrective retry and the empty-reply diagnosis stay in
-// src/venice/client.ts.
+// JSON extraction from chat replies. The rest of `VeniceClient.chatJson`'s
+// reply policy (the corrective retry, the empty-reply diagnosis) is in
+// chat-json.ts; the HTTP stays in src/venice/client.ts.
 // ---------------------------------------------------------------------------
 
 /**

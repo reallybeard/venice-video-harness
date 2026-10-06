@@ -533,6 +533,35 @@
   before the API key is read. `collectProjectFacts` reads the same facts with
   the same readers, so `status` sees what the command will see.
   Test: `tests/core-gates.test.mjs`.
+- **The port helpers move into core, so a browser host stops copying CLI
+  code to implement the ports (all on the core barrel).**
+  - `venice/chat-json.js`: `VeniceClient.chatJson`'s reply policy (rule 47).
+    `chatJsonMessages` and `chatJsonBody` build each attempt's request;
+    `chatJsonStep(request, attempt, messages, raw)` returns ok with the
+    value, retry with the next attempt's messages, or the error (fences
+    stripped, one retry quoting the parse error, the no-vision empty-reply
+    message). `chatJson` keeps the HTTP.
+  - `venice/queue-handshake.js`: `submitVideoQueue`'s handshakes.
+    `nextVideoQueueAttempt(state, failure)` decides between resubmitting
+    (409 `needs_consent` with the Seedance attestation; a refunded
+    provider refusal, once), refused, and fail, and carries the lines the
+    CLI prints. There is no rate-limit branch: the queue call has never
+    retried a 429.
+  - `venice/pending-job.js`: the pending-job record (rule 43).
+    `PendingJobRecord` (the host-neutral fields; the CLI's `PendingJob`
+    extends it with `outputPath` and `pid`), `PENDING_JOB_STALE_AFTER_MS`,
+    `isStalePendingJob(job, now)`, `pendingJobPrompt` (the 240-character
+    cap). The registry file stays in `src/venice/job-store.ts`.
+  - `venice/image-format.js`: `sniffImageFormat`, now over a plain
+    `Uint8Array`.
+  - `resumeVideoJob(ports, target, policy?, options?)` in
+    `venice/render-job.js`: re-attach to a recorded render with no request
+    to queue. Resolves `undefined` when nothing is recorded; never queues.
+
+  The CLI modules keep their exports and re-export from core; console
+  output and request bodies are unchanged (the chatJson and queue
+  refactors were checked against the previous implementations).
+  Tests: `tests/core-port-helpers.test.mjs`, `tests/core-render-job.test.mjs`.
 
 ## 2.26.0 — 2026-10-05
 
