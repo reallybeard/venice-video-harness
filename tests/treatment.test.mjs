@@ -11,7 +11,7 @@ import test from 'node:test';
 import sharp from 'sharp';
 import { hasTreatment, refreshTreatment, shotKey } from '../dist/mini-drama/treatment.js';
 import { approveWorkshop, saveWorkshop } from '../dist/mini-drama/workshop.js';
-import { createSeries, getEpisodeDir, saveSeries } from '../dist/series/manager.js';
+import { createSeries, getEpisodeDir, getLocationDir, saveSeries } from '../dist/series/manager.js';
 import { collectProjectStatus, qualifyCommand } from '../dist/session/status.js';
 
 function film(workspace) {
@@ -69,6 +69,12 @@ async function project(shots) {
   const workshop = draft(series, shots);
   await saveWorkshop(series, workshop);
   await approveWorkshop(series, workshop);
+  // The location's reference plate, so storyboard-episode's rule-54 preflight
+  // passes as it would after generate-location-references. Not an image: the
+  // page has nothing to preview until a panel exists.
+  const plateDir = getLocationDir(series, 'orbital-capsule');
+  await mkdir(plateDir, { recursive: true });
+  await writeFile(join(plateDir, 'north.png'), 'plate');
   const sceneDir = join(getEpisodeDir(series, 1), 'scene-001');
   await mkdir(sceneDir, { recursive: true });
   return { series, sceneDir, episodeDir: getEpisodeDir(series, 1) };
