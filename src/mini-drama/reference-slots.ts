@@ -18,16 +18,12 @@
 // dropped only if characters + plates alone exceed the budget.
 // ---------------------------------------------------------------------------
 
-import { join } from 'node:path';
-import { existsSync, readdirSync } from 'node:fs';
 import type { SeriesState, ShotScript } from 'venice-video-harness/core/series/types.js';
 import { getMaxReferenceImages } from 'venice-video-harness/core/series/types.js';
-import {
-  getCharacterDir,
-  getLocationDir,
-  getLocation,
-  getStoryboardRefPath,
-} from '../series/manager.js';
+import type { ReferenceSet } from 'venice-video-harness/core/series/references.js';
+import { isReferenceSet } from 'venice-video-harness/core/series/references.js';
+import { getLocation } from '../series/manager.js';
+import { referenceSetFromDisk } from './reference-set-from-disk.js';
 
 export type ReferenceSlotKind =
   | 'character-primary'
@@ -39,7 +35,12 @@ export interface ReferenceSlot {
   /** 1-based index — @Image<imageIndex> in the prompt. */
   imageIndex: number;
   kind: ReferenceSlotKind;
-  /** Absolute path to the image on disk. */
+  /**
+   * The image, as the host names it: an absolute path on the CLI, an asset
+   * id in a browser (`ReferenceImage.ref`). The planner never opens it.
+   */
+  ref: string;
+  /** @deprecated Alias of `ref` (always a path on the CLI). Removed next major. */
   path: string;
   /** Character name (character slots), location slug, or storyboard slug. */
   label: string;
@@ -57,24 +58,22 @@ export interface ReferenceSlotPlan {
 
 interface CandidateSlot {
   kind: ReferenceSlotKind;
-  path: string;
+  ref: string;
   label: string;
   roleClause: string;
+}
+
+export interface ReferenceSlotPlanOptions {
+  characterNames?: string[];
 }
 
 // North (the hero plate) first, then the derived same-wall plates
 // (south/east/west), then the legacy names (only present on pre-2026-10-05
 // projects). The derived plates are all multi-edits of the north plate, so
 // they depict ONE coherent space — safe to send together as "same place,
-// different wall".
-const LOCATION_ANGLE_ORDER_DEFAULT = [
-  'north.png', 'south.png', 'east.png', 'west.png',
-  'wide.png', 'angle-2.png', 'angle-3.png', 'angle-4.png', 'medium.png', 'detail.png',
-];
-// Closer shot types no longer prefer a "medium" distance angle (the ladder is
-// gone); the same north-first order applies. Kept as a named constant so the
-// call site reads clearly.
-const LOCATION_ANGLE_ORDER_CLOSER = LOCATION_ANGLE_ORDER_DEFAULT;
+// different wall". The ORDER now lives in the ReferenceSet (the CLI builds it
+// in reference-set-from-disk.ts with this same list); here the names only
+// pick the role clause for a plate's `wall`.
 
 /**
  * Build the ordered reference slot plan for a shot on an @Image-tag model.
@@ -82,13 +81,47 @@ const LOCATION_ANGLE_ORDER_CLOSER = LOCATION_ANGLE_ORDER_DEFAULT;
  * The returned slots array is the exact push order of reference_image_urls;
  * @ImageN in the prompt = slots[N-1]. Characters always occupy the first
  * slots (one primary angle each) so drop decisions never renumber them.
+ *
+ * `refs` is the shot's `ReferenceSet` — the images as data (paths on the
+ * CLI, asset ids in a browser). The planner never touches disk; the CLI
+ * builds the set with `referenceSetFromDisk`.
  */
 export function buildReferenceSlotPlan(
   series: SeriesState,
   shot: ShotScript,
   modelId: string,
-  options: { characterNames?: string[] } = {},
+  refs: ReferenceSet,
+  options?: ReferenceSlotPlanOptions,
+): ReferenceSlotPlan;
+/**
+ * @deprecated Legacy CLI signature: probes the project directory via
+ * `referenceSetFromDisk(series, shot, options)` and plans from that. Pass a
+ * `ReferenceSet` instead; this overload goes away when the planner moves to
+ * core.
+ */
+export function buildReferenceSlotPlan(
+  series: SeriesState,
+  shot: ShotScript,
+  modelId: string,
+  options?: ReferenceSlotPlanOptions,
+): ReferenceSlotPlan;
+export function buildReferenceSlotPlan(
+  series: SeriesState,
+  shot: ShotScript,
+  modelId: string,
+  refsOrOptions?: ReferenceSet | ReferenceSlotPlanOptions,
+  maybeOptions?: ReferenceSlotPlanOptions,
 ): ReferenceSlotPlan {
+  if (!isReferenceSet(refsOrOptions)) {
+    const legacyOptions = refsOrOptions ?? {};
+    return buildReferenceSlotPlan(
+      series, shot, modelId,
+      referenceSetFromDisk(series, shot, legacyOptions),
+      legacyOptions,
+    );
+  }
+  const refs = refsOrOptions;
+  const options = maybeOptions ?? {};
   const budget = getMaxReferenceImages(modelId);
   const dropped: string[] = [];
 
@@ -103,14 +136,13 @@ export function buildReferenceSlotPlan(
   // later units must match — the strongest anti-drift reference available.
   const primary: CandidateSlot[] = [];
   for (const char of resolvedChars) {
-    const dir = getCharacterDir(series, char.name);
-    const path = ['anchor.png', 'front.png', 'three-quarter.png']
-      .map(f => join(dir, f))
-      .find(p => existsSync(p));
-    if (!path) continue;
+    const ref = refs.characters
+      .find(c => c.name.toUpperCase() === char.name.toUpperCase())
+      ?.primary?.ref;
+    if (!ref) continue;
     primary.push({
       kind: 'character-primary',
-      path,
+      ref,
       label: char.name,
       roleClause: `is ${char.name} — use this reference for ${char.name}'s face, hair, and wardrobe`,
     });
@@ -119,11 +151,10 @@ export function buildReferenceSlotPlan(
   // --- Tier 2: storyboard blocking plate (PROTECTED) ---
   const storyboard: CandidateSlot[] = [];
   if (shot.storyboardRef) {
-    const sbPath = getStoryboardRefPath(series, shot.storyboardRef);
-    if (sbPath && existsSync(sbPath)) {
+    if (refs.storyboard) {
       storyboard.push({
         kind: 'storyboard',
-        path: sbPath,
+        ref: refs.storyboard.ref,
         label: shot.storyboardRef,
         roleClause:
           'is the storyboard blocking reference — it shows where the characters are ' +
@@ -142,9 +173,7 @@ export function buildReferenceSlotPlan(
   if (shot.location) {
     const loc = getLocation(series, shot.location);
     if (loc) {
-      const dir = getLocationDir(series, loc.slug);
-      const closer = shot.type === 'close-up' || shot.type === 'reaction' || shot.type === 'insert';
-      const order = closer ? LOCATION_ANGLE_ORDER_CLOSER : LOCATION_ANGLE_ORDER_DEFAULT;
+      const plates = refs.locations.find(l => l.slug === loc.slug)?.plates ?? [];
       const angleRole: Record<string, string> = {
         'north.png': 'a wide establishing plate of the location, facing the north wall',
         'south.png': 'the south wall of the same location',
@@ -158,30 +187,16 @@ export function buildReferenceSlotPlan(
         'detail.png': 'a third angle of the same location (detail)',
       };
       // Custom angles (operator-generated extra coverage beyond the canonical
-      // set, e.g. reverse-angle.png) queue after the canonical plates, in
-      // stable name order. Archives and sidecar-less strays are excluded by
-      // pattern.
+      // set, e.g. reverse-angle.png) arrive in the set after the canonical
+      // plates, in stable name order (reference-set-from-disk.ts).
       const canonical = new Set([
         'north.png', 'south.png', 'east.png', 'west.png',
         'wide.png', 'angle-2.png', 'angle-3.png', 'angle-4.png', 'medium.png', 'detail.png',
       ]);
-      let customAngles: string[] = [];
-      try {
-        customAngles = readdirSync(dir)
-          .filter(f =>
-            /\.png$/i.test(f)
-            && !canonical.has(f)
-            && !f.includes('archive')
-            && !f.includes('-pre-'))
-          .sort();
-      } catch {
-        // No location dir — canonical loop below reports nothing either.
-      }
 
       let angleCount = 0;
-      for (const f of [...order, ...customAngles]) {
-        const p = join(dir, f);
-        if (!existsSync(p)) continue;
+      for (const plate of plates) {
+        const f = `${plate.wall}.png`;
         angleCount += 1;
         const customName = canonical.has(f) ? null : f.replace(/\.png$/i, '').replace(/-/g, ' ');
         const anglePhrase = angleCount === 1
@@ -191,7 +206,7 @@ export function buildReferenceSlotPlan(
             : `is ${angleRole[f] ?? 'another angle of the same location'} (${loc.name}) — same place, different angle; keep the environment consistent with it`;
         location.push({
           kind: 'location',
-          path: p,
+          ref: plate.ref,
           label: loc.slug,
           roleClause: anglePhrase,
         });
@@ -202,15 +217,16 @@ export function buildReferenceSlotPlan(
   // --- Tier 4: second character angles ---
   const charAngles: CandidateSlot[] = [];
   for (const char of resolvedChars) {
-    const dir = getCharacterDir(series, char.name);
-    const primaryPath = primary.find(s => s.label === char.name)?.path;
-    const path = ['three-quarter.png', 'profile.png', 'full-body.png']
-      .map(f => join(dir, f))
-      .find(p => existsSync(p) && p !== primaryPath);
-    if (!path) continue;
+    // The set's angles already exclude the primary and are in preference
+    // order (three-quarter, profile, full-body on the CLI); take the first.
+    const primaryRef = primary.find(s => s.label === char.name)?.ref;
+    const ref = refs.characters
+      .find(c => c.name.toUpperCase() === char.name.toUpperCase())
+      ?.angles.find(a => a.ref !== primaryRef)?.ref;
+    if (!ref) continue;
     charAngles.push({
       kind: 'character-angle',
-      path,
+      ref,
       label: char.name,
       roleClause: `is a second angle of ${char.name} — same person as ${char.name}'s primary reference`,
     });
@@ -244,6 +260,7 @@ export function buildReferenceSlotPlan(
     slots.push({
       imageIndex: slots.length + 1,
       ...candidate,
+      path: candidate.ref,
     });
   }
 

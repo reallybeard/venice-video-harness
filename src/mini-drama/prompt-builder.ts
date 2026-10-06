@@ -29,6 +29,7 @@ import { parseShotDuration } from './generation-planner.js';
 import { faceCapableTwinId, getMaxPositivePromptChars, modelWantsSimplePrompt } from 'venice-video-harness/core/venice/models.js';
 import { getLocation } from '../series/manager.js';
 import { buildReferenceSlotPlan, type ReferenceSlot } from './reference-slots.js';
+import { referenceSetFromDisk } from './reference-set-from-disk.js';
 
 export interface MiniDramaImagePrompt {
   prompt: string;
@@ -530,9 +531,8 @@ export function buildVideoPrompt(
     // budgeted per model (9 on Seedance R2V). The @ImageN indices here are
     // authoritative; the video generator pushes reference_image_urls in
     // exactly this order.
-    const plan = buildReferenceSlotPlan(series, shot, modelId, {
-      characterNames: resolvedCharacters.map(c => c.name),
-    });
+    const slotOptions = { characterNames: resolvedCharacters.map(c => c.name) };
+    const plan = buildReferenceSlotPlan(series, shot, modelId, referenceSetFromDisk(series, shot, slotOptions), slotOptions);
     referenceSlots = plan.slots;
     for (const note of plan.dropped) {
       console.warn(`  ⚠ Reference budget: dropped ${note}`);
@@ -893,9 +893,8 @@ export function buildMontagePrompt(
 
   const uniqueCharNames = Array.from(new Set(shots.flatMap(shot => shot.characters)));
   const planShot: ShotScript = { ...shots[0], characters: uniqueCharNames };
-  const plan = buildReferenceSlotPlan(series, planShot, modelId, {
-    characterNames: uniqueCharNames,
-  });
+  const slotOptions = { characterNames: uniqueCharNames };
+  const plan = buildReferenceSlotPlan(series, planShot, modelId, referenceSetFromDisk(series, planShot, slotOptions), slotOptions);
   for (const note of plan.dropped) {
     console.warn(`  ⚠ Reference budget (montage): dropped ${note}`);
   }
@@ -1129,9 +1128,8 @@ function buildSeedanceMultiShotPrompt(
     ...shots[0],
     characters: uniqueCharNames,
   };
-  const plan = buildReferenceSlotPlan(series, planShot, modelId, {
-    characterNames: uniqueCharNames,
-  });
+  const slotOptions = { characterNames: uniqueCharNames };
+  const plan = buildReferenceSlotPlan(series, planShot, modelId, referenceSetFromDisk(series, planShot, slotOptions), slotOptions);
   for (const note of plan.dropped) {
     console.warn(`  ⚠ Reference budget (multi-shot): dropped ${note}`);
   }

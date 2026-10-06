@@ -1301,7 +1301,7 @@ function resolveCharacterElements(
   if (prompt.referenceSlots && prompt.referenceSlots.length > 0
     && MODELS_SUPPORTING_REFERENCE_IMAGES.has(prompt.model)) {
     const paths = prompt.referenceSlots
-      .map(slot => slot.path)
+      .map(slot => slot.ref)
       .filter(p => existsSync(p));
     if (paths.length !== prompt.referenceSlots.length) {
       console.warn('  ⚠ Reference slot images missing on disk — @ImageN bindings may misalign; regenerate refs.');
@@ -1841,7 +1841,7 @@ async function renderMultiShotUnit(
     // prompt's @ImageN bindings match the request array (same invariant as
     // resolveCharacterElements on the single-shot path).
     const paths = prompt.referenceSlots!
-      .map(slot => slot.path)
+      .map(slot => slot.ref)
       .filter(p => existsSync(p));
     if (paths.length !== prompt.referenceSlots!.length) {
       console.warn('  ⚠ Multi-shot reference slot images missing on disk — @ImageN bindings may misalign; regenerate refs.');
@@ -1981,7 +1981,7 @@ async function renderMontageUnit(
   let referenceImagePaths: string[] | undefined;
   if ((prompt.referenceSlots?.length ?? 0) > 0) {
     const paths = prompt.referenceSlots!
-      .map(slot => slot.path)
+      .map(slot => slot.ref)
       .filter(p => existsSync(p));
     if (paths.length !== prompt.referenceSlots!.length) {
       console.warn('  ⚠ Montage reference slot images missing on disk — @ImageN bindings may misalign; regenerate refs.');

@@ -282,3 +282,71 @@ test('referenceSetFromDisk reads hasFace from the provenance sidecar', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('planner with the from-disk set === planner with the legacy disk-probing signature', () => {
+  const { dir, series } = materialise();
+  try {
+    const MODEL = 'seedance-2-0-enhanced-reference-to-video';
+    const shot = makeShot({ characters: ['BOB', 'ALICE', 'ZED'], location: 'courtyard', storyboardRef: 'e01-beat-1-courtyard' });
+    const viaSet = buildReferenceSlotPlan(series, shot, MODEL, referenceSetFromDisk(series, shot));
+    const legacy = buildReferenceSlotPlan(series, shot, MODEL);
+    assert.deepEqual(viaSet.slots, legacy.slots);
+    assert.deepEqual(viaSet.dropped, legacy.dropped);
+    assert.deepEqual([...viaSet.characterSlotByName], [...legacy.characterSlotByName]);
+    // 3 primaries + plate + 8 plates = 12 > 9: budget drops trailing plates and all angles.
+    assert.equal(viaSet.slots.length, 9);
+    for (const s of viaSet.slots) assert.equal(s.path, s.ref, 'deprecated `path` aliases `ref`');
+    assert.ok(viaSet.dropped.some(d => d.includes('character-angle')));
+
+    // characterNames option threads through both signatures identically.
+    const opts = { characterNames: ['ALICE'] };
+    assert.deepEqual(
+      buildReferenceSlotPlan(series, shot, MODEL, referenceSetFromDisk(series, shot, opts), opts).slots,
+      buildReferenceSlotPlan(series, shot, MODEL, opts).slots,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('planner accepts a browser-shaped ReferenceSet (asset ids, nothing on disk)', () => {
+  const series = makeSeries('/nonexistent/project', {
+    characters: ['BOB', 'ALICE'],
+    locations: [{ name: 'Courtyard', slug: 'courtyard', description: 'c', seed: 1 }],
+  });
+  const shot = makeShot({ characters: ['BOB', 'ALICE'], location: 'courtyard', storyboardRef: 'beat-1' });
+  const refs = {
+    characters: [
+      { name: 'BOB', primary: { ref: 'asset:bob-anchor', hasFace: true }, angles: [{ ref: 'asset:bob-34', view: 'three-quarter' }] },
+      { name: 'ALICE', primary: { ref: 'asset:alice-front' }, angles: [] },
+    ],
+    locations: [{
+      slug: 'courtyard',
+      plates: [
+        { ref: 'asset:cy-north', wall: 'north', hasFace: false },
+        { ref: 'asset:cy-east', wall: 'east' },
+        { ref: 'asset:cy-rev', wall: 'reverse-angle' },
+      ],
+    }],
+    storyboard: { ref: 'asset:beat-1' },
+  };
+  const plan = buildReferenceSlotPlan(series, shot, 'seedance-2-0-enhanced-reference-to-video', refs);
+  assert.deepEqual(plan.slots.map(s => [s.imageIndex, s.kind, s.ref]), [
+    [1, 'character-primary', 'asset:bob-anchor'],
+    [2, 'character-primary', 'asset:alice-front'],
+    [3, 'storyboard', 'asset:beat-1'],
+    [4, 'location', 'asset:cy-north'],
+    [5, 'location', 'asset:cy-east'],
+    [6, 'location', 'asset:cy-rev'],
+    [7, 'character-angle', 'asset:bob-34'],
+  ]);
+  assert.match(plan.slots[3].roleClause, /location environment reference \(Courtyard\)/);
+  assert.match(plan.slots[4].roleClause, /the east wall of the same location/);
+  assert.match(plan.slots[5].roleClause, /Courtyard: reverse angle/);
+  assert.equal(plan.characterSlotByName.get('BOB'), 1);
+  assert.deepEqual(plan.dropped, []);
+
+  // Storyboard requested but not in the set → recorded as dropped, like a missing file.
+  const noPlate = buildReferenceSlotPlan(series, shot, 'seedance-2-0-enhanced-reference-to-video', { ...refs, storyboard: undefined });
+  assert.ok(noPlate.dropped.some(d => d.includes('storyboard ref "beat-1"')));
+});

@@ -203,6 +203,37 @@
   no sheet on disk skips with a note, a failed call warns and leaves the
   field untouched, and the lock goes through either way. Test:
   `tests/reference-check.test.mjs`.
+- **`ReferenceSet`: the @ImageN slot planner takes its reference images as
+  data; the CLI builds the set from disk.** `buildReferenceSlotPlan` used to
+  probe the project directory itself (`existsSync` / `readdirSync` for
+  `characters/<slug>/{anchor,front,three-quarter,profile,full-body}.png`,
+  `locations/<slug>/{north,south,east,west,wide,angle-2..4,medium,detail}.png`
+  plus custom `*.png`, `storyboards/<ref>.png`), which made the whole prompt
+  path Node-only. New core types `ReferenceImage { ref, hasFace? }`,
+  `CharacterReferences { name, primary?, angles[] }`,
+  `LocationReferences { slug, plates[] }` and `ReferenceSet { characters,
+  locations, storyboard? }` (`packages/core/src/series/references.ts`, on
+  the barrel) carry the images as opaque `ref` strings — paths on the CLI,
+  asset ids in a browser; the planner never opens them. `view` / `wall` are
+  open strings so custom plates keep working. The planner's signature is
+  now `buildReferenceSlotPlan(series, shot, modelId, refs: ReferenceSet,
+  options?)`; `ReferenceSlot.ref` replaces `ReferenceSlot.path` (`path`
+  stays as a deprecated alias of `ref` for one release). Fill order, role
+  clauses and the per-model budget are unchanged line for line. New
+  `src/mini-drama/reference-set-from-disk.ts` (`referenceSetFromDisk(series,
+  shot, options?)`) holds the probing that moved out of the planner, with
+  the same file lists in the same order, and reads `hasFace` from each
+  image's provenance sidecar when one exists. The three prompt-builder call
+  sites build the set first; `resolveShotReferenceInputs` reads `slot.ref`.
+  The old three-argument call (`buildReferenceSlotPlan(series, shot,
+  modelId, options?)`) is kept as a deprecated overload that calls
+  `referenceSetFromDisk` internally, so `tests/test-reference-slots.mjs` and
+  `tests/test-queue-body-refs.mjs` pass unchanged — the proof that CLI
+  behaviour did not move. Test: `tests/reference-set-from-disk.test.mjs`
+  (materialises a project dir and checks the set against a verbatim copy of
+  the pre-refactor probing; the planner given the set equals the planner
+  given disk; a browser-shaped set with asset ids plans without touching
+  the filesystem).
 - **`packages/core` — the pure half of the harness, exported as
   `venice-video-harness/core` (phase 2 of the core split).** An npm
   workspace holding the modules that were already pure, moved with
