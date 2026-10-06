@@ -128,6 +128,24 @@
   bindings are refused as `not-recorded`. `--skip-qa` still bypasses it.
   New `src/mini-drama/panel-approval.ts` (pure `settingsDigest` /
   `compareApproval`). Test: `tests/panel-approval.test.mjs`.
+- **A failed clip write on the render path is no longer a poll error.**
+  `renderVideoFile`'s retrieve loop wrapped the file write in the same
+  try/catch as the poll, so an unwritable output directory (or a full disk)
+  counted as one more failed poll. After the clip was downloaded and paid
+  for, the loop then re-retrieved it about 360 times before timing out. The
+  write now happens after the loop, and its error surfaces at once.
+  `Video saved` now prints after `/video/complete`, as the other render path
+  already did. Test: `tests/generation-loop-golden.test.mjs`.
+- **The queue id prints before the pending-job record is written**
+  (`src/ports/video-backend.ts`), so a record write that throws still leaves
+  the id on screen for `venice-video queue` to re-attach to.
+- **A cancelled multi-shot unit stops instead of retrying every 15s.**
+  `generateEpisodeVideos` retried every multi-shot error except a classified
+  refusal. A Ctrl-C (the operation's abort signal) counted as a failed
+  attempt, and each retry failed on the same abort, so the unit spun until
+  the process was killed. Abort errors now propagate, and the retry wait is
+  abortable. Test: `tests/generation-loop-golden.test.mjs`
+  (`multishot-cancel-during-retry`).
 
 ### Changed
 
@@ -582,6 +600,36 @@
   one-frame `frameLumas` window with a single seek at any start, so the
   boundary check runs the ffmpeg command it always did. Test:
   `tests/core-qa-loops.test.mjs`.
+- **One video render moves into core as `renderVideo`
+  (`venice-video-harness/core/mini-drama/render-video.js`, also on the core
+  barrel).** `renderVideo(ports, media, request, options)` runs the
+  faces-off check, `planVideoQueueRequest`, the reference URLs (through
+  `ReferenceStore.url`), the audio pads, `buildVideoQueueRequest`,
+  `runVideoJob` with `RENDER_FILE_VIDEO_JOB_POLICY`, the gone-job requeue
+  and the recipe pass. IO with no port (file existence, `hasFace`
+  sidecars, audio durations and pads, the recipe write) comes in as
+  `RenderVideoMedia` callbacks. `prepareVideoRequest` builds the body
+  without queueing. `renderVideoFile` is now a thin caller over the CLI
+  ports plus `createCliRenderMedia` (`src/ports/render-media.ts`). Bodies
+  are byte-identical. `createCliVideoBackend` gains `{ validateRequests }`
+  (default `true`); the render path passes `false`, as before.
+  Test: `tests/core-render-video.test.mjs`.
+- **The episode unit loop moves into core as `runGenerationUnits`
+  (`venice-video-harness/core/mini-drama/generation-loop.js`, also on the
+  core barrel).** It runs the duration preflight, resolves each unit's
+  shots (`resolveUnitShots`, cursor first), reports progress, and dispatches
+  each unit to the host's `GenerationUnitRenderer` (`single`, `multishot`,
+  `montage`). It carries the chaining context between units and retries a
+  multi-shot unit with `Clock.sleep` (`renderMultiShotUntilSuccess`). The
+  host decides which errors are final. `generateEpisodeVideos` is now a
+  thin caller. The new `tests/generation-loop-golden.test.mjs` pins it: 20
+  cases across the lanes, with every request, console line, timer wait,
+  pending job and file
+  captured before the change. Test: `tests/core-generation-loop.test.mjs`.
+- **`scripts/verify-generation-loop-live.ts`.** Renders one 5s MiniMax H3
+  Max Turbo unit through the new path (`--live`, est. $0.06). It first
+  checks offline that the pre-change build sends the same `/video/queue`
+  body.
 
 ## 2.26.0 — 2026-10-05
 
