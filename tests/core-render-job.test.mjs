@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 
 import {
   runVideoJob,
+  resumeVideoJob,
   DEFAULT_VIDEO_JOB_POLICY,
   RENDER_FILE_VIDEO_JOB_POLICY,
   GENERATE_VIDEO_JOB_POLICY,
@@ -426,4 +427,70 @@ test('RENDER_FILE preset: no silent-reject check, sleeps before every poll', asy
   const result = await runVideoJob(p, REQUEST, TARGET, RENDER_FILE_VIDEO_JOB_POLICY);
   assert.equal(result.download.sizeBytes, TINY.bytes.length);
   assert.deepEqual(p.clock.slept, [10_000, 10_000]);
+});
+
+// ---- resumeVideoJob (re-attach only) --------------------------------------------
+
+test('resumeVideoJob: nothing recorded resolves undefined and touches nothing else', async () => {
+  const p = ports({});
+  assert.equal(await resumeVideoJob(p, TARGET), undefined);
+  assert.deepEqual(p.video.names(), ['findPending']);
+});
+
+test('resumeVideoJob: a recorded job is resumed, polled, stored and completed', async () => {
+  const progress = [];
+  const p = ports({ pending: {}, script: [PROCESSING, READY] });
+  const result = await resumeVideoJob(p, TARGET, undefined, { onProgress: (s) => progress.push(s.status) });
+  assert.deepEqual(p.video.names(), ['findPending', 'resume', 'retrieve', 'retrieve', 'download', 'complete']);
+  assert.equal(result.resumed, true);
+  assert.equal(result.requeued, false);
+  assert.equal(result.handle.queueId, 'q-recorded');
+  assert.equal(result.polls, 2);
+  assert.deepEqual(progress, ['PROCESSING']);
+});
+
+test('resumeVideoJob never queues: gone clears the record and throws even with requeueOnGone', async () => {
+  const p = ports({ pending: {}, script: [GONE] });
+  await assert.rejects(resumeVideoJob(p, TARGET, { requeueOnGone: true }), (err) => {
+    assert.ok(err instanceof VideoJobGoneError);
+    assert.equal(err.queueId, 'q-recorded');
+    assert.equal(err.status, 404);
+    return true;
+  });
+  assert.equal(count(p, 'queue'), 0);
+  assert.equal(p.video.records.size, 0);
+});
+
+test('resumeVideoJob: a failed job clears the record (clearOnFailed) and throws', async () => {
+  const p = ports({ pending: {}, script: [FAILED] });
+  await assert.rejects(resumeVideoJob(p, TARGET), VideoGenerationFailedError);
+  assert.equal(p.video.records.size, 0);
+  assert.equal(count(p, 'queue'), 0);
+});
+
+test('resumeVideoJob: a silent reject names the prompt passed in', async () => {
+  const p = ports({ pending: {}, script: [TINY] });
+  await assert.rejects(resumeVideoJob(p, TARGET, undefined, { prompt: 'a lighthouse at dusk' }), (err) => {
+    assert.ok(err instanceof VeniceRejectionError);
+    assert.equal(err.prompt, 'a lighthouse at dusk');
+    return true;
+  });
+});
+
+test('resumeVideoJob: the policy deadline applies and the record is kept for the next re-attach', async () => {
+  const p = ports({ pending: {}, script: [PROCESSING] });
+  await assert.rejects(
+    resumeVideoJob(p, TARGET, { maxPolls: 3, maxWaitMs: undefined }),
+    (err) => err instanceof VideoJobTimeoutError && err.reason === 'max-polls',
+  );
+  assert.equal(count(p, 'retrieve'), 3);
+  assert.equal(p.video.records.size, 1);
+});
+
+test('resumeVideoJob: an aborted signal rejects before anything is looked up', async () => {
+  const p = ports({ pending: {} });
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(resumeVideoJob(p, TARGET, undefined, { signal: controller.signal }), FakeAbortError);
+  assert.deepEqual(p.video.names(), []);
 });

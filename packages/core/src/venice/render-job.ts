@@ -9,6 +9,8 @@
 // there is one (never re-submitting a render that may be in flight, rule 43),
 // otherwise queues exactly once (never auto-retried: Venice bills at queue
 // time), polls until the job is terminal, and stores the media.
+// `resumeVideoJob` is the re-attach branch alone, for a host that has a
+// pending record and no request: it never queues.
 //
 // How it polls is a `VideoJobPolicy`. The CLI has two poll loops that disagree
 // (`pollVideoResult` behind `generateVideo`, `pollRenderedVideo` behind
@@ -317,7 +319,7 @@ export async function runVideoJob(
   const resumed = handle.resumed;
 
   let requeued = false;
-  let settled = await pollUntilSettled(ports, handle, request, p, options);
+  let settled = await pollUntilSettled(ports, handle, request.prompt, p, options);
   while (settled.kind === 'gone') {
     await video.clearPending(target.outputKey, call);
     if (!p.requeueOnGone || requeued) {
@@ -327,7 +329,7 @@ export async function runVideoJob(
     await throwIfAborted(clock, signal);
     handle = await video.queue(request, target, call);
     requeued = true;
-    settled = await pollUntilSettled(ports, handle, request, p, options);
+    settled = await pollUntilSettled(ports, handle, request.prompt, p, options);
   }
 
   const download = await video.download(handle, { bytes: settled.bytes }, call);
@@ -343,12 +345,67 @@ export async function runVideoJob(
   };
 }
 
+export interface ResumeVideoJobOptions {
+  /** As `RunVideoJobOptions.signal`: the record is left in place for the next re-attach. */
+  signal?: AbortSignal;
+  /** Each `processing` answer, in order. */
+  onProgress?: (status: VideoRetrieveStatus) => void;
+  /** The render's prompt, named in a silent-reject error. Nothing else reads it. */
+  prompt?: string;
+}
+
+/**
+ * Re-attach to the job recorded for `target` and see it through: resume,
+ * poll, store, complete. For a host that has only the pending record (a
+ * browser reopening a tab) and no request to queue.
+ *
+ * Never queues. Resolves `undefined` when nothing is recorded for the output
+ * (or the record is stale); the host decides what that means. A recorded id
+ * Venice no longer knows clears the record and rejects with
+ * `VideoJobGoneError`, whatever `policy.requeueOnGone` says. Everything else
+ * (failure, silent reject, timeout, poll errors, abort) is as `runVideoJob`.
+ */
+export async function resumeVideoJob(
+  ports: VideoJobPorts,
+  target: VideoJobTarget,
+  policy: Partial<VideoJobPolicy> = DEFAULT_VIDEO_JOB_POLICY,
+  options: ResumeVideoJobOptions = {},
+): Promise<VideoJobResult | undefined> {
+  const p: VideoJobPolicy = { ...DEFAULT_VIDEO_JOB_POLICY, ...policy };
+  const { video, clock } = ports;
+  const { signal } = options;
+  const call = { signal };
+
+  await throwIfAborted(clock, signal);
+  const pending = await video.findPending(target.outputKey, call);
+  if (!pending) return undefined;
+  const handle = await video.resume(pending, call);
+
+  const settled = await pollUntilSettled(ports, handle, options.prompt, p, options);
+  if (settled.kind === 'gone') {
+    await video.clearPending(target.outputKey, call);
+    throw new VideoJobGoneError(handle.model, handle.queueId, settled.status);
+  }
+
+  const download = await video.download(handle, { bytes: settled.bytes }, call);
+  await video.complete(handle, call);
+
+  return {
+    handle,
+    download,
+    resumed: true,
+    requeued: false,
+    polls: settled.polls,
+    waitedMs: settled.waitedMs,
+  };
+}
+
 async function pollUntilSettled(
   ports: VideoJobPorts,
   handle: VideoJobHandle,
-  request: VideoQueueRequest,
+  prompt: string | undefined,
   p: VideoJobPolicy,
-  options: RunVideoJobOptions,
+  options: Pick<RunVideoJobOptions, 'signal' | 'onProgress'>,
 ): Promise<Settled> {
   const { video, clock, logger } = ports;
   const { signal } = options;
@@ -412,7 +469,7 @@ async function pollUntilSettled(
           try {
             assertNotSilentRejectVideo(result.bytes, {
               model: handle.model,
-              prompt: request.prompt,
+              prompt,
               threshold: p.silentReject.thresholdBytes,
             });
           } catch (err) {
