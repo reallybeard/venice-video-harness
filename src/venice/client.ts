@@ -80,6 +80,131 @@ export function describeApiError(errorBody: unknown, status: number): string {
 
 export { extractJsonBlock };
 
+// ---- chatJson reply policy -------------------------------------------------
+
+/** A chat completion that must come back as JSON (`VeniceClient.chatJson`). */
+export interface ChatJsonRequest {
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  /** Data URIs. Supplying any makes this a vision request. */
+  images?: string[];
+  maxTokens?: number;
+  temperature?: number;
+  /** What is being generated, for error messages, e.g. 'workshop'. */
+  label?: string;
+  /**
+   * Ask the model to answer directly, with no chain of thought
+   * (`venice_parameters.disable_thinking`). For short, latency-bound
+   * generations (the stream writer) this is the difference between ~4s and
+   * ~35s on the same model. Thinking-only models (GLM 5.3) reject the flag
+   * with a 400; callers that pass it should pick a model that honors it.
+   */
+  disableThinking?: boolean;
+}
+
+/** One `/chat/completions` message. */
+export type ChatJsonMessage = Record<string, unknown>;
+
+export const CHAT_JSON_DEFAULT_MAX_TOKENS = 8000;
+export const CHAT_JSON_DEFAULT_TEMPERATURE = 0.65;
+/** The first call plus one retry. */
+export const CHAT_JSON_MAX_ATTEMPTS = 2;
+
+/** The first attempt's messages: the system prompt, then the images (if any) ahead of the user prompt. */
+export function chatJsonMessages(request: ChatJsonRequest): ChatJsonMessage[] {
+  const images = request.images ?? [];
+  const userContent = images.length > 0
+    ? [
+      ...images.map(url => ({ type: 'image_url', image_url: { url } })),
+      { type: 'text', text: request.userPrompt },
+    ]
+    : request.userPrompt;
+
+  return [
+    { role: 'system', content: request.systemPrompt },
+    { role: 'user', content: userContent },
+  ];
+}
+
+/** The `/chat/completions` body for one attempt over `messages`. */
+export function chatJsonBody(request: ChatJsonRequest, messages: ChatJsonMessage[]): Record<string, unknown> {
+  const veniceParameters = request.disableThinking
+    ? { disable_thinking: true, strip_thinking_response: true }
+    : undefined;
+  return {
+    model: request.model,
+    messages,
+    max_tokens: request.maxTokens ?? CHAT_JSON_DEFAULT_MAX_TOKENS,
+    temperature: request.temperature ?? CHAT_JSON_DEFAULT_TEMPERATURE,
+    ...(veniceParameters ? { venice_parameters: veniceParameters } : {}),
+  };
+}
+
+/** What one reply means. */
+export type ChatJsonStep<T> =
+  | { kind: 'ok'; value: T }
+  /** Ask again with `messages`, the whole conversation for the next attempt. `error` is what went wrong with this one. */
+  | { kind: 'retry'; messages: ChatJsonMessage[]; error: Error }
+  | { kind: 'error'; error: Error };
+
+/**
+ * Decide what attempt `attempt` (0-based) over `messages` does with the
+ * reply's text content (`''` when there was none).
+ *
+ * An empty reply is retried with the same messages, since vision models drop
+ * replies intermittently; a second empty reply is an error naming the
+ * no-vision cause. A reply that does not parse after fence stripping is
+ * retried once with the model's own output and the parser's complaint
+ * appended; a second parse failure is an error quoting the last complaint.
+ */
+export function chatJsonStep<T>(
+  request: ChatJsonRequest,
+  attempt: number,
+  messages: ChatJsonMessage[],
+  raw: string,
+): ChatJsonStep<T> {
+  const { model, images = [], label = 'response' } = request;
+  const maxTokens = request.maxTokens ?? CHAT_JSON_DEFAULT_MAX_TOKENS;
+  const canRetry = attempt + 1 < CHAT_JSON_MAX_ATTEMPTS;
+
+  if (!raw.trim()) {
+    const error = new Error(
+      images.length > 0
+        ? `${model} returned no content for the ${label}. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.`
+        : `${model} returned no content for the ${label}. It may have spent the whole ${maxTokens}-token budget reasoning.`,
+    );
+    // Intermittent empties happen even on vision models.
+    return canRetry ? { kind: 'retry', messages, error } : { kind: 'error', error };
+  }
+
+  const cleaned = extractJsonBlock(raw);
+  try {
+    return { kind: 'ok', value: JSON.parse(cleaned) as T };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    if (!canRetry) {
+      return {
+        kind: 'error',
+        error: new Error(`${model} did not return valid JSON for the ${label} after a retry: ${error.message}`),
+      };
+    }
+    // Hand the model its own broken output plus the parser's complaint.
+    return {
+      kind: 'retry',
+      error,
+      messages: [
+        ...messages,
+        { role: 'assistant', content: raw },
+        {
+          role: 'user',
+          content: `That did not parse as JSON: ${error.message}. Return the same content again as one valid JSON document. No prose, no markdown fences.`,
+        },
+      ],
+    };
+  }
+}
+
 // ---- Deprecation header surfacing -----------------------------------------
 //
 // Venice returns these headers on every call that uses a deprecated model:
@@ -531,81 +656,19 @@ export class VeniceClient {
    * Reasoning text arrives in a separate `reasoning_content` field on every
    * model checked, so it never pollutes what gets parsed.
    */
-  async chatJson<T>(options: {
-    model: string;
-    systemPrompt: string;
-    userPrompt: string;
-    /** Data URIs. Supplying any makes this a vision request. */
-    images?: string[];
-    maxTokens?: number;
-    temperature?: number;
-    /** What is being generated, for error messages, e.g. 'workshop'. */
-    label?: string;
-    /**
-     * Ask the model to answer directly, with no chain of thought
-     * (`venice_parameters.disable_thinking`). For short, latency-bound
-     * generations (the stream writer) this is the difference between ~4s and
-     * ~35s on the same model. Thinking-only models (GLM 5.3) reject the flag
-     * with a 400; callers that pass it should pick a model that honors it.
-     */
-    disableThinking?: boolean;
-  }): Promise<T> {
-    const { model, systemPrompt, userPrompt, images = [], label = 'response' } = options;
-    const maxTokens = options.maxTokens ?? 8000;
-    const temperature = options.temperature ?? 0.65;
-    const veniceParameters = options.disableThinking
-      ? { disable_thinking: true, strip_thinking_response: true }
-      : undefined;
-
-    const userContent = images.length > 0
-      ? [
-        ...images.map(url => ({ type: 'image_url', image_url: { url } })),
-        { type: 'text', text: userPrompt },
-      ]
-      : userPrompt;
-
-    const messages: Array<Record<string, unknown>> = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userContent },
-    ];
-
-    let lastError: Error | undefined;
-    for (let attempt = 0; attempt < 2; attempt++) {
+  async chatJson<T>(options: ChatJsonRequest): Promise<T> {
+    let messages = chatJsonMessages(options);
+    for (let attempt = 0; ; attempt++) {
       const response = await this.post<{
         choices: Array<{ message: { content: string | null } }>;
-      }>('/api/v1/chat/completions', {
-        model, messages, max_tokens: maxTokens, temperature,
-        ...(veniceParameters ? { venice_parameters: veniceParameters } : {}),
-      });
+      }>('/api/v1/chat/completions', chatJsonBody(options, messages));
 
       const raw = response.choices?.[0]?.message?.content ?? '';
-      if (!raw.trim()) {
-        lastError = new Error(
-          images.length > 0
-            ? `${model} returned no content for the ${label}. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.`
-            : `${model} returned no content for the ${label}. It may have spent the whole ${maxTokens}-token budget reasoning.`,
-        );
-        if (attempt === 0) continue; // intermittent empties happen even on vision models
-        throw lastError;
-      }
-
-      const cleaned = extractJsonBlock(raw);
-      try {
-        return JSON.parse(cleaned) as T;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        if (attempt === 0) {
-          // Hand the model its own broken output plus the parser's complaint.
-          messages.push({ role: 'assistant', content: raw });
-          messages.push({
-            role: 'user',
-            content: `That did not parse as JSON: ${lastError.message}. Return the same content again as one valid JSON document. No prose, no markdown fences.`,
-          });
-        }
-      }
+      const step = chatJsonStep<T>(options, attempt, messages, raw);
+      if (step.kind === 'ok') return step.value;
+      if (step.kind === 'error') throw step.error;
+      messages = step.messages;
     }
-
-    throw new Error(`${model} did not return valid JSON for the ${label} after a retry: ${lastError?.message}`);
   }
 
   // ---- Internals ----------------------------------------------------------
