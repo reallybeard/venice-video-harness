@@ -6,8 +6,10 @@
 //   clipDuration   ffprobeDurationSec   (mini-drama/video-qa.ts)
 //   extractFrame   extractFrame         (video-qa.ts) for { atSec },
 //                  extractLastFrame     (video-generator.ts) for { fromEndSec }
-//   frameLumas     headFrameLumas / frameLuma (video-qa.ts); a window that
-//                  starts mid-clip uses the same signalstats filter after a seek
+//   frameLumas     one frame: frameLuma (video-qa.ts), at any start, as the
+//                  boundary check has always measured; a head window:
+//                  headFrameLumas; a multi-frame window mid-clip: the same
+//                  signalstats filter after a seek
 //
 // ffmpeg runs synchronously, so a signal is checked before each call but
 // cannot interrupt one in progress.
@@ -89,11 +91,11 @@ export function createCliImageProbe(options: CliImageProbeOptions = {}): ImagePr
       return withSignal(opts.signal, async () => {
         const start = window.startSec ?? 0;
         if (window.frames <= 0) return [];
-        if (start <= 0) return headFrameLumas(clip, window.frames);
         if (window.frames === 1) {
           const v = frameLuma(clip, start);
           return v === undefined ? [] : [v];
         }
+        if (start <= 0) return headFrameLumas(clip, window.frames);
         return seekedFrameLumas(clip, start, window.frames);
       });
     },

@@ -30,36 +30,25 @@
 // ---------------------------------------------------------------------------
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { VeniceClient } from '../venice/client.js';
 import type { SeriesState, EpisodeScript } from 'venice-video-harness/core/series/types.js';
 import { getCharacterDir } from '../series/manager.js';
+import { createCliVisionJudge } from '../ports/vision-judge.js';
 import {
-  CROSS_UNIT_SYSTEM_PROMPT,
   HEAD_GLITCH_WINDOW_FRAMES,
-  IDENTITY_MAX_FRAMES,
-  IDENTITY_MAX_REFERENCES,
-  IDENTITY_SYSTEM_PROMPT,
-  buildCrossUnitUserPrompt,
-  buildUnitIdentityUserPrompt,
-  crossUnitFailure,
-  crossUnitFromReply,
-  emptyCrossUnitResult,
   findHeadGlitch,
   midBeatSampleSec,
-  unitIdentityFailure,
-  unitIdentityFromReply,
-  type CrossUnitReply,
   type CrossUnitResult,
   type HeadGlitchFinding,
   type UnitFrameSample,
-  type UnitIdentityReply,
   type UnitIdentityResult,
   type VideoQaReport,
 } from 'venice-video-harness/core/mini-drama/video-qa.js';
+import { judgeCrossUnitIdentity, judgeUnitIdentity } from './qa-loops.js';
 
 export type {
   BoundaryFinding,
@@ -166,7 +155,11 @@ export function frameLuma(videoPath: string, atSec: number): number | undefined 
 // Vision layer
 // ---------------------------------------------------------------------------
 
-const toDataUri = (p: string) => `data:image/png;base64,${readFileSync(p).toString('base64')}`;
+/** A character's front reference sheet on disk, the image both QA layers compare against. */
+export function characterFrontSheet(series: SeriesState, name: string): string | undefined {
+  const front = join(getCharacterDir(series, name), 'front.png');
+  return existsSync(front) ? front : undefined;
+}
 
 interface PlanUnitLike {
   unitId: string;
@@ -177,7 +170,9 @@ interface PlanUnitLike {
 
 /**
  * Sample one mid-beat frame per character-bearing shot of each unit.
- * Frames land in a temp dir; callers get the manifest.
+ * Frames land in a temp dir; callers get the manifest. Synchronous ffmpeg;
+ * `qa-videos` samples through core's `probeUnitFrames` over the ImageProbe
+ * port instead, with the same rules.
  */
 export function sampleUnitFrames(
   units: PlanUnitLike[],
@@ -209,7 +204,8 @@ export function sampleUnitFrames(
 }
 
 /**
- * Per-unit identity check: hero frame(s) of a unit vs the character sheets.
+ * Per-unit identity check: hero frame(s) of a unit vs the character sheets
+ * (`judgeUnitIdentity` over the CLI vision judge).
  */
 export async function checkUnitIdentity(
   client: VeniceClient,
@@ -219,37 +215,16 @@ export async function checkUnitIdentity(
   frames: UnitFrameSample[],
   characterNames: string[],
 ): Promise<UnitIdentityResult> {
-  const images = frames.slice(0, IDENTITY_MAX_FRAMES).map(f => toDataUri(f.framePath));
-  const refNames: string[] = [];
-  for (const name of characterNames.slice(0, IDENTITY_MAX_REFERENCES)) {
-    const front = join(getCharacterDir(series, name), 'front.png');
-    if (existsSync(front)) {
-      images.push(toDataUri(front));
-      refNames.push(name);
-    }
-  }
-  if (images.length === 0 || refNames.length === 0) {
-    return { unitId, verdict: 'PASS', issues: [], errored: false };
-  }
-  try {
-    const parsed = await client.chatJson<UnitIdentityReply>({
-      model,
-      systemPrompt: IDENTITY_SYSTEM_PROMPT,
-      userPrompt: buildUnitIdentityUserPrompt(unitId, frames.length, refNames),
-      images,
-      maxTokens: 2000,
-      temperature: 0.2,
-      label: `unit ${unitId} identity QA`,
-    });
-    return unitIdentityFromReply(unitId, parsed);
-  } catch (err) {
-    return unitIdentityFailure(unitId, err instanceof Error ? err.message : String(err));
-  }
+  return judgeUnitIdentity(createCliVisionJudge(() => client), {
+    model, unitId, frames, characterNames,
+    characterSheet: async name => characterFrontSheet(series, name),
+  });
 }
 
 /**
  * The cross-unit check — the one that would have caught canopy-run's three
- * Wrens. One hero frame per unit, all in one vision call, in film order.
+ * Wrens. One hero frame per unit, all in one vision call, in film order
+ * (`judgeCrossUnitIdentity` over the CLI vision judge).
  */
 export async function checkCrossUnitIdentity(
   client: VeniceClient,
@@ -257,23 +232,9 @@ export async function checkCrossUnitIdentity(
   heroFrames: UnitFrameSample[],
   protagonistName: string,
 ): Promise<CrossUnitResult> {
-  if (heroFrames.length < 2) {
-    return emptyCrossUnitResult();
-  }
-  try {
-    const parsed = await client.chatJson<CrossUnitReply>({
-      model,
-      systemPrompt: CROSS_UNIT_SYSTEM_PROMPT,
-      userPrompt: buildCrossUnitUserPrompt(heroFrames.length, protagonistName),
-      images: heroFrames.map(f => toDataUri(f.framePath)),
-      maxTokens: 2000,
-      temperature: 0.2,
-      label: 'cross-unit identity QA',
-    });
-    return crossUnitFromReply(parsed, heroFrames.map(f => f.unitId));
-  } catch (err) {
-    return crossUnitFailure(err instanceof Error ? err.message : String(err));
-  }
+  return judgeCrossUnitIdentity(createCliVisionJudge(() => client), {
+    model, heroFrames, protagonist: protagonistName,
+  });
 }
 
 /** Persist the report next to qa-report.json. */
