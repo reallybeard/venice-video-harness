@@ -1154,7 +1154,8 @@ async function pollRenderedVideo(
 
   let elapsed = 0;
   let consecutiveErrors = 0;
-  while (true) {
+  let videoBuffer: Buffer | undefined;
+  while (!videoBuffer) {
     throwIfAborted();
     if (elapsed >= MAX_POLL_MS) {
       throw new Error(
@@ -1173,61 +1174,8 @@ async function pollRenderedVideo(
       consecutiveErrors = 0;
 
       if (Buffer.isBuffer(result.value)) {
-        const videoBuffer = result.value;
-
-        archiveExisting(outputPath);
-
-        await writeFile(outputPath, videoBuffer);
-        await clearPendingJob(jobKey);
-        console.log(`  Video saved: ${outputPath} (${(videoBuffer.length / 1024 / 1024).toFixed(1)} MB, ${(elapsed / 1000).toFixed(0)}s)`);
-
-        try {
-          await client.post(VIDEO_COMPLETE_PATH, { model, queue_id });
-        } catch { /* cleanup is optional */ }
-
-        // Recipe sidecar: log the resolved video call with stable on-disk
-        // paths (never data: URIs) so a finishing agent can replay or
-        // continue this shot. `elements` mapping goes in `extra` since it
-        // carries per-character frontal/reference structure.
-        const isPath = (p?: string): p is string => !!p && !p.startsWith('data:');
-        await appendRecipePass(outputPath, {
-          kind: 'video-generate',
-          role: (prompt.characterElements && prompt.characterElements.length > 0)
-            || (referenceImagePaths && referenceImagePaths.length > 0)
-            || (elements && elements.length > 0)
-            ? 'identity' : 'content',
-          model: effectiveModel,
-          label: effectiveModel !== prompt.model
-            ? `video render (fallback from ${prompt.model})`
-            : 'video render',
-          prompt: prompt.prompt,
-          negativePrompt,
-          duration: prompt.duration,
-          aspectRatio: (body.aspect_ratio as string | undefined) ?? options.aspectRatio,
-          resolution: body.resolution as string | undefined,
-          anchorImagePath: isPath(anchorImagePath) ? anchorImagePath : undefined,
-          endImagePath: isPath(endFrameImagePath) ? endFrameImagePath : undefined,
-          audioPath: isPath(audioPath) ? audioPath : undefined,
-          referenceImagePaths: referenceImagePaths?.filter(isPath),
-          extra: {
-            audio: prompt.audio,
-            ...(body.bitrate_mode ? { bitrateMode: body.bitrate_mode } : {}),
-            ...(voiceReferencePaths && voiceReferencePaths.length > 0
-              ? { voiceReferencePaths: voiceReferencePaths.filter(isPath) } : {}),
-            ...(sceneImagePaths && sceneImagePaths.length > 0
-              ? { sceneImagePaths: sceneImagePaths.filter(isPath) } : {}),
-            ...(elements && elements.length > 0
-              ? {
-                elements: elements.map(el => ({
-                  frontalImageUrl: isPath(el.frontalImageUrl) ? el.frontalImageUrl : undefined,
-                  referenceImageUrls: el.referenceImageUrls?.filter(isPath),
-                  audioPath: isPath(el.audioPath) ? el.audioPath : undefined,
-                })),
-              } : {}),
-          },
-        });
-
-        return outputPath;
+        videoBuffer = result.value;
+        continue;
       }
 
       const status = result.value as { status: string; execution_duration?: number };
@@ -1269,6 +1217,65 @@ async function pollRenderedVideo(
       console.warn(`  Poll error ${consecutiveErrors}/${MAX_CONSECUTIVE_POLL_ERRORS} (will retry): ${err}`);
     }
   }
+
+  // Storing the clip is outside the poll's error budget. A failed write
+  // (EACCES, ENOSPC, a bad output dir) is not a transient retrieve error:
+  // counted as one, the next retrieve succeeded and reset the count, so the
+  // paid clip was re-downloaded every 10s until the deadline. It propagates
+  // now, with the pending record kept, so the next run re-attaches.
+  archiveExisting(outputPath);
+
+  await writeFile(outputPath, videoBuffer);
+  await clearPendingJob(jobKey);
+  console.log(`  Video saved: ${outputPath} (${(videoBuffer.length / 1024 / 1024).toFixed(1)} MB, ${(elapsed / 1000).toFixed(0)}s)`);
+
+  try {
+    await client.post(VIDEO_COMPLETE_PATH, { model, queue_id });
+  } catch { /* cleanup is optional */ }
+
+  // Recipe sidecar: log the resolved video call with stable on-disk
+  // paths (never data: URIs) so a finishing agent can replay or
+  // continue this shot. `elements` mapping goes in `extra` since it
+  // carries per-character frontal/reference structure.
+  const isPath = (p?: string): p is string => !!p && !p.startsWith('data:');
+  await appendRecipePass(outputPath, {
+    kind: 'video-generate',
+    role: (prompt.characterElements && prompt.characterElements.length > 0)
+      || (referenceImagePaths && referenceImagePaths.length > 0)
+      || (elements && elements.length > 0)
+      ? 'identity' : 'content',
+    model: effectiveModel,
+    label: effectiveModel !== prompt.model
+      ? `video render (fallback from ${prompt.model})`
+      : 'video render',
+    prompt: prompt.prompt,
+    negativePrompt,
+    duration: prompt.duration,
+    aspectRatio: (body.aspect_ratio as string | undefined) ?? options.aspectRatio,
+    resolution: body.resolution as string | undefined,
+    anchorImagePath: isPath(anchorImagePath) ? anchorImagePath : undefined,
+    endImagePath: isPath(endFrameImagePath) ? endFrameImagePath : undefined,
+    audioPath: isPath(audioPath) ? audioPath : undefined,
+    referenceImagePaths: referenceImagePaths?.filter(isPath),
+    extra: {
+      audio: prompt.audio,
+      ...(body.bitrate_mode ? { bitrateMode: body.bitrate_mode } : {}),
+      ...(voiceReferencePaths && voiceReferencePaths.length > 0
+        ? { voiceReferencePaths: voiceReferencePaths.filter(isPath) } : {}),
+      ...(sceneImagePaths && sceneImagePaths.length > 0
+        ? { sceneImagePaths: sceneImagePaths.filter(isPath) } : {}),
+      ...(elements && elements.length > 0
+        ? {
+          elements: elements.map(el => ({
+            frontalImageUrl: isPath(el.frontalImageUrl) ? el.frontalImageUrl : undefined,
+            referenceImageUrls: el.referenceImageUrls?.filter(isPath),
+            audioPath: isPath(el.audioPath) ? el.audioPath : undefined,
+          })),
+        } : {}),
+    },
+  });
+
+  return outputPath;
 }
 
 function resolveCharacterElements(

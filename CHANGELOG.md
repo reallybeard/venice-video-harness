@@ -144,6 +144,17 @@
   bindings are refused as `not-recorded`. `--skip-qa` still bypasses it.
   New `src/mini-drama/panel-approval.ts` (pure `settingsDigest` /
   `compareApproval`). Test: `tests/panel-approval.test.mjs`.
+- **A clip that can't be written no longer re-downloads for an hour.**
+  `renderVideoFile` stored the downloaded clip (archive, write, clear the
+  pending-job record) inside the poll loop's error handler, so a failed write
+  (EACCES, ENOSPC, a bad output dir) counted as a transient poll error. The
+  next retrieve succeeded and reset the count, so the 6-error budget never
+  ran out: the paid clip was fetched again every 10 s until the 60-minute
+  deadline (about 360 downloads), which then reported a timeout. The write
+  now happens after the loop and its error surfaces at once; the pending
+  record is kept, so the next run re-attaches and fetches the clip again.
+  Test: `tests/render-clip-write-failure.test.mjs` renders into a read-only
+  directory and expects one download and an `EACCES`.
 
 ### Changed
 
