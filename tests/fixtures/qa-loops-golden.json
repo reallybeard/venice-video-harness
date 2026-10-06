@@ -1,0 +1,1632 @@
+{
+  "storyboard-all-pass": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (6 shots, model: vision-b)\n\n  [1/6] Shot 001: ✓ PASS\n  [2/6] Shot 002: ✓ PASS\n  [3/6] Shot 003: ✓ PASS\n  [4/6] Shot 004: ✓ PASS\n  [5/6] Shot 005: ✓ PASS\n  [6/6] Shot 006: ✓ PASS\n\n──────────────────────────────────────────────────\nQA Report: 6 PASS, 0 CRITICAL, 0 MODERATE, 0 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\nNo critical issues. Run: qa-approve -p <PROJECT> -e 1\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vision-b\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 6,\n    \"pass\": 6,\n    \"flagCritical\": 0,\n    \"flagModerate\": 0,\n    \"flagLow\": 0,\n    \"errored\": 0\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 3,\n      \"type\": \"two-shot\",\n      \"characters\": [\n        \"MARA\",\n        \"JUNO\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 4,\n      \"type\": \"close-up\",\n      \"characters\": [\n        \"KAI\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 5,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 6,\n      \"type\": \"insert\",\n      \"characters\": [\n        \"JUNO\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:3"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 3.\nShot type: two-shot. Camera: static.\nDescription: JUNO climbs through the hatch.\nStated blocking: MARA screen left at the console; JUNO screen right at the hatch.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket; JUNO: a young engineer, wearing sealed flight suit. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 2). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 4.\nShot type: close-up. Camera: handheld.\nDescription: KAI waits under a neon sign.\nCharacters in shot: KAI: a courier, wearing black coat. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:5"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 5.\nShot type: medium. Camera: tracking.\nDescription: MARA walks past.\nStated blocking: MARA enters screen right, crossing left.\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 4). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:6"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 6.\nShot type: insert. Camera: static.\nDescription: Close on JUNO's gloved hands on a wrench.\nCharacters in shot: JUNO: a young engineer, wearing orange overalls. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "storyboard-criticals-and-selection": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--model",
+      "qa-x",
+      "--shots",
+      "1,3-5"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (4 shots, model: qa-x)\n\n  [1/4] Shot 001: ✗ FLAG-CRITICAL -- MARA has blonde hair; reference is black\n  [2/4] Shot 003: ⚠ FLAG-MODERATE -- JUNO wardrobe is overalls, not the flight suit\n  [3/4] Shot 004: ⚠ FLAG-LOW -- slight colour drift\n  [4/4] Shot 005: ✗ FLAG-CRITICAL -- MARA crosses right, blocking says left\n\n──────────────────────────────────────────────────\nQA Report: 0 PASS, 2 CRITICAL, 1 MODERATE, 1 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\n2 critical issue(s) found. Fix panels before proceeding.\n  Shot 001: MARA has blonde hair; reference is black, console on the wrong wall\n  Shot 005: MARA crosses right, blocking says left\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"qa-x\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 4,\n    \"pass\": 0,\n    \"flagCritical\": 2,\n    \"flagModerate\": 1,\n    \"flagLow\": 1,\n    \"errored\": 0\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"FLAG-CRITICAL\",\n      \"issues\": [\n        \"MARA has blonde hair; reference is black\",\n        \"console on the wrong wall\"\n      ],\n      \"notes\": \"identity break\"\n    },\n    {\n      \"shotNumber\": 3,\n      \"type\": \"two-shot\",\n      \"characters\": [\n        \"MARA\",\n        \"JUNO\"\n      ],\n      \"verdict\": \"FLAG-MODERATE\",\n      \"issues\": [\n        \"JUNO wardrobe is overalls, not the flight suit\"\n      ],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 4,\n      \"type\": \"close-up\",\n      \"characters\": [\n        \"KAI\"\n      ],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"slight colour drift\"\n      ],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 5,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"FLAG-CRITICAL\",\n      \"issues\": [\n        \"MARA crosses right, blocking says left\"\n      ],\n      \"notes\": \"ok\"\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:3"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 3.\nShot type: two-shot. Camera: static.\nDescription: JUNO climbs through the hatch.\nStated blocking: MARA screen left at the console; JUNO screen right at the hatch.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket; JUNO: a young engineer, wearing sealed flight suit. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 2). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 4.\nShot type: close-up. Camera: handheld.\nDescription: KAI waits under a neon sign.\nCharacters in shot: KAI: a courier, wearing black coat. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:5"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 5.\nShot type: medium. Camera: tracking.\nDescription: MARA walks past.\nStated blocking: MARA enters screen right, crossing left.\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 4). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "storyboard-companion-rescue": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--model",
+      "qa-x",
+      "--shots",
+      "1-3"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (3 shots, model: qa-x)\n\n  [1/3] Shot 001: ✓ PASS\n  [2/3] Shot 002: ✓ PASS (via fallback vision-b)\n  [3/3] Shot 003: ⚠ FLAG-LOW (via fallback vision-b) -- hatch slightly too far right\n\n──────────────────────────────────────────────────\nQA Report: 2 PASS, 0 CRITICAL, 0 MODERATE, 1 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\nNo critical issues. Run: qa-approve -p <PROJECT> -e 1\n",
+    "stderr": "  [2/3] Shot 002: qa-x failed — retrying on vision companion vision-b...\n  [3/3] Shot 003: qa-x failed — retrying on vision companion vision-b...\n",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"qa-x\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 3,\n    \"pass\": 2,\n    \"flagCritical\": 0,\n    \"flagModerate\": 0,\n    \"flagLow\": 1,\n    \"errored\": 0\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"rescued\"\n    },\n    {\n      \"shotNumber\": 3,\n      \"type\": \"two-shot\",\n      \"characters\": [\n        \"MARA\",\n        \"JUNO\"\n      ],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"hatch slightly too far right\"\n      ],\n      \"notes\": \"ok\"\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:3"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 3.\nShot type: two-shot. Camera: static.\nDescription: JUNO climbs through the hatch.\nStated blocking: MARA screen left at the console; JUNO screen right at the hatch.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket; JUNO: a young engineer, wearing sealed flight suit. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 2). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:3"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 3.\nShot type: two-shot. Camera: static.\nDescription: JUNO climbs through the hatch.\nStated blocking: MARA screen left at the console; JUNO screen right at the hatch.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket; JUNO: a young engineer, wearing sealed flight suit. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 2). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "storyboard-unchecked-and-missing": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--model",
+      "qa-x"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (6 shots, model: qa-x)\n\n  [2/6] Shot 002: ✓ PASS\n  [3/6] Shot 003: MISSING\n  [4/6] Shot 004: ✓ PASS\n  [5/6] Shot 005: ✓ PASS\n\n──────────────────────────────────────────────────\nQA Report: 3 PASS, 1 CRITICAL, 0 MODERATE, 2 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\n2 of 6 shot(s) were never checked — qa-x could not read them:\n  Shot 001: QA analysis failed: vision-b did not return valid JSON for the shot 001 QA after a retry: Unexpected token 's', \"still not json\" is not valid JSON\n  Shot 006: QA analysis failed: Venice API error 503: overloaded\n\nThose shots are unverified, not approved. Fix the model and re-run:\n  qa-storyboard -p <PROJECT> -e 1\n\n1 critical issue(s) found. Fix panels before proceeding.\n  Shot 003: Panel file missing\n",
+    "stderr": "  [1/6] Shot 001: qa-x failed — retrying on vision companion vision-b...\n  [1/6] Shot 001: QA failed - vision-b did not return valid JSON for the shot 001 QA after a retry: Unexpected token 's', \"still not json\" is not valid JSON\n  [6/6] Shot 006: qa-x failed — retrying on vision companion vision-b...\n  [6/6] Shot 006: QA failed - Venice API error 503: overloaded\n",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"qa-x\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 6,\n    \"pass\": 3,\n    \"flagCritical\": 1,\n    \"flagModerate\": 0,\n    \"flagLow\": 2,\n    \"errored\": 2\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"QA analysis failed: vision-b did not return valid JSON for the shot 001 QA after a retry: Unexpected token 's', \\\"still not json\\\" is not valid JSON\"\n      ],\n      \"notes\": \"Vision API error\",\n      \"errored\": true\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 3,\n      \"type\": \"two-shot\",\n      \"characters\": [\n        \"MARA\",\n        \"JUNO\"\n      ],\n      \"verdict\": \"FLAG-CRITICAL\",\n      \"issues\": [\n        \"Panel file missing\"\n      ],\n      \"notes\": \"No panel generated\"\n    },\n    {\n      \"shotNumber\": 4,\n      \"type\": \"close-up\",\n      \"characters\": [\n        \"KAI\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 5,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 6,\n      \"type\": \"insert\",\n      \"characters\": [\n        \"JUNO\"\n      ],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"QA analysis failed: Venice API error 503: overloaded\"\n      ],\n      \"notes\": \"Vision API error\",\n      \"errored\": true\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": "not json at all"
+          },
+          {
+            "role": "user",
+            "content": "That did not parse as JSON: Unexpected token 'o', \"not json at all\" is not valid JSON. Return the same content again as one valid JSON document. No prose, no markdown fences."
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 4.\nShot type: close-up. Camera: handheld.\nDescription: KAI waits under a neon sign.\nCharacters in shot: KAI: a courier, wearing black coat. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:5"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:4"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 5.\nShot type: medium. Camera: tracking.\nDescription: MARA walks past.\nStated blocking: MARA enters screen right, crossing left.\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 4). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:6"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 6.\nShot type: insert. Camera: static.\nDescription: Close on JUNO's gloved hands on a wrench.\nCharacters in shot: JUNO: a young engineer, wearing orange overalls. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:6"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 6.\nShot type: insert. Camera: static.\nDescription: Close on JUNO's gloved hands on a wrench.\nCharacters in shot: JUNO: a young engineer, wearing orange overalls. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "storyboard-prior-panel-missing-and-single-model-failure": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--shots",
+      "2,3"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (2 shots, model: vision-b)\n\n  [2/2] Shot 003: ✓ PASS\n\n──────────────────────────────────────────────────\nQA Report: 1 PASS, 0 CRITICAL, 0 MODERATE, 1 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\n1 of 2 shot(s) were never checked — vision-b could not read them:\n  Shot 002: QA analysis failed: Venice API error 500: boom\n\nThose shots are unverified, not approved. Fix the model and re-run:\n  qa-storyboard -p <PROJECT> -e 1\n",
+    "stderr": "  [1/2] Shot 002: QA failed - Venice API error 500: boom\n",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vision-b\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 2,\n    \"pass\": 1,\n    \"flagCritical\": 0,\n    \"flagModerate\": 0,\n    \"flagLow\": 1,\n    \"errored\": 1\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"QA analysis failed: Venice API error 500: boom\"\n      ],\n      \"notes\": \"Vision API error\",\n      \"errored\": true\n    },\n    {\n      \"shotNumber\": 3,\n      \"type\": \"two-shot\",\n      \"characters\": [\n        \"MARA\",\n        \"JUNO\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:3"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 3.\nShot type: two-shot. Camera: static.\nDescription: JUNO climbs through the hatch.\nStated blocking: MARA screen left at the console; JUNO screen right at the hatch.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket; JUNO: a young engineer, wearing sealed flight suit. Reference images follow the panel.\nThe FINAL image is the previous panel in the same location (shot 2). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "storyboard-reply-without-issues": {
+    "args": [
+      "qa-storyboard",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--model",
+      "qa-x",
+      "--shots",
+      "1-2"
+    ],
+    "status": 0,
+    "stdout": "QA Storyboard: Episode 1 (2 shots, model: qa-x)\n\n  [1/2] Shot 001: ✓ PASS (via fallback vision-b)\n\n──────────────────────────────────────────────────\nQA Report: 2 PASS, 0 CRITICAL, 0 MODERATE, 3 LOW\nReport saved: <PROJECT>/episodes/episode-001/qa-report.json\n\n1 of 5 shot(s) were never checked — qa-x could not read them:\n  Shot 002: QA analysis failed: Cannot read properties of undefined (reading 'length')\n\nThose shots are unverified, not approved. Fix the model and re-run:\n  qa-storyboard -p <PROJECT> -e 1\n",
+    "stderr": "  [1/2] Shot 001: qa-x failed — retrying on vision companion vision-b...\n  [2/2] Shot 002: qa-x failed — retrying on vision companion vision-b...\n  [2/2] Shot 002: QA failed - Cannot read properties of undefined (reading 'length')\n",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"qa-x\",\n  \"analyzedAt\": \"<TIME>\",\n  \"summary\": {\n    \"total\": 5,\n    \"pass\": 2,\n    \"flagCritical\": 0,\n    \"flagModerate\": 0,\n    \"flagLow\": 3,\n    \"errored\": 1\n  },\n  \"results\": [\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"notes\": \"no issues key\"\n    },\n    {\n      \"shotNumber\": 1,\n      \"type\": \"medium\",\n      \"characters\": [\n        \"MARA\"\n      ],\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"notes\": \"ok\"\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"FLAG-LOW\"\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"FLAG-LOW\"\n    },\n    {\n      \"shotNumber\": 2,\n      \"type\": \"wide\",\n      \"characters\": [],\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"QA analysis failed: Cannot read properties of undefined (reading 'length')\"\n      ],\n      \"notes\": \"Vision API error\",\n      \"errored\": true\n    }\n  ]\n}"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 1.\nShot type: medium. Camera: static.\nDescription: MARA checks the console.\nStated blocking: MARA seated at the console, screen left, facing right.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nCharacters in shot: MARA: a weathered pilot, wearing grey flight jacket. Reference images follow the panel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "qa-x",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a visual QA analyst for an animated mini-drama series. Your job is to compare storyboard panels against character reference images, the series aesthetic, and adjacent panels to check for consistency issues.\n\nFor each panel, evaluate:\n1. CHARACTER CONSISTENCY: Do characters match their reference images? Check hair color/style, facial features, body type, wardrobe, skin tone.\n2. SETTING CONTINUITY: Does the environment match the shot description? Time of day, weather, location details.\n3. COMPOSITION: Does the framing match the intended shot type and camera description?\n4. SPATIAL CONTINUITY: Does the panel match the shot's stated blocking — is each character/object on the stated frame side, at the stated depth, facing the stated direction, positioned correctly relative to the named location landmarks? When a previous panel from the same location is provided, verify characters keep their screen sides and relative positions, eyelines/screen direction are preserved (180-degree rule), and landmarks have not moved, mirrored, or rearranged.\n\nRespond ONLY in this exact JSON format (no markdown, no code fences):\n{\"verdict\":\"PASS|FLAG-CRITICAL|FLAG-MODERATE|FLAG-LOW\",\"issues\":[\"issue 1\",\"issue 2\"],\"notes\":\"brief overall assessment\"}\n\nVerdict rules:\n- PASS: Panel matches references, description, blocking, and spatial continuity well\n- FLAG-CRITICAL: Major character identity mismatch (wrong hair color, wrong gender presentation, missing character) OR a spatial flip that breaks the scene (characters swapped sides, geography mirrored/rearranged vs the previous panel)\n- FLAG-MODERATE: Noticeable wardrobe or feature deviation, wrong composition, character on the wrong side of frame vs the stated blocking, moved/relocated landmark\n- FLAG-LOW: Minor stylistic drift or small placement deviation, acceptable for production"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:2"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:panel:1"
+              },
+              {
+                "type": "text",
+                "text": "Analyze this storyboard panel (image 1) for shot 2.\nShot type: wide. Camera: slow push.\nDescription: The empty cockpit hums.\nLocation landmarks (fixed layout): console along the front wall; hatch behind the seats; porthole left of the console\nNo characters expected in this shot. Verify the scene is empty of people.\nThe FINAL image is the previous panel in the same location (shot 1, blocking: MARA seated at the console, screen left, facing right.). Check spatial continuity against it: same screen sides, preserved eyelines, unmoved landmarks."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "video-all-pass": {
+    "args": [
+      "qa-videos",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1"
+    ],
+    "status": 0,
+    "stdout": "QA Videos: Episode 1 — 3 rendered unit(s)\n\nProgrammatic checks:\n  ✓ no head-glitch flashes detected\n  ✓ no boundary lighting jumps\n\nVision checks (model: vision-b):\n  ✓ u1: PASS\n  ✓ u2: PASS\n  ✓ u3: PASS\n  ✓ cross-unit (MARA, 3 units): PASS\n\n──────────────────────────────────────────────────\nVideo QA: 0 critical, 0 unchecked — PASS\nReport saved: <PROJECT>/episodes/episode-001/video-qa-report.json\n\nAll rendered units verified. Run: assemble-episode -p <PROJECT> -e 1\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vision-b\",\n  \"analyzedAt\": \"<TIME>\",\n  \"headGlitches\": [],\n  \"boundaries\": [],\n  \"unitIdentity\": [\n    {\n      \"unitId\": \"u1\",\n      \"verdict\": \"PASS\",\n      \"issues\": []\n    },\n    {\n      \"unitId\": \"u2\",\n      \"verdict\": \"PASS\",\n      \"issues\": []\n    },\n    {\n      \"unitId\": \"u3\",\n      \"verdict\": \"PASS\",\n      \"issues\": []\n    }\n  ],\n  \"crossUnit\": {\n    \"verdict\": \"PASS\",\n    \"issues\": [],\n    \"driftingUnits\": []\n  },\n  \"summary\": {\n    \"units\": 3,\n    \"criticals\": 0,\n    \"errored\": 0,\n    \"passed\": true\n  }\n}\n"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u1. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u2. The remaining image(s) are the official reference sheet(s) for: MARA, JUNO. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 2 image(s) are rendered frames from unit u3. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. Every image you receive is a rendered frame from a DIFFERENT generation unit of one film, in film order, and each SHOULD show the same protagonist. Your single question: across the frames where the protagonist is clearly visible, does the protagonist read as the same person — same face, same hair color and style, same wardrobe and signature accessories?\nFrames where the protagonist is absent, heavily occluded, facing away, or too small to judge go in unclearFrames and MUST NOT be counted as drift. Only put a frame in driftingFrames when the protagonist is clearly visible and reads as a different person.\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"driftingFrames\": number[], \"unclearFrames\": number[], \"notes\": string}\ndriftingFrames and unclearFrames list 1-based frame indexes. FLAG-CRITICAL means at least one clearly-visible frame reads as a different person."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "text",
+                "text": "3 frames, one per generation unit, in film order. The protagonist is MARA. Across the frames where MARA is clearly visible, is this the same person?"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "video-head-glitch-and-boundaries": {
+    "args": [
+      "qa-videos",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--skip-vision"
+    ],
+    "status": 1,
+    "stdout": "QA Videos: Episode 1 — 3 rendered unit(s)\n\nProgrammatic checks:\n  ✗ u1: head-glitch flash at frame 4 (luma Δ192)\n  ⚠ boundary u1 → u2: luma jump Δ49.0\n  ✗ boundary u2 → u3: luma jump Δ116.0\n\n──────────────────────────────────────────────────\nVideo QA: 2 critical, 0 unchecked — NOT PASSED\nReport saved: <PROJECT>/episodes/episode-001/video-qa-report.json\n\nFix the flagged units before assembling:\n  Head glitches: u1 — re-render, or trim the flash frames.\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"programmatic-only\",\n  \"analyzedAt\": \"<TIME>\",\n  \"headGlitches\": [\n    {\n      \"unitId\": \"u1\",\n      \"frameIndex\": 4,\n      \"lumaDelta\": 192\n    }\n  ],\n  \"boundaries\": [\n    {\n      \"fromUnit\": \"u1\",\n      \"toUnit\": \"u2\",\n      \"lumaDelta\": 49,\n      \"severity\": \"warn\"\n    },\n    {\n      \"fromUnit\": \"u2\",\n      \"toUnit\": \"u3\",\n      \"lumaDelta\": 116,\n      \"severity\": \"fail\"\n    }\n  ],\n  \"unitIdentity\": [],\n  \"crossUnit\": {\n    \"verdict\": \"PASS\",\n    \"issues\": [],\n    \"driftingUnits\": []\n  },\n  \"summary\": {\n    \"units\": 3,\n    \"criticals\": 2,\n    \"errored\": 0,\n    \"passed\": false\n  }\n}\n"
+    },
+    "requests": []
+  },
+  "video-identity-drift": {
+    "args": [
+      "qa-videos",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1"
+    ],
+    "status": 1,
+    "stdout": "QA Videos: Episode 1 — 3 rendered unit(s)\n\nProgrammatic checks:\n  ✓ no head-glitch flashes detected\n  ✓ no boundary lighting jumps\n\nVision checks (model: vision-b):\n  ✓ u1: PASS\n  ✗ u2: FLAG-CRITICAL — MARA reads as a different woman\n  ⚠ u3: FLAG-LOW\n  ✗ cross-unit (MARA, 3 units): FLAG-CRITICAL\n      frame 2 protagonist has a different face\n      protagonist not clearly visible in: u3 (not counted as drift)\n      drifting units: u2\n\n──────────────────────────────────────────────────\nVideo QA: 2 critical, 0 unchecked — NOT PASSED\nReport saved: <PROJECT>/episodes/episode-001/video-qa-report.json\n\nFix the flagged units before assembling:\n  Drifting units: u2\n  Recommended: harvest-anchor from a unit that PASSED, then re-render the drifting units.\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vision-b\",\n  \"analyzedAt\": \"<TIME>\",\n  \"headGlitches\": [],\n  \"boundaries\": [],\n  \"unitIdentity\": [\n    {\n      \"unitId\": \"u1\",\n      \"verdict\": \"PASS\",\n      \"issues\": []\n    },\n    {\n      \"unitId\": \"u2\",\n      \"verdict\": \"FLAG-CRITICAL\",\n      \"issues\": [\n        \"MARA reads as a different woman\",\n        \"jacket is red\"\n      ]\n    },\n    {\n      \"unitId\": \"u3\",\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": []\n    }\n  ],\n  \"crossUnit\": {\n    \"verdict\": \"FLAG-CRITICAL\",\n    \"issues\": [\n      \"frame 2 protagonist has a different face\",\n      \"protagonist not clearly visible in: u3 (not counted as drift)\"\n    ],\n    \"driftingUnits\": [\n      \"u2\"\n    ]\n  },\n  \"summary\": {\n    \"units\": 3,\n    \"criticals\": 2,\n    \"errored\": 0,\n    \"passed\": false\n  }\n}\n"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u1. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u2. The remaining image(s) are the official reference sheet(s) for: MARA, JUNO. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 2 image(s) are rendered frames from unit u3. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vision-b",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. Every image you receive is a rendered frame from a DIFFERENT generation unit of one film, in film order, and each SHOULD show the same protagonist. Your single question: across the frames where the protagonist is clearly visible, does the protagonist read as the same person — same face, same hair color and style, same wardrobe and signature accessories?\nFrames where the protagonist is absent, heavily occluded, facing away, or too small to judge go in unclearFrames and MUST NOT be counted as drift. Only put a frame in driftingFrames when the protagonist is clearly visible and reads as a different person.\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"driftingFrames\": number[], \"unclearFrames\": number[], \"notes\": string}\ndriftingFrames and unclearFrames list 1-based frame indexes. FLAG-CRITICAL means at least one clearly-visible frame reads as a different person."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "text",
+                "text": "3 frames, one per generation unit, in film order. The protagonist is MARA. Across the frames where MARA is clearly visible, is this the same person?"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "video-vision-errors": {
+    "args": [
+      "qa-videos",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1",
+      "--model",
+      "vqa-x"
+    ],
+    "status": 0,
+    "stdout": "QA Videos: Episode 1 — 3 rendered unit(s)\n\nProgrammatic checks:\n  ✓ no head-glitch flashes detected\n  ✓ no boundary lighting jumps\n\nVision checks (model: vqa-x):\n  ? u1: UNCHECKED — identity QA failed: Venice API error 500: boom\n  ? u2: UNCHECKED — identity QA failed: vqa-x returned no content for the unit u2 identity QA. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.\n  ⚠ u3: FLAG-MODERATE — KAI coat is brown\n  ? cross-unit (MARA, 3 units): UNCHECKED\n      cross-unit QA failed: vqa-x returned no content for the cross-unit identity QA. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.\n\n──────────────────────────────────────────────────\nVideo QA: 0 critical, 3 unchecked — NOT PASSED\nReport saved: <PROJECT>/episodes/episode-001/video-qa-report.json\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vqa-x\",\n  \"analyzedAt\": \"<TIME>\",\n  \"headGlitches\": [],\n  \"boundaries\": [],\n  \"unitIdentity\": [\n    {\n      \"unitId\": \"u1\",\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"identity QA failed: Venice API error 500: boom\"\n      ],\n      \"errored\": true\n    },\n    {\n      \"unitId\": \"u2\",\n      \"verdict\": \"FLAG-LOW\",\n      \"issues\": [\n        \"identity QA failed: vqa-x returned no content for the unit u2 identity QA. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.\"\n      ],\n      \"errored\": true\n    },\n    {\n      \"unitId\": \"u3\",\n      \"verdict\": \"FLAG-MODERATE\",\n      \"issues\": [\n        \"KAI coat is brown\"\n      ]\n    }\n  ],\n  \"crossUnit\": {\n    \"verdict\": \"FLAG-LOW\",\n    \"issues\": [\n      \"cross-unit QA failed: vqa-x returned no content for the cross-unit identity QA. Either the model cannot read images (no-vision models answer image prompts with silence rather than an error) or it dropped this response intermittently -- retried once before giving up.\"\n    ],\n    \"driftingUnits\": [],\n    \"errored\": true\n  },\n  \"summary\": {\n    \"units\": 3,\n    \"criticals\": 0,\n    \"errored\": 3,\n    \"passed\": false\n  }\n}\n"
+    },
+    "requests": [
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u1. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u2. The remaining image(s) are the official reference sheet(s) for: MARA, JUNO. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:JUNO"
+              },
+              {
+                "type": "text",
+                "text": "The first 1 image(s) are rendered frames from unit u2. The remaining image(s) are the official reference sheet(s) for: MARA, JUNO. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 2 image(s) are rendered frames from unit u3. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. You receive rendered VIDEO FRAMES from one generation unit of a film, followed by the official character reference sheet(s). Judge whether the character(s) in the frames match the reference: face/body design, hair or shell color and style, wardrobe, and signature accessories. Characters may be non-human (drones, machines, creatures) — the reference sheet defines what they look like; never flag a shot merely because no human is visible when the referenced character is not human. Rendered frames are mid-action, so allow motion blur, unusual angles, and partial occlusion — flag identity substance, not rendering softness. If the referenced character is not visible or too small/occluded to judge in every frame, use verdict FLAG-LOW with issue \"character not clearly visible\" — never FLAG-CRITICAL for absence alone (the frame may be a scripted insert or an empty beat).\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"notes\": string}\nFLAG-CRITICAL means a viewer would read a visible character as a different person/design (wrong hair color, different face, wrong shell/body design, missing signature wardrobe element)."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|FIXTURE:sheet:MARA"
+              },
+              {
+                "type": "text",
+                "text": "The first 2 image(s) are rendered frames from unit u3. The remaining image(s) are the official reference sheet(s) for: MARA. Do the rendered characters match their references?"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": "nope"
+          },
+          {
+            "role": "user",
+            "content": "That did not parse as JSON: Unexpected token 'o', \"nope\" is not valid JSON. Return the same content again as one valid JSON document. No prose, no markdown fences."
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. Every image you receive is a rendered frame from a DIFFERENT generation unit of one film, in film order, and each SHOULD show the same protagonist. Your single question: across the frames where the protagonist is clearly visible, does the protagonist read as the same person — same face, same hair color and style, same wardrobe and signature accessories?\nFrames where the protagonist is absent, heavily occluded, facing away, or too small to judge go in unclearFrames and MUST NOT be counted as drift. Only put a frame in driftingFrames when the protagonist is clearly visible and reads as a different person.\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"driftingFrames\": number[], \"unclearFrames\": number[], \"notes\": string}\ndriftingFrames and unclearFrames list 1-based frame indexes. FLAG-CRITICAL means at least one clearly-visible frame reads as a different person."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "text",
+                "text": "3 frames, one per generation unit, in film order. The protagonist is MARA. Across the frames where MARA is clearly visible, is this the same person?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/api/v1/chat/completions",
+        "model": "vqa-x",
+        "max_tokens": 2000,
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a film-continuity QA analyst. Every image you receive is a rendered frame from a DIFFERENT generation unit of one film, in film order, and each SHOULD show the same protagonist. Your single question: across the frames where the protagonist is clearly visible, does the protagonist read as the same person — same face, same hair color and style, same wardrobe and signature accessories?\nFrames where the protagonist is absent, heavily occluded, facing away, or too small to judge go in unclearFrames and MUST NOT be counted as drift. Only put a frame in driftingFrames when the protagonist is clearly visible and reads as a different person.\nRespond with JSON only: {\"verdict\": \"PASS\" | \"FLAG-CRITICAL\" | \"FLAG-MODERATE\" | \"FLAG-LOW\", \"issues\": string[], \"driftingFrames\": number[], \"unclearFrames\": number[], \"notes\": string}\ndriftingFrames and unclearFrames list 1-based frame indexes. FLAG-CRITICAL means at least one clearly-visible frame reads as a different person."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:gray"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:red"
+              },
+              {
+                "type": "image_url",
+                "image": "data:image/png;base64|frame:blue"
+              },
+              {
+                "type": "text",
+                "text": "3 frames, one per generation unit, in film order. The protagonist is MARA. Across the frames where MARA is clearly visible, is this the same person?"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "video-no-sheets-no-protagonist-frames": {
+    "args": [
+      "qa-videos",
+      "-p",
+      "<PROJECT>",
+      "-e",
+      "1"
+    ],
+    "status": 0,
+    "stdout": "QA Videos: Episode 1 — 1 rendered unit(s)\n\nProgrammatic checks:\n  ✓ no head-glitch flashes detected\n  ✓ no boundary lighting jumps\n\nVision checks (model: vision-b):\n  ✓ u3: PASS\n  ✓ cross-unit (MARA, 1 units): PASS\n\n──────────────────────────────────────────────────\nVideo QA: 0 critical, 0 unchecked — PASS\nReport saved: <PROJECT>/episodes/episode-001/video-qa-report.json\n\nAll rendered units verified. Run: assemble-episode -p <PROJECT> -e 1\n",
+    "stderr": "",
+    "report": {
+      "raw": "{\n  \"episode\": 1,\n  \"model\": \"vision-b\",\n  \"analyzedAt\": \"<TIME>\",\n  \"headGlitches\": [],\n  \"boundaries\": [],\n  \"unitIdentity\": [\n    {\n      \"unitId\": \"u3\",\n      \"verdict\": \"PASS\",\n      \"issues\": [],\n      \"errored\": false\n    }\n  ],\n  \"crossUnit\": {\n    \"verdict\": \"PASS\",\n    \"issues\": [],\n    \"driftingUnits\": []\n  },\n  \"summary\": {\n    \"units\": 1,\n    \"criticals\": 0,\n    \"errored\": 0,\n    \"passed\": true\n  }\n}\n"
+    },
+    "requests": []
+  }
+}
