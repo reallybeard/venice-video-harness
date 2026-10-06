@@ -105,3 +105,7 @@ export * from './mini-drama/reference-slots.js';
 export * from './mini-drama/prompt-builder.js';
 // Ports: the host interfaces core's loop runs over (CLI: src/ports/createCliPorts).
 export * from './ports.js';
+// The video render job lifecycle over the VideoBackend / Clock / Logger ports:
+// re-attach or queue once, poll by policy, store, complete (rule 43).
+export * from './venice/video-errors.js';
+export * from './venice/render-job.js';

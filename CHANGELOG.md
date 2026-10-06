@@ -442,6 +442,29 @@
   extraction, file IO and the vision call stay in `src/`; the src modules
   re-export what moved, so existing imports are unchanged. No behaviour
   change. Test: `tests/core-qa.test.mjs`.
+- **The video render job lifecycle is in core (`venice/render-job.ts`).**
+  `runVideoJob(ports, request, target, policy?, options?)` runs one render
+  over the `VideoBackend` / `Clock` / `Logger` ports: re-attach to a recorded
+  job (`findPending` → `resume`, never a second `queue`, rule 43) or queue
+  exactly once (never retried), poll by policy through `Clock.sleep`, check
+  the ready bytes for a silent reject, then `download` → `complete`. A failed
+  job clears the record; a gone resumed id clears it and requeues once; a
+  timeout, an exhausted retrieve-error budget or a cancellation leaves it, so
+  the next run re-attaches. `VideoJobPolicy` expresses both CLI poll loops,
+  exported as presets: `RENDER_FILE_VIDEO_JOB_POLICY` (`pollRenderedVideo`:
+  sleep first, 60 min of waiting, 6 consecutive errors, no silent-reject
+  check) and `GENERATE_VIDEO_JOB_POLICY` (`pollVideoResult`: 180 polls, the
+  first error propagates, silent-reject check on, record kept after a
+  reject). Core's default, `DEFAULT_VIDEO_JOB_POLICY`, polls at once, waits
+  up to 60 min, tolerates 6 consecutive retrieve errors, and treats a silent
+  reject as terminal (record cleared). New errors `VideoJobTimeoutError`,
+  `VideoJobPollError`, `VideoJobGoneError` carry the CLI's existing messages;
+  `VideoGenerationFailedError` moves to core (`venice/video-errors.ts`,
+  re-exported by `src/venice/video.ts`, same class). No CLI call site moves
+  yet. Tests: `tests/core-render-job.test.mjs` (in-memory backend, fake
+  clock) and `tests/core-render-job-equivalence.test.mjs` (both presets
+  against `renderVideoFile` / `generateVideo` on the same scripted retrieve
+  sequences, through the CLI's own `VideoBackend`).
 
 ## 2.26.0 — 2026-10-05
 
