@@ -79,7 +79,7 @@ const SNIFFERS: Array<{ format: ImageFormat; mime: string; ext: string; match: (
  * `{ format: 'unknown', mime: 'application/octet-stream', ext: '.bin' }` when
  * no known magic matches.
  */
-export function sniffImageFormat(buf: Uint8Array | Buffer): SniffResult {
+export function sniffImageFormat(buf: Uint8Array): SniffResult {
   for (const s of SNIFFERS) {
     if (s.match(buf)) return { format: s.format, mime: s.mime, ext: s.ext };
   }
