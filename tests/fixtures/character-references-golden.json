@@ -2797,7 +2797,7 @@
         "Next: audition-voices -p <dir>/project --character \"ROOK\""
       ],
       "stderr": [
-        "  Failed to read --override-prompt missing.json: ENOENT: no such file or directory, open '/private<dir>/missing.json'"
+        "  Failed to read --override-prompt missing.json: ENOENT: no such file or directory, open '<dir>/missing.json'"
       ]
     },
     "invalid angle exits 2": {
