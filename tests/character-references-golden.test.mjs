@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,6 +161,9 @@ async function runModuleCase(c) {
 function runCliCase(c) {
   const dir = mkdtempSync(join(tmpdir(), 'add-character-golden-'));
   const configDir = mkdtempSync(join(tmpdir(), 'add-character-config-'));
+  // macOS tmpdir is a symlink into /private, and Node error messages print the resolved path.
+  const real = realpathSync(dir);
+  const hideDir = (line) => line.replaceAll(real, '<dir>').replaceAll(dir, '<dir>');
   try {
     const project = join(dir, 'project');
     mkdirSync(project);
@@ -196,8 +199,8 @@ function runCliCase(c) {
       calls,
       seriesCharacters: saved.characters,
       characters: snapshotCharacters(project),
-      stdout: run.stdout.split('\n').filter(Boolean).map(l => l.replaceAll(dir, '<dir>')),
-      stderr: run.stderr.split('\n').filter(Boolean).map(l => l.replaceAll(dir, '<dir>')),
+      stdout: run.stdout.split('\n').filter(Boolean).map(hideDir),
+      stderr: run.stderr.split('\n').filter(Boolean).map(hideDir),
     };
   } finally {
     rmSync(dir, { recursive: true, force: true });
