@@ -102,7 +102,15 @@ import {
 import type { DialogueLine } from '../venice/audio.js';
 import { getMusicModel } from 'venice-video-harness/core/venice/models.js';
 
-import { buildImagePrompt, buildCharacterReferencePromptParts } from './prompt-builder.js';
+import { buildImagePrompt } from './prompt-builder.js';
+import {
+  buildCharacterReferenceRequest,
+  CHARACTER_ANGLES,
+  characterReferenceHasFace,
+  characterSeedFromName,
+  parseCharacterAngles,
+  type CharacterAngle,
+} from 'venice-video-harness/core/mini-drama/character-references.js';
 import {
   approvalForShot,
   shotIdOf,
@@ -1162,7 +1170,7 @@ program
       : 'deep, resonant masculine voice, low pitch, authoritative tone, steady cadence';
     const voiceDescription = opts.voiceDesc || defaultVoice;
 
-    const seed = Math.abs([...opts.name].reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)) % 999_999_999;
+    const seed = characterSeedFromName(opts.name);
 
     const character: MiniDramaCharacter = {
       name: opts.name.toUpperCase(),
@@ -1208,22 +1216,23 @@ program
           console.warn(`  Failed to read --override-prompt ${opts.overridePrompt}: ${(err as Error).message}`);
         }
       }
-      const sharedModel = override.shared?.model ?? DEFAULT_IMAGE_GENERATION_MODEL;
-      const sharedCfg = override.shared?.cfg_scale ?? 10;
-      const sharedAspect = override.shared?.aspect_ratio ?? '1:1';
-      const sharedResolution = override.shared?.resolution ?? '1K';
-      const sharedSeed = override.shared?.seed ?? seed;
+      const shared = {
+        model: override.shared?.model,
+        cfgScale: override.shared?.cfg_scale,
+        aspectRatio: override.shared?.aspect_ratio,
+        resolution: override.shared?.resolution,
+        seed: override.shared?.seed,
+        negativePromptStrategy: series.videoDefaults.imageDefaults?.negativePromptStrategy,
+      };
 
-      const allAngles: ('front' | 'three-quarter' | 'profile' | 'full-body')[] = ['front', 'three-quarter', 'profile', 'full-body'];
-      let angles = allAngles;
+      let angles: CharacterAngle[] = [...CHARACTER_ANGLES];
       if (opts.angles) {
-        const requested = opts.angles.split(',').map(a => a.trim()).filter(Boolean);
-        const invalid = requested.filter(a => !allAngles.includes(a as (typeof allAngles)[number]));
-        if (invalid.length > 0) {
-          console.error(`--angles must be a subset of: ${allAngles.join(', ')} (got: ${invalid.join(', ')})`);
+        const parsed = parseCharacterAngles(opts.angles);
+        if (parsed.invalid.length > 0) {
+          console.error(`--angles must be a subset of: ${CHARACTER_ANGLES.join(', ')} (got: ${parsed.invalid.join(', ')})`);
           process.exit(2);
         }
-        angles = allAngles.filter(a => requested.includes(a));
+        angles = parsed.angles;
       }
       const filenames = angles.map(a => `${a}.png`);
 
@@ -1239,38 +1248,18 @@ program
           await copyFile(existingPath, archive);
         }
         const angleOverride = override.angles?.[angle];
-
-        // Default prompt build (still used when override.angles[angle].positive
-        // is missing). structured prompt keeps the positive prompt under the
-        // model's silent-reject ceiling and pushes style-reminder cues
-        // into negative_prompt.
-        const { positive: defaultPositive, negativeAdditions } =
-          buildCharacterReferencePromptParts(character, series.aesthetic, angle, {
-            model: sharedModel,
-            negativePromptStrategy: series.videoDefaults.imageDefaults?.negativePromptStrategy ?? 'auto',
-          });
-        const prompt = opts.prompt ?? angleOverride?.positive ?? defaultPositive;
-        const baseNegatives = [
-          'deformed', 'blurry', 'bad anatomy', 'low quality',
-          'multiple people', 'watermark',
-          'character reference sheet', 'comic panels', 'panel borders',
-        ];
-        const negativePrompt = angleOverride?.negative
-          ?? [...baseNegatives, ...negativeAdditions].join(', ');
+        const request = buildCharacterReferenceRequest(character, series.aesthetic, angle, {
+          ...shared,
+          prompt: opts.prompt ?? angleOverride?.positive,
+          negativePrompt: angleOverride?.negative,
+        });
+        const {
+          model: sharedModel, prompt, negative_prompt: negativePrompt,
+          cfg_scale: sharedCfg, aspect_ratio: sharedAspect, resolution: sharedResolution, seed: sharedSeed,
+        } = request;
 
         try {
-          const response = await generateImage(client, {
-            model: sharedModel,
-            prompt,
-            negative_prompt: negativePrompt,
-            resolution: sharedResolution,
-            aspect_ratio: sharedAspect,
-            steps: 30,
-            cfg_scale: sharedCfg,
-            seed: sharedSeed,
-            safe_mode: false,
-            hide_watermark: true,
-          });
+          const response = await generateImage(client, request);
 
           if (response.images?.[0]) {
             const imgBuffer = Buffer.from(response.images[0].b64_json, 'base64');
@@ -1311,7 +1300,7 @@ program
               aspectRatio: sharedAspect,
               resolution: sharedResolution,
               extra: returnedSeed !== undefined ? { returnedSeed } : undefined,
-            }, { provenance: 'generate', hasFace: (character.kind ?? 'person') !== 'object' });
+            }, { provenance: 'generate', hasFace: characterReferenceHasFace(character) });
           }
         } catch (err) {
           console.warn(`  ${angle}: failed - ${err}`);

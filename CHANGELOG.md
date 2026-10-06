@@ -181,6 +181,19 @@
   `tests/location-plates-golden.test.mjs` pins every request body and
   `.prompt.json` sidecar across 14 cases, captured before the move.
 
+- **Character reference requests are in core.** The four angles, the
+  name-derived seed, the negatives, the cfg / steps / aspect / resolution
+  defaults and the `/image/generate` body for one angle moved to
+  `venice-video-harness/core/mini-drama/character-references.js`
+  (`buildCharacterReferenceRequest`, `CHARACTER_ANGLES`,
+  `CHARACTER_REFERENCE_DEFAULTS`, `characterSeedFromName`,
+  `parseCharacterAngles`). `add-character` and
+  `generateCharacterReferences` each built the body themselves; both now call
+  core and keep the Venice call, the files and the sidecars. Output is
+  unchanged: `tests/character-references-golden.test.mjs` pins every request
+  body, sidecar and saved character across 12 generator cases and 10
+  `add-character` runs, captured before the move.
+
 - **Duration and resolution are validated before the paid call instead of
   silently corrected.** `queueVideo` used to snap an unsupported duration to
   the nearest valid one, and `buildModelParams` swapped an unsupported

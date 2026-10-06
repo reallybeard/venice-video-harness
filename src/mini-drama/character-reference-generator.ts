@@ -13,15 +13,18 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCharacterDir } from '../series/manager.js';
 import type { Character, SeriesState } from 'venice-video-harness/core/series/types.js';
-import { DEFAULT_IMAGE_GENERATION_MODEL } from 'venice-video-harness/core/series/types.js';
+import {
+  buildCharacterReferenceRequest,
+  CHARACTER_ANGLES,
+  characterReferenceHasFace,
+  type CharacterAngle,
+} from 'venice-video-harness/core/mini-drama/character-references.js';
 import type { VeniceClient } from '../venice/client.js';
 import { generateImage } from '../venice/generate.js';
 import { writeImageBytesSmart } from '../venice/image-bytes.js';
 import { appendRecipePass } from '../venice/recipe.js';
-import { buildCharacterReferencePromptParts } from './prompt-builder.js';
 
-export const CHARACTER_ANGLES = ['front', 'three-quarter', 'profile', 'full-body'] as const;
-export type CharacterAngle = (typeof CHARACTER_ANGLES)[number];
+export { CHARACTER_ANGLES, type CharacterAngle };
 
 export interface GenerateCharacterReferencesOptions {
   /** Only (re)generate this subset. Default: all four angles. */
@@ -55,11 +58,6 @@ export async function generateCharacterReferences(
   const charDir = getCharacterDir(series, character.name);
   await mkdir(charDir, { recursive: true });
 
-  const model = options.model ?? DEFAULT_IMAGE_GENERATION_MODEL;
-  const cfgScale = options.cfgScale ?? 10;
-  const aspectRatio = options.aspectRatio ?? '1:1';
-  const resolution = options.resolution ?? '1K';
-  const seed = character.seed;
   const angles = options.angles?.length ? options.angles : [...CHARACTER_ANGLES];
 
   const generated: string[] = [];
@@ -76,32 +74,18 @@ export async function generateCharacterReferences(
       await copyFile(imgPath, archive);
     }
 
-    const { positive: defaultPositive, negativeAdditions } =
-      buildCharacterReferencePromptParts(character, series.aesthetic, angle, {
-        model,
-        negativePromptStrategy: series.videoDefaults.imageDefaults?.negativePromptStrategy ?? 'auto',
-      });
-    const prompt = options.promptOverride ?? defaultPositive;
-    const negativePrompt = [
-      'deformed', 'blurry', 'bad anatomy', 'low quality',
-      'multiple people', 'watermark',
-      'character reference sheet', 'comic panels', 'panel borders',
-      ...negativeAdditions,
-    ].join(', ');
+    const request = buildCharacterReferenceRequest(character, series.aesthetic, angle, {
+      model: options.model,
+      cfgScale: options.cfgScale,
+      aspectRatio: options.aspectRatio,
+      resolution: options.resolution,
+      negativePromptStrategy: series.videoDefaults.imageDefaults?.negativePromptStrategy,
+      prompt: options.promptOverride,
+    });
+    const { model, prompt, negative_prompt: negativePrompt, cfg_scale: cfgScale, aspect_ratio: aspectRatio, resolution, seed } = request;
 
     try {
-      const response = await generateImage(client, {
-        model,
-        prompt,
-        negative_prompt: negativePrompt,
-        resolution,
-        aspect_ratio: aspectRatio,
-        steps: 30,
-        cfg_scale: cfgScale,
-        seed,
-        safe_mode: false,
-        hide_watermark: true,
-      });
+      const response = await generateImage(client, request);
       if (!response.images?.[0]) {
         console.warn(`  ${angle}: no image returned`);
         continue;
@@ -138,7 +122,7 @@ export async function generateCharacterReferences(
         aspectRatio,
         resolution,
         extra: returnedSeed !== undefined ? { returnedSeed } : undefined,
-      }, { provenance: 'generate', hasFace: (character.kind ?? 'person') !== 'object' });
+      }, { provenance: 'generate', hasFace: characterReferenceHasFace(character) });
 
       generated.push(finalPath);
     } catch (err) {
