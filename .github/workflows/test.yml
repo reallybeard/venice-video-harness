@@ -13,8 +13,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: test-${{ github.ref }}
-  cancel-in-progress: true
+  # Each main push gets its own group so every merge keeps a result; a PR's
+  # newer push supersedes its older one.
+  group: test-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -36,9 +38,9 @@ jobs:
       VENICE_API_KEY: ''
       VENICE_VIDEO_CONFIG_DIR: ${{ github.workspace }}/.ci-config
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -81,8 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
