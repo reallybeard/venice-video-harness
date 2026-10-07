@@ -1,8 +1,14 @@
 {
-  "name": "@venice-video-harness/core",
-  "version": "2.26.0",
-  "private": true,
-  "description": "Pure core of venice-video-harness: model registry, capability sets, series schema, choices. No Node APIs, no network, no filesystem. Bundled by the root package and exported as venice-video-harness/core.",
+  "name": "@reallybeard/venice-video-harness-core",
+  "version": "2.26.0-web.1",
+  "description": "Pure core of venice-video-harness, published from the reallybeard fork's integration line for the web app: model registry, capability sets, series schema, prompts, request bodies, planners, stages, gates, QA, ports and steps. No Node APIs, no network, no filesystem. Interim until upstream publishes core itself.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reallybeard/venice-video-harness.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/reallybeard/venice-video-harness/tree/main/packages/core",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,9 +23,15 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -b"
   }
